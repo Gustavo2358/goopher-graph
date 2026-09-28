@@ -45,6 +45,8 @@ const (
 )
 
 type Diagnostic struct {
+	Related       []Location
+	Contributions uint64
 	Severity      Severity
 	Code          string // código estável, não classificação por texto
 	Location      Location
