@@ -2,14 +2,14 @@
 
 Estado: implementação incremental iniciada; CLI de ajuda e harness reais disponíveis.
 
-Próxima fatia: **B03**.
+Próxima fatia: **B04**.
 
 | Fatia | Estado | Evidência / próximo passo |
 |---|---|---|
 | B00 | Concluído | Go global 1.26.0; harness falho retornou 1; `go test ./...`, `go vet ./...`, build sem cgo e `--help` passaram. |
 | B01 | Concluído | Grafo/CSR, valores e sets reais; testes de direção, paralelas, loops, alias, limites, Close e zero alocações na adjacência; regressão/vet/build sem cgo passaram. |
 | B02 | Concluído | Reachable/territory/anti/between e subgrafo completo; closure independente em 40 grafos, filtros, ciclos, paralelas e cancelamento em hub de 50 mil edges; regressão/vet passaram. |
-| B03 | Pendente | — |
+| B03 | Concluído | Decoder streaming com limites, presença/quoted empty, CRLF, tipos/arrays, rejeições e seeds de fuzz; fragmentação 1/2/7/4096, n>0+erro e records >64 KiB; regressão/vet passaram. |
 | B04 | Pendente | — |
 | B05 | Pendente | — |
 | B06 | Pendente | — |
@@ -24,7 +24,7 @@ Próxima fatia: **B03**.
 
 2026-09-28: Go 1.26.0 instalado globalmente pelo usuário e conferido. B00 concluída com teste de ajuda em diretório vazio, falha de output e uso inválido. O teste temporário intencionalmente falho falhou e foi removido; regressão e build passaram. Git local inicializado a pedido do usuário; um commit por checkpoint concluído.
 
-B01 concluída: `go test ./graph/... ./internal/graphdata/...`, `go test ./...`, `go vet ./...` e build sem cgo passaram. B02 concluída: `go test ./...` e `go vet ./...` passaram. Próximo passo: B03, decoder Neptune streaming.
+B01 concluída: `go test ./graph/... ./internal/graphdata/...`, `go test ./...`, `go vet ./...` e build sem cgo passaram. B02 concluída: `go test ./...` e `go vet ./...` passaram. B03 concluída: testes focais, regressão e vet passaram. Próximo passo: B04, merge resiliente em memória e todas as fixtures.
 
 ## Notas para retomar
 
