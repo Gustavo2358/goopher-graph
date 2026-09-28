@@ -2,12 +2,12 @@
 
 Estado: implementação incremental iniciada; CLI de ajuda e harness reais disponíveis.
 
-Próxima fatia: **B01**.
+Próxima fatia: **B02**.
 
 | Fatia | Estado | Evidência / próximo passo |
 |---|---|---|
 | B00 | Concluído | Go global 1.26.0; harness falho retornou 1; `go test ./...`, `go vet ./...`, build sem cgo e `--help` passaram. |
-| B01 | Pendente | — |
+| B01 | Concluído | Grafo/CSR, valores e sets reais; testes de direção, paralelas, loops, alias, limites, Close e zero alocações na adjacência; regressão/vet/build sem cgo passaram. |
 | B02 | Pendente | — |
 | B03 | Pendente | — |
 | B04 | Pendente | — |
@@ -24,7 +24,7 @@ Próxima fatia: **B01**.
 
 2026-09-28: Go 1.26.0 instalado globalmente pelo usuário e conferido. B00 concluída com teste de ajuda em diretório vazio, falha de output e uso inválido. O teste temporário intencionalmente falho falhou e foi removido; regressão e build passaram. Git local inicializado a pedido do usuário; um commit por checkpoint concluído.
 
-Próximo passo: B01, colunas compactas, grafo imutável e conjuntos com identidade.
+B01 concluída: `go test ./graph/... ./internal/graphdata/...`, `go test ./...`, `go vet ./...` e build sem cgo passaram. Próximo passo: B02, consultas compostas e oráculo independente.
 
 ## Notas para retomar
 
