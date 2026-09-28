@@ -41,6 +41,9 @@ func topology(t testing.TB, n int, edges [][3]int) *graph.Graph {
 		d.EdgePropOffsets.Heap = append(d.EdgePropOffsets.Heap, 0)
 	}
 	graphdata.BuildCSR(d)
+	if err := graphdata.BuildIndexes(context.Background(), d); err != nil {
+		t.Fatal(err)
+	}
 	g, err := graph.New(d, nil)
 	if err != nil {
 		t.Fatal(err)

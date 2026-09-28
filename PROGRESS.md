@@ -2,7 +2,7 @@
 
 Estado: implementação incremental iniciada; CLI de ajuda e harness reais disponíveis.
 
-Próxima fatia: **B06**.
+Próxima fatia: **B07**.
 
 | Fatia | Estado | Evidência / próximo passo |
 |---|---|---|
@@ -12,7 +12,7 @@ Próxima fatia: **B06**.
 | B03 | Concluído | Decoder streaming com limites, presença/quoted empty, CRLF, tipos/arrays, rejeições e seeds de fuzz; fragmentação 1/2/7/4096, n>0+erro e records >64 KiB; regressão/vet passaram. |
 | B04 | Concluído | As 12 fixtures, modelos, consultas, diagnósticos e contadores passaram; barreira nodes/edges, falhas de ports, close por fonte, permutações e idempotência; regressão/vet/build passaram. |
 | B05 | Concluído | Catálogos Linux sem filtro de extensão, symlinks/diretórios rejeitados, permissões reais e diagnóstico JSON escapado; 12 fixtures em disco, regressão e vet passaram. |
-| B06 | Pendente | — |
+| B06 | Concluído | Postings de labels/propriedades e índice vazio persistido nas colunas; índice/scan equivalentes em todas as fixtures; validação de memberships falsos/faltantes/duplicados; regressão/vet passaram. |
 | B07 | Pendente | — |
 | B08 | Pendente | — |
 | B09 | Pendente | — |
@@ -24,7 +24,7 @@ Próxima fatia: **B06**.
 
 2026-09-28: Go 1.26.0 instalado globalmente pelo usuário e conferido. B00 concluída com teste de ajuda em diretório vazio, falha de output e uso inválido. O teste temporário intencionalmente falho falhou e foi removido; regressão e build passaram. Git local inicializado a pedido do usuário; um commit por checkpoint concluído.
 
-B01 concluída: `go test ./graph/... ./internal/graphdata/...`, `go test ./...`, `go vet ./...` e build sem cgo passaram. B02 concluída: `go test ./...` e `go vet ./...` passaram. B03 concluída: testes focais, regressão e vet passaram. B04 concluída: `go test ./...`, vet e build sem cgo passaram. B05 concluída: catálogos reais produzem os mesmos modelos; testes completos e vet passaram. Próximo passo: B06, postings e igualdade por propriedade.
+B01 concluída: `go test ./graph/... ./internal/graphdata/...`, `go test ./...`, `go vet ./...` e build sem cgo passaram. B02 concluída: `go test ./...` e `go vet ./...` passaram. B03 concluída: testes focais, regressão e vet passaram. B04 concluída: `go test ./...`, vet e build sem cgo passaram. B05 concluída: catálogos reais produzem os mesmos modelos; testes completos e vet passaram. B06 concluída: testes de graph/ingest, regressão e vet passaram. Próximo passo: B07, codec de 24 seções e goldens independentes.
 
 ## Notas para retomar
 

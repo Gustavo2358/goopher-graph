@@ -154,5 +154,5 @@ func Validate(d *Data) error {
 			}
 		}
 	}
-	return nil
+	return validateIndexes(d)
 }

@@ -108,7 +108,18 @@ func (b *builder) canonicalize(keys []string) (*graph.Graph, error) {
 		d.EdgeProps.Heap = append(d.EdgeProps.Heap, props(e)...)
 		d.EdgePropOffsets.Heap = append(d.EdgePropOffsets.Heap, uint64(len(d.EdgeProps.Heap)))
 	}
+	keySet := map[uint32]bool{}
+	for _, key := range keys {
+		keySet[sids[key]] = true
+	}
+	for key := range keySet {
+		d.IndexedKeys.Heap = append(d.IndexedKeys.Heap, key)
+	}
+	sort.Slice(d.IndexedKeys.Heap, func(i, j int) bool { return d.IndexedKeys.Heap[i] < d.IndexedKeys.Heap[j] })
 	graphdata.BuildCSR(d)
+	if err := graphdata.BuildIndexes(b.ctx, d); err != nil {
+		return nil, err
+	}
 	if e := b.ctx.Err(); e != nil {
 		return nil, e
 	}

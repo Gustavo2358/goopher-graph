@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"context"
 	"errors"
 	"gophergraph/internal/graphdata"
 	"math"
@@ -22,6 +23,9 @@ func fixture(t *testing.T) *Graph {
 	d.EdgeLabels = graphdata.U32{Heap: []uint32{3, 3, 4}}
 	d.EdgePropOffsets = graphdata.U64{Heap: []uint64{0, 0, 0, 0}}
 	graphdata.BuildCSR(d)
+	if err := graphdata.BuildIndexes(context.Background(), d); err != nil {
+		t.Fatal(err)
+	}
 	g, err := New(d, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -190,5 +194,17 @@ func TestAdjacencyNoPerEdgeAllocation(t *testing.T) {
 	})
 	if n != 0 {
 		t.Fatalf("allocations=%v", n)
+	}
+}
+func TestPostingMembershipValidation(t *testing.T) {
+	for _, mutate := range []func(*graphdata.Data){func(d *graphdata.Data) { d.LabelPostings.Heap[0] = 1; d.LabelPostings.Heap[1] = 1 }, func(d *graphdata.Data) { d.LabelIndex.Heap[0].Count-- }, func(d *graphdata.Data) {
+		d.IndexedKeys.Heap = []uint32{8}
+		d.PropertyIndex = graphdata.PropertyEntries{}
+	}} {
+		g := fixture(t)
+		mutate(g.data)
+		if err := graphdata.Validate(g.data); err == nil {
+			t.Fatal("invalid postings accepted")
+		}
 	}
 }

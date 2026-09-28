@@ -67,6 +67,10 @@ func (c Properties) At(i uint64) Property {
 }
 
 type Data struct {
+	LabelIndex                                                     LabelEntries
+	LabelPostings, IndexedKeys                                     U32
+	PropertyIndex                                                  PropertyEntries
+	PropertyPostings                                               U32
 	Strings                                                        []string
 	StringOffsets                                                  U64
 	StringBytes                                                    []byte
