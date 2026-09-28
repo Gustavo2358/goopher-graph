@@ -1,0 +1,9 @@
+package dot
+
+import (
+	"gophergraph/graph"
+	"gophergraph/query"
+	"io"
+)
+
+func Write(output io.Writer, g *graph.Graph, subgraph *query.Subgraph) error

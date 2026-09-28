@@ -1,0 +1,5 @@
+~id,~label,rank:Int
+A,PROGRAM,1
+BAD,PROGRAM,oops
+B,PROGRAM,2
+C,PROGRAM,3

@@ -1,0 +1,26 @@
+package query
+
+import (
+	"context"
+	"gophergraph/graph"
+)
+
+type Options struct {
+	EdgeLabels []graph.StringID // nil=todas; não-nil vazio=nenhuma
+}
+
+type Subgraph struct{} // representação privada
+
+func Reachable(ctx context.Context, g *graph.Graph, start graph.NodeID, direction graph.Direction, options Options) (*graph.NodeSet, error)
+func FromNodes(ctx context.Context, g *graph.Graph, nodes *graph.NodeSet, options Options) (*Subgraph, error)
+func Territory(ctx context.Context, g *graph.Graph, start graph.NodeID, options Options) (*Subgraph, error)
+func AntiTerritory(ctx context.Context, g *graph.Graph, start graph.NodeID, options Options) (*Subgraph, error)
+func Between(ctx context.Context, g *graph.Graph, from, to graph.NodeID, options Options) (*Subgraph, error)
+
+func NewSubgraph(g *graph.Graph) (*Subgraph, error)
+func (s *Subgraph) AddNode(id graph.NodeID) error
+func (s *Subgraph) AddEdge(id graph.EdgeID) error // inclui endpoints
+func (s *Subgraph) Nodes() graph.NodeIterator
+func (s *Subgraph) Edges() graph.EdgeIDIterator
+func (s *Subgraph) NodeCount() uint64
+func (s *Subgraph) EdgeCount() uint64

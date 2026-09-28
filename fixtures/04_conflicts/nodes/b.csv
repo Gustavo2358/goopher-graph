@@ -1,0 +1,4 @@
+~id,~label,sigla:String(single),owner:String
+A,ENTRY_POINT,CT,ownerX
+B,PROGRAM,CO,ownerY
+A,PROGRAM,CO,

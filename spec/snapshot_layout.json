@@ -1,0 +1,320 @@
+{
+  "format_name": "GOPHERGRAPH",
+  "magic_hex": "474f504847525048",
+  "format_version": 1,
+  "endian": "little",
+  "header_size": 64,
+  "directory_offset": 64,
+  "directory_entry_size": 32,
+  "alignment": 64,
+  "flags": {
+    "partial_load": 1
+  },
+  "header_fields": [
+    [
+      0,
+      8,
+      "magic"
+    ],
+    [
+      8,
+      4,
+      "format_version"
+    ],
+    [
+      12,
+      4,
+      "header_size"
+    ],
+    [
+      16,
+      8,
+      "flags"
+    ],
+    [
+      24,
+      8,
+      "file_size"
+    ],
+    [
+      32,
+      8,
+      "node_count"
+    ],
+    [
+      40,
+      8,
+      "edge_count"
+    ],
+    [
+      48,
+      4,
+      "string_count"
+    ],
+    [
+      52,
+      4,
+      "section_count"
+    ],
+    [
+      56,
+      8,
+      "directory_offset"
+    ]
+  ],
+  "sections": [
+    {
+      "id": 1,
+      "name": "STRING_OFFSETS",
+      "element_size": 8,
+      "count": "S+1"
+    },
+    {
+      "id": 2,
+      "name": "STRING_BYTES",
+      "element_size": 1,
+      "count": "B"
+    },
+    {
+      "id": 3,
+      "name": "NODE_EXTERNAL_IDS",
+      "element_size": 4,
+      "count": "N"
+    },
+    {
+      "id": 4,
+      "name": "NODE_LABEL_OFFSETS",
+      "element_size": 8,
+      "count": "N+1"
+    },
+    {
+      "id": 5,
+      "name": "NODE_LABELS",
+      "element_size": 4,
+      "count": "L"
+    },
+    {
+      "id": 6,
+      "name": "NODE_PROPERTY_OFFSETS",
+      "element_size": 8,
+      "count": "N+1"
+    },
+    {
+      "id": 7,
+      "name": "NODE_PROPERTIES",
+      "element_size": 16,
+      "count": "Pn"
+    },
+    {
+      "id": 8,
+      "name": "EDGE_EXTERNAL_IDS",
+      "element_size": 4,
+      "count": "E"
+    },
+    {
+      "id": 9,
+      "name": "EDGE_SOURCES",
+      "element_size": 4,
+      "count": "E"
+    },
+    {
+      "id": 10,
+      "name": "EDGE_TARGETS",
+      "element_size": 4,
+      "count": "E"
+    },
+    {
+      "id": 11,
+      "name": "EDGE_LABELS",
+      "element_size": 4,
+      "count": "E"
+    },
+    {
+      "id": 12,
+      "name": "EDGE_PROPERTY_OFFSETS",
+      "element_size": 8,
+      "count": "E+1"
+    },
+    {
+      "id": 13,
+      "name": "EDGE_PROPERTIES",
+      "element_size": 16,
+      "count": "Pe"
+    },
+    {
+      "id": 14,
+      "name": "FORWARD_OFFSETS",
+      "element_size": 8,
+      "count": "N+1"
+    },
+    {
+      "id": 15,
+      "name": "FORWARD_NEIGHBORS",
+      "element_size": 4,
+      "count": "E"
+    },
+    {
+      "id": 16,
+      "name": "FORWARD_EDGES",
+      "element_size": 4,
+      "count": "E"
+    },
+    {
+      "id": 17,
+      "name": "REVERSE_OFFSETS",
+      "element_size": 8,
+      "count": "N+1"
+    },
+    {
+      "id": 18,
+      "name": "REVERSE_NEIGHBORS",
+      "element_size": 4,
+      "count": "E"
+    },
+    {
+      "id": 19,
+      "name": "REVERSE_EDGES",
+      "element_size": 4,
+      "count": "E"
+    },
+    {
+      "id": 20,
+      "name": "LABEL_INDEX_ENTRIES",
+      "element_size": 24,
+      "count": "Glabel"
+    },
+    {
+      "id": 21,
+      "name": "LABEL_POSTINGS",
+      "element_size": 4,
+      "count": "L+E"
+    },
+    {
+      "id": 22,
+      "name": "INDEXED_PROPERTY_KEYS",
+      "element_size": 4,
+      "count": "K"
+    },
+    {
+      "id": 23,
+      "name": "PROPERTY_INDEX_ENTRIES",
+      "element_size": 32,
+      "count": "Gprop"
+    },
+    {
+      "id": 24,
+      "name": "PROPERTY_POSTINGS",
+      "element_size": 4,
+      "count": "Qprop"
+    }
+  ],
+  "type_tags": {
+    "Bool": 1,
+    "Byte": 2,
+    "Short": 3,
+    "Int": 4,
+    "Long": 5,
+    "Float": 6,
+    "Double": 7,
+    "String": 8,
+    "Date": 9,
+    "Datetime": 10
+  },
+  "records": {
+    "PropertyValue": {
+      "size": 16,
+      "fields": [
+        [
+          0,
+          4,
+          "key_sid"
+        ],
+        [
+          4,
+          1,
+          "type"
+        ],
+        [
+          5,
+          1,
+          "flags"
+        ],
+        [
+          6,
+          2,
+          "reserved"
+        ],
+        [
+          8,
+          8,
+          "payload"
+        ]
+      ]
+    },
+    "LabelEntry": {
+      "size": 24,
+      "fields": [
+        [
+          0,
+          4,
+          "owner_kind"
+        ],
+        [
+          4,
+          4,
+          "label_sid"
+        ],
+        [
+          8,
+          8,
+          "start"
+        ],
+        [
+          16,
+          8,
+          "count"
+        ]
+      ]
+    },
+    "PropertyEntry": {
+      "size": 32,
+      "fields": [
+        [
+          0,
+          1,
+          "owner_kind"
+        ],
+        [
+          1,
+          1,
+          "type"
+        ],
+        [
+          2,
+          2,
+          "reserved"
+        ],
+        [
+          4,
+          4,
+          "key_sid"
+        ],
+        [
+          8,
+          8,
+          "payload"
+        ],
+        [
+          16,
+          8,
+          "start"
+        ],
+        [
+          24,
+          8,
+          "count"
+        ]
+      ]
+    }
+  }
+}

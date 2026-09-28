@@ -1,0 +1,2 @@
+~id,~from,~to,~label,score:Double,note:String
+e_all,A,B,LINK,-2.5,"edge, note"

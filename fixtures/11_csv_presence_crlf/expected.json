@@ -1,0 +1,151 @@
+{
+  "description": "Blank/quoted vazio, CRLF interno e espaços quoted: não perder semântica no adapter Go.",
+  "load": {
+    "completeness": "COMPLETE",
+    "nodes": 3,
+    "edges": 2,
+    "required_diagnostics": {},
+    "report_exact": {}
+  },
+  "index_properties": [
+    "text"
+  ],
+  "graph": {
+    "nodes": [
+      {
+        "id": "A",
+        "labels": [
+          "PROGRAM"
+        ],
+        "properties": [
+          {
+            "key": "empty",
+            "type": "String",
+            "value": ""
+          },
+          {
+            "key": "text",
+            "type": "String",
+            "value": "line1\r\nline2"
+          },
+          {
+            "key": "num",
+            "type": "Int",
+            "value": 7
+          }
+        ]
+      },
+      {
+        "id": "B",
+        "labels": [
+          "PROGRAM"
+        ],
+        "properties": [
+          {
+            "key": "text",
+            "type": "String",
+            "value": "a,b \"quoted\""
+          },
+          {
+            "key": "num",
+            "type": "Int",
+            "value": 8
+          }
+        ]
+      },
+      {
+        "id": "C",
+        "labels": [
+          "PROGRAM"
+        ],
+        "properties": [
+          {
+            "key": "text",
+            "type": "String",
+            "value": "  keep spaces  "
+          },
+          {
+            "key": "num",
+            "type": "Int",
+            "value": 9
+          }
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "id": "E1",
+        "source": "A",
+        "target": "B",
+        "label": "CALLS",
+        "properties": []
+      },
+      {
+        "id": "E2",
+        "source": "B",
+        "target": "C",
+        "label": "CALLS",
+        "properties": []
+      }
+    ]
+  },
+  "queries": [
+    {
+      "kind": "territory",
+      "start": "A",
+      "edge_labels": null,
+      "members": [
+        "A",
+        "B",
+        "C"
+      ],
+      "edges": [
+        "E1",
+        "E2"
+      ],
+      "ids_default": [
+        "B",
+        "C"
+      ]
+    },
+    {
+      "kind": "anti_territory",
+      "start": "C",
+      "edge_labels": null,
+      "members": [
+        "A",
+        "B",
+        "C"
+      ],
+      "edges": [
+        "E1",
+        "E2"
+      ],
+      "ids_default": [
+        "A",
+        "B"
+      ]
+    },
+    {
+      "kind": "between",
+      "start": "A",
+      "edge_labels": null,
+      "members": [
+        "A",
+        "B",
+        "C"
+      ],
+      "edges": [
+        "E1",
+        "E2"
+      ],
+      "ids_default": [
+        "A",
+        "B",
+        "C"
+      ],
+      "end": "C"
+    }
+  ],
+  "lexically_invalid_sources": []
+}

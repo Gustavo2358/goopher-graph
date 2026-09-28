@@ -1,0 +1,108 @@
+{
+  "description": "Labels default e IDs externos vazios explícitos, em espaços separados.",
+  "load": {
+    "completeness": "COMPLETE",
+    "nodes": 2,
+    "edges": 2,
+    "required_diagnostics": {},
+    "report_exact": {}
+  },
+  "index_properties": [],
+  "graph": {
+    "nodes": [
+      {
+        "id": "",
+        "labels": [
+          "vertex"
+        ],
+        "properties": [
+          {
+            "key": "note",
+            "type": "String",
+            "value": ""
+          }
+        ]
+      },
+      {
+        "id": "A",
+        "labels": [
+          "vertex"
+        ],
+        "properties": []
+      }
+    ],
+    "edges": [
+      {
+        "id": "",
+        "source": "",
+        "target": "A",
+        "label": "edge",
+        "properties": []
+      },
+      {
+        "id": "loop",
+        "source": "A",
+        "target": "A",
+        "label": "edge",
+        "properties": []
+      }
+    ]
+  },
+  "queries": [
+    {
+      "kind": "territory",
+      "start": "",
+      "edge_labels": null,
+      "members": [
+        "",
+        "A"
+      ],
+      "edges": [
+        "",
+        "loop"
+      ],
+      "ids_default": [
+        "A"
+      ]
+    },
+    {
+      "kind": "anti_territory",
+      "start": "",
+      "edge_labels": null,
+      "members": [
+        ""
+      ],
+      "edges": [],
+      "ids_default": []
+    },
+    {
+      "kind": "territory",
+      "start": "A",
+      "edge_labels": null,
+      "members": [
+        "A"
+      ],
+      "edges": [
+        "loop"
+      ],
+      "ids_default": []
+    },
+    {
+      "kind": "anti_territory",
+      "start": "A",
+      "edge_labels": null,
+      "members": [
+        "",
+        "A"
+      ],
+      "edges": [
+        "",
+        "loop"
+      ],
+      "ids_default": [
+        ""
+      ]
+    }
+  ],
+  "lexically_invalid_sources": []
+}

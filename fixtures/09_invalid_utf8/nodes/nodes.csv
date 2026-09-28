@@ -1,0 +1,4 @@
+~id,~label,note:String
+A,PROGRAM,ok
+B,PROGRAM,"ÿ"
+C,PROGRAM,ok

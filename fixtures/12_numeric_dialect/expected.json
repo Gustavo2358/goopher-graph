@@ -1,0 +1,145 @@
+{
+  "description": "A gramática do perfil não é toda a gramática que strconv aceita; erros isolados e floats canônicos.",
+  "load": {
+    "completeness": "PARTIAL",
+    "nodes": 3,
+    "edges": 2,
+    "required_diagnostics": {
+      "VALUE_INVALID": 3
+    },
+    "report_exact": {}
+  },
+  "index_properties": [
+    "x"
+  ],
+  "graph": {
+    "nodes": [
+      {
+        "id": "A",
+        "labels": [
+          "PROGRAM"
+        ],
+        "properties": [
+          {
+            "key": "x",
+            "type": "Double",
+            "value": "Infinity"
+          },
+          {
+            "key": "b",
+            "type": "Byte",
+            "value": -128
+          }
+        ]
+      },
+      {
+        "id": "B",
+        "labels": [
+          "PROGRAM"
+        ],
+        "properties": [
+          {
+            "key": "x",
+            "type": "Double",
+            "value": -0.0
+          },
+          {
+            "key": "b",
+            "type": "Byte",
+            "value": 127
+          }
+        ]
+      },
+      {
+        "id": "C",
+        "labels": [
+          "PROGRAM"
+        ],
+        "properties": [
+          {
+            "key": "x",
+            "type": "Double",
+            "value": "NaN"
+          },
+          {
+            "key": "b",
+            "type": "Byte",
+            "value": 0
+          }
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "id": "E1",
+        "source": "A",
+        "target": "B",
+        "label": "CALLS",
+        "properties": []
+      },
+      {
+        "id": "E2",
+        "source": "B",
+        "target": "C",
+        "label": "CALLS",
+        "properties": []
+      }
+    ]
+  },
+  "queries": [
+    {
+      "kind": "territory",
+      "start": "A",
+      "edge_labels": null,
+      "members": [
+        "A",
+        "B",
+        "C"
+      ],
+      "edges": [
+        "E1",
+        "E2"
+      ],
+      "ids_default": [
+        "B",
+        "C"
+      ]
+    },
+    {
+      "kind": "anti_territory",
+      "start": "C",
+      "edge_labels": null,
+      "members": [
+        "A",
+        "B",
+        "C"
+      ],
+      "edges": [
+        "E1",
+        "E2"
+      ],
+      "ids_default": [
+        "A",
+        "B"
+      ]
+    },
+    {
+      "kind": "between",
+      "start": "B",
+      "edge_labels": null,
+      "members": [
+        "B",
+        "C"
+      ],
+      "edges": [
+        "E2"
+      ],
+      "ids_default": [
+        "B",
+        "C"
+      ],
+      "end": "C"
+    }
+  ],
+  "lexically_invalid_sources": []
+}

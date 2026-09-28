@@ -1,0 +1,32 @@
+[
+  {
+    "snapshot": "topology.snapshot",
+    "expected": "../01_topology/expected.json",
+    "bytes": 3264
+  },
+  {
+    "snapshot": "partial.snapshot",
+    "expected": "../02_resilient/expected.json",
+    "bytes": 2176
+  },
+  {
+    "snapshot": "typed.snapshot",
+    "expected": "../03_typed_values/expected.json",
+    "bytes": 3136
+  },
+  {
+    "snapshot": "empty.snapshot",
+    "expected": "../07_empty/expected.json",
+    "bytes": 1216
+  },
+  {
+    "snapshot": "presence.snapshot",
+    "expected": "../11_csv_presence_crlf/expected.json",
+    "bytes": 2560
+  },
+  {
+    "snapshot": "numeric.snapshot",
+    "expected": "../12_numeric_dialect/expected.json",
+    "bytes": 2496
+  }
+]

@@ -1,0 +1,9 @@
+~id,~from,~to,~label,line:Int
+e1,A,B,CALLS,10
+e2,A,C,CALLS,20
+e3,B,D,CALLS,30
+e4,C,D,CALLS,40
+e5,D,B,CALLS,50
+e6,D,F,READS,60
+e7,A,B,CALLS,70
+e8,F,F,USES,80

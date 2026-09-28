@@ -1,0 +1,171 @@
+{
+  "description": "Header ruim e registros inválidos não impedem as contribuições válidas.",
+  "load": {
+    "completeness": "PARTIAL",
+    "nodes": 3,
+    "edges": 2,
+    "required_diagnostics": {
+      "HEADER_INVALID": 3,
+      "VALUE_INVALID": 1,
+      "REQUIRED_FIELD_MISSING": 1,
+      "ENDPOINT_NOT_FOUND": 3
+    },
+    "report_exact": {
+      "nodes.records_seen": 4,
+      "nodes.records_rejected": 1,
+      "nodes.records_staged": 3,
+      "edges.records_seen": 6,
+      "edges.records_rejected": 4,
+      "edges.records_staged": 2
+    }
+  },
+  "index_properties": [],
+  "graph": {
+    "nodes": [
+      {
+        "id": "A",
+        "labels": [
+          "PROGRAM"
+        ],
+        "properties": [
+          {
+            "key": "rank",
+            "type": "Int",
+            "value": 1
+          }
+        ]
+      },
+      {
+        "id": "B",
+        "labels": [
+          "PROGRAM"
+        ],
+        "properties": [
+          {
+            "key": "rank",
+            "type": "Int",
+            "value": 2
+          }
+        ]
+      },
+      {
+        "id": "C",
+        "labels": [
+          "PROGRAM"
+        ],
+        "properties": [
+          {
+            "key": "rank",
+            "type": "Int",
+            "value": 3
+          }
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "id": "e1",
+        "source": "A",
+        "target": "B",
+        "label": "CALLS",
+        "properties": []
+      },
+      {
+        "id": "e2",
+        "source": "B",
+        "target": "C",
+        "label": "CALLS",
+        "properties": []
+      }
+    ]
+  },
+  "queries": [
+    {
+      "kind": "territory",
+      "start": "A",
+      "edge_labels": null,
+      "members": [
+        "A",
+        "B",
+        "C"
+      ],
+      "edges": [
+        "e1",
+        "e2"
+      ],
+      "ids_default": [
+        "B",
+        "C"
+      ]
+    },
+    {
+      "kind": "anti_territory",
+      "start": "A",
+      "edge_labels": null,
+      "members": [
+        "A"
+      ],
+      "edges": [],
+      "ids_default": []
+    },
+    {
+      "kind": "territory",
+      "start": "B",
+      "edge_labels": null,
+      "members": [
+        "B",
+        "C"
+      ],
+      "edges": [
+        "e2"
+      ],
+      "ids_default": [
+        "C"
+      ]
+    },
+    {
+      "kind": "anti_territory",
+      "start": "B",
+      "edge_labels": null,
+      "members": [
+        "A",
+        "B"
+      ],
+      "edges": [
+        "e1"
+      ],
+      "ids_default": [
+        "A"
+      ]
+    },
+    {
+      "kind": "territory",
+      "start": "C",
+      "edge_labels": null,
+      "members": [
+        "C"
+      ],
+      "edges": [],
+      "ids_default": []
+    },
+    {
+      "kind": "anti_territory",
+      "start": "C",
+      "edge_labels": null,
+      "members": [
+        "A",
+        "B",
+        "C"
+      ],
+      "edges": [
+        "e1",
+        "e2"
+      ],
+      "ids_default": [
+        "A",
+        "B"
+      ]
+    }
+  ],
+  "lexically_invalid_sources": []
+}

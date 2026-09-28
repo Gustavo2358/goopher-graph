@@ -1,0 +1,13 @@
+package snapshot
+
+import (
+	"context"
+	"gophergraph/graph"
+	"gophergraph/snapshot/ports"
+)
+
+var ErrCorruptSnapshot error
+var ErrUnsupportedFormat error
+
+func Open(ctx context.Context, source ports.Source) (*graph.Graph, error)
+func Write(ctx context.Context, g *graph.Graph, sink ports.Sink) (ports.Publication, error)

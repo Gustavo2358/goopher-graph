@@ -1,0 +1,540 @@
+{
+  "description": "Diamante, ciclo, paralelas, loop, node isolado e índices.",
+  "load": {
+    "completeness": "COMPLETE",
+    "nodes": 6,
+    "edges": 8,
+    "required_diagnostics": {},
+    "report_exact": {}
+  },
+  "index_properties": [
+    "sigla",
+    "line"
+  ],
+  "graph": {
+    "nodes": [
+      {
+        "id": "A",
+        "labels": [
+          "PROGRAM",
+          "ENTRY_POINT"
+        ],
+        "properties": [
+          {
+            "key": "sigla",
+            "type": "String",
+            "value": "CO"
+          }
+        ]
+      },
+      {
+        "id": "B",
+        "labels": [
+          "PROGRAM"
+        ],
+        "properties": [
+          {
+            "key": "sigla",
+            "type": "String",
+            "value": "CO"
+          }
+        ]
+      },
+      {
+        "id": "C",
+        "labels": [
+          "PROGRAM"
+        ],
+        "properties": [
+          {
+            "key": "sigla",
+            "type": "String",
+            "value": "CT"
+          }
+        ]
+      },
+      {
+        "id": "D",
+        "labels": [
+          "PROGRAM"
+        ],
+        "properties": [
+          {
+            "key": "sigla",
+            "type": "String",
+            "value": "CO"
+          }
+        ]
+      },
+      {
+        "id": "F",
+        "labels": [
+          "FILE"
+        ],
+        "properties": [
+          {
+            "key": "sigla",
+            "type": "String",
+            "value": "CO"
+          }
+        ]
+      },
+      {
+        "id": "I",
+        "labels": [
+          "PROGRAM"
+        ],
+        "properties": [
+          {
+            "key": "sigla",
+            "type": "String",
+            "value": "XX"
+          }
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "id": "e1",
+        "source": "A",
+        "target": "B",
+        "label": "CALLS",
+        "properties": [
+          {
+            "key": "line",
+            "type": "Int",
+            "value": 10
+          }
+        ]
+      },
+      {
+        "id": "e2",
+        "source": "A",
+        "target": "C",
+        "label": "CALLS",
+        "properties": [
+          {
+            "key": "line",
+            "type": "Int",
+            "value": 20
+          }
+        ]
+      },
+      {
+        "id": "e3",
+        "source": "B",
+        "target": "D",
+        "label": "CALLS",
+        "properties": [
+          {
+            "key": "line",
+            "type": "Int",
+            "value": 30
+          }
+        ]
+      },
+      {
+        "id": "e4",
+        "source": "C",
+        "target": "D",
+        "label": "CALLS",
+        "properties": [
+          {
+            "key": "line",
+            "type": "Int",
+            "value": 40
+          }
+        ]
+      },
+      {
+        "id": "e5",
+        "source": "D",
+        "target": "B",
+        "label": "CALLS",
+        "properties": [
+          {
+            "key": "line",
+            "type": "Int",
+            "value": 50
+          }
+        ]
+      },
+      {
+        "id": "e6",
+        "source": "D",
+        "target": "F",
+        "label": "READS",
+        "properties": [
+          {
+            "key": "line",
+            "type": "Int",
+            "value": 60
+          }
+        ]
+      },
+      {
+        "id": "e7",
+        "source": "A",
+        "target": "B",
+        "label": "CALLS",
+        "properties": [
+          {
+            "key": "line",
+            "type": "Int",
+            "value": 70
+          }
+        ]
+      },
+      {
+        "id": "e8",
+        "source": "F",
+        "target": "F",
+        "label": "USES",
+        "properties": [
+          {
+            "key": "line",
+            "type": "Int",
+            "value": 80
+          }
+        ]
+      }
+    ]
+  },
+  "queries": [
+    {
+      "kind": "territory",
+      "start": "A",
+      "edge_labels": null,
+      "members": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "F"
+      ],
+      "edges": [
+        "e1",
+        "e2",
+        "e3",
+        "e4",
+        "e5",
+        "e6",
+        "e7",
+        "e8"
+      ],
+      "ids_default": [
+        "B",
+        "C",
+        "D",
+        "F"
+      ]
+    },
+    {
+      "kind": "anti_territory",
+      "start": "A",
+      "edge_labels": null,
+      "members": [
+        "A"
+      ],
+      "edges": [],
+      "ids_default": []
+    },
+    {
+      "kind": "territory",
+      "start": "B",
+      "edge_labels": null,
+      "members": [
+        "B",
+        "D",
+        "F"
+      ],
+      "edges": [
+        "e3",
+        "e5",
+        "e6",
+        "e8"
+      ],
+      "ids_default": [
+        "D",
+        "F"
+      ]
+    },
+    {
+      "kind": "anti_territory",
+      "start": "B",
+      "edge_labels": null,
+      "members": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "edges": [
+        "e1",
+        "e2",
+        "e3",
+        "e4",
+        "e5",
+        "e7"
+      ],
+      "ids_default": [
+        "A",
+        "C",
+        "D"
+      ]
+    },
+    {
+      "kind": "territory",
+      "start": "C",
+      "edge_labels": null,
+      "members": [
+        "B",
+        "C",
+        "D",
+        "F"
+      ],
+      "edges": [
+        "e3",
+        "e4",
+        "e5",
+        "e6",
+        "e8"
+      ],
+      "ids_default": [
+        "B",
+        "D",
+        "F"
+      ]
+    },
+    {
+      "kind": "anti_territory",
+      "start": "C",
+      "edge_labels": null,
+      "members": [
+        "A",
+        "C"
+      ],
+      "edges": [
+        "e2"
+      ],
+      "ids_default": [
+        "A"
+      ]
+    },
+    {
+      "kind": "territory",
+      "start": "D",
+      "edge_labels": null,
+      "members": [
+        "B",
+        "D",
+        "F"
+      ],
+      "edges": [
+        "e3",
+        "e5",
+        "e6",
+        "e8"
+      ],
+      "ids_default": [
+        "B",
+        "F"
+      ]
+    },
+    {
+      "kind": "anti_territory",
+      "start": "D",
+      "edge_labels": null,
+      "members": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "edges": [
+        "e1",
+        "e2",
+        "e3",
+        "e4",
+        "e5",
+        "e7"
+      ],
+      "ids_default": [
+        "A",
+        "B",
+        "C"
+      ]
+    },
+    {
+      "kind": "territory",
+      "start": "F",
+      "edge_labels": null,
+      "members": [
+        "F"
+      ],
+      "edges": [
+        "e8"
+      ],
+      "ids_default": []
+    },
+    {
+      "kind": "anti_territory",
+      "start": "F",
+      "edge_labels": null,
+      "members": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "F"
+      ],
+      "edges": [
+        "e1",
+        "e2",
+        "e3",
+        "e4",
+        "e5",
+        "e6",
+        "e7",
+        "e8"
+      ],
+      "ids_default": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ]
+    },
+    {
+      "kind": "territory",
+      "start": "I",
+      "edge_labels": null,
+      "members": [
+        "I"
+      ],
+      "edges": [],
+      "ids_default": []
+    },
+    {
+      "kind": "anti_territory",
+      "start": "I",
+      "edge_labels": null,
+      "members": [
+        "I"
+      ],
+      "edges": [],
+      "ids_default": []
+    },
+    {
+      "kind": "between",
+      "start": "A",
+      "edge_labels": null,
+      "members": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "F"
+      ],
+      "edges": [
+        "e1",
+        "e2",
+        "e3",
+        "e4",
+        "e5",
+        "e6",
+        "e7",
+        "e8"
+      ],
+      "end": "F",
+      "ids_default": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "F"
+      ]
+    },
+    {
+      "kind": "between",
+      "start": "D",
+      "edge_labels": null,
+      "members": [
+        "B",
+        "D"
+      ],
+      "edges": [
+        "e3",
+        "e5"
+      ],
+      "end": "D",
+      "ids_default": [
+        "B",
+        "D"
+      ]
+    },
+    {
+      "kind": "between",
+      "start": "I",
+      "edge_labels": null,
+      "members": [],
+      "edges": [],
+      "end": "A",
+      "ids_default": []
+    },
+    {
+      "kind": "territory",
+      "start": "A",
+      "edge_labels": [
+        "CALLS"
+      ],
+      "members": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "edges": [
+        "e1",
+        "e2",
+        "e3",
+        "e4",
+        "e5",
+        "e7"
+      ],
+      "ids_default": [
+        "B",
+        "C",
+        "D"
+      ]
+    },
+    {
+      "kind": "anti_territory",
+      "start": "F",
+      "edge_labels": [
+        "READS"
+      ],
+      "members": [
+        "D",
+        "F"
+      ],
+      "edges": [
+        "e6"
+      ],
+      "ids_default": [
+        "D"
+      ]
+    },
+    {
+      "kind": "territory",
+      "start": "A",
+      "edge_labels": [],
+      "members": [
+        "A"
+      ],
+      "edges": [],
+      "ids_default": []
+    }
+  ],
+  "lexically_invalid_sources": []
+}

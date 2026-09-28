@@ -1,0 +1,204 @@
+{
+  "description": "Merge determinístico sem first/last-wins e sem ressurreição de grupos em conflito.",
+  "load": {
+    "completeness": "PARTIAL",
+    "nodes": 3,
+    "edges": 3,
+    "required_diagnostics": {
+      "PROPERTY_CONFLICT": 2,
+      "EDGE_ID_CONFLICT": 1
+    },
+    "report_exact": {
+      "properties_dropped": 2,
+      "edges_quarantined": 1
+    }
+  },
+  "index_properties": [
+    "sigla"
+  ],
+  "graph": {
+    "nodes": [
+      {
+        "id": "A",
+        "labels": [
+          "PROGRAM",
+          "ENTRY_POINT"
+        ],
+        "properties": [
+          {
+            "key": "tags",
+            "type": "String",
+            "value": "um"
+          },
+          {
+            "key": "tags",
+            "type": "String",
+            "value": "dois"
+          },
+          {
+            "key": "owner",
+            "type": "String",
+            "value": "ownerX"
+          }
+        ]
+      },
+      {
+        "id": "B",
+        "labels": [
+          "PROGRAM"
+        ],
+        "properties": [
+          {
+            "key": "sigla",
+            "type": "String",
+            "value": "CO"
+          },
+          {
+            "key": "tags",
+            "type": "String",
+            "value": "foo"
+          },
+          {
+            "key": "owner",
+            "type": "String",
+            "value": "ownerY"
+          }
+        ]
+      },
+      {
+        "id": "C",
+        "labels": [
+          "FILE"
+        ],
+        "properties": []
+      }
+    ],
+    "edges": [
+      {
+        "id": "e2",
+        "source": "A",
+        "target": "B",
+        "label": "CALLS",
+        "properties": []
+      },
+      {
+        "id": "e3",
+        "source": "B",
+        "target": "C",
+        "label": "READS",
+        "properties": [
+          {
+            "key": "line",
+            "type": "Int",
+            "value": 9
+          }
+        ]
+      },
+      {
+        "id": "e4",
+        "source": "A",
+        "target": "B",
+        "label": "CALLS",
+        "properties": [
+          {
+            "key": "line",
+            "type": "Int",
+            "value": 7
+          }
+        ]
+      }
+    ]
+  },
+  "queries": [
+    {
+      "kind": "territory",
+      "start": "A",
+      "edge_labels": null,
+      "members": [
+        "A",
+        "B",
+        "C"
+      ],
+      "edges": [
+        "e2",
+        "e3",
+        "e4"
+      ],
+      "ids_default": [
+        "B",
+        "C"
+      ]
+    },
+    {
+      "kind": "anti_territory",
+      "start": "A",
+      "edge_labels": null,
+      "members": [
+        "A"
+      ],
+      "edges": [],
+      "ids_default": []
+    },
+    {
+      "kind": "territory",
+      "start": "B",
+      "edge_labels": null,
+      "members": [
+        "B",
+        "C"
+      ],
+      "edges": [
+        "e3"
+      ],
+      "ids_default": [
+        "C"
+      ]
+    },
+    {
+      "kind": "anti_territory",
+      "start": "B",
+      "edge_labels": null,
+      "members": [
+        "A",
+        "B"
+      ],
+      "edges": [
+        "e2",
+        "e4"
+      ],
+      "ids_default": [
+        "A"
+      ]
+    },
+    {
+      "kind": "territory",
+      "start": "C",
+      "edge_labels": null,
+      "members": [
+        "C"
+      ],
+      "edges": [],
+      "ids_default": []
+    },
+    {
+      "kind": "anti_territory",
+      "start": "C",
+      "edge_labels": null,
+      "members": [
+        "A",
+        "B",
+        "C"
+      ],
+      "edges": [
+        "e2",
+        "e3",
+        "e4"
+      ],
+      "ids_default": [
+        "A",
+        "B"
+      ]
+    }
+  ],
+  "lexically_invalid_sources": []
+}

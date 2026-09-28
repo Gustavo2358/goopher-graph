@@ -1,0 +1,21 @@
+{
+  "description": "Lote enumerável sem contribuição válida produz snapshot vazio parcial.",
+  "load": {
+    "completeness": "PARTIAL",
+    "nodes": 0,
+    "edges": 0,
+    "required_diagnostics": {
+      "HEADER_INVALID": 2,
+      "ENDPOINT_NOT_FOUND": 1,
+      "EMPTY_GRAPH": 1
+    },
+    "report_exact": {}
+  },
+  "index_properties": [],
+  "graph": {
+    "nodes": [],
+    "edges": []
+  },
+  "queries": [],
+  "lexically_invalid_sources": []
+}

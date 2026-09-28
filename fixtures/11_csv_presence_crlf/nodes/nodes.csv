@@ -1,0 +1,5 @@
+~id,~label,missing:String,empty:String,text:String,num:Int
+A,PROGRAM,,"","line1
+line2",7
+B,PROGRAM,,,"a,b ""quoted""",8
+C,PROGRAM,,,"  keep spaces  ",9

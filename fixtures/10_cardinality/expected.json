@@ -1,0 +1,57 @@
+{
+  "description": "Duas declarações incompatíveis eliminam a propriedade, não o vertex ou o lote.",
+  "load": {
+    "completeness": "PARTIAL",
+    "nodes": 1,
+    "edges": 0,
+    "required_diagnostics": {
+      "PROPERTY_CARDINALITY_CONFLICT": 1,
+      "HEADER_INVALID": 1
+    },
+    "report_exact": {
+      "properties_dropped": 1
+    }
+  },
+  "index_properties": [],
+  "graph": {
+    "nodes": [
+      {
+        "id": "X",
+        "labels": [
+          "PROGRAM"
+        ],
+        "properties": [
+          {
+            "key": "keep",
+            "type": "String",
+            "value": "one"
+          }
+        ]
+      }
+    ],
+    "edges": []
+  },
+  "queries": [
+    {
+      "kind": "territory",
+      "start": "X",
+      "edge_labels": null,
+      "members": [
+        "X"
+      ],
+      "edges": [],
+      "ids_default": []
+    },
+    {
+      "kind": "anti_territory",
+      "start": "X",
+      "edge_labels": null,
+      "members": [
+        "X"
+      ],
+      "edges": [],
+      "ids_default": []
+    }
+  ],
+  "lexically_invalid_sources": []
+}

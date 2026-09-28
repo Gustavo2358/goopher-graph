@@ -1,0 +1,126 @@
+package graph
+
+import "context"
+
+type NodeID uint32
+type EdgeID uint32
+type StringID uint32
+
+const InvalidNodeID NodeID = ^NodeID(0)
+const InvalidEdgeID EdgeID = ^EdgeID(0)
+const InvalidStringID StringID = ^StringID(0)
+
+type Direction uint8
+
+const (
+	Forward Direction = iota
+	Reverse
+)
+
+type ValueKind uint8
+
+const (
+	BoolKind ValueKind = iota + 1
+	ByteKind
+	ShortKind
+	IntKind
+	LongKind
+	FloatKind
+	DoubleKind
+	StringKind
+	DateKind
+	DatetimeKind
+)
+
+// Campos privados omitidos. Não implementar estas structs como vazias.
+type Graph struct{}
+type Value struct{}
+type NodeSet struct{}
+type EdgeSet struct{}
+type NodeIterator struct{}
+type EdgeIDIterator struct{}
+type EdgeIterator struct{}
+type PropertyIterator struct{}
+
+type Metadata struct {
+	Nodes       uint64
+	Edges       uint64
+	PartialLoad bool
+}
+
+type Edge struct {
+	ID       EdgeID
+	Source   NodeID
+	Target   NodeID
+	Label    StringID
+	Neighbor NodeID // target no forward; source no reverse
+}
+
+type Property struct {
+	Key   StringID
+	Value Value
+}
+
+// Sentinelas reais serão inicializadas no produto.
+var ErrNotFound error
+var ErrClosed error
+var ErrOutOfRange error
+var ErrGraphMismatch error
+
+func BoolValue(v bool) Value
+func IntegerValue(kind ValueKind, v int64) (Value, error)
+func DecimalValue(kind ValueKind, v float64) (Value, error)
+func TextValue(kind ValueKind, v string) (Value, error)
+func (v Value) Kind() ValueKind
+func (v Value) Bool() (bool, bool)
+func (v Value) Int64() (int64, bool)
+func (v Value) Float64() (float64, bool)
+func (v Value) Text() (string, bool)
+func (v Value) Equal(other Value) bool
+
+func (g *Graph) Metadata() Metadata
+func (g *Graph) Close() error
+func (g *Graph) FindNode(external string) (NodeID, error)
+func (g *Graph) FindEdge(external string) (EdgeID, error)
+func (g *Graph) FindString(text string) (StringID, bool, error)
+func (g *Graph) String(id StringID) (string, error)
+func (g *Graph) NodeExternalID(id NodeID) (string, error)
+func (g *Graph) EdgeExternalID(id EdgeID) (string, error)
+func (g *Graph) NodeLabels(id NodeID) ([]StringID, error) // cópia
+func (g *Graph) Edge(id EdgeID) (Edge, error)
+func (g *Graph) Adjacent(node NodeID, direction Direction) (EdgeIterator, error)
+func (g *Graph) NodeProperties(id NodeID) (PropertyIterator, error)
+func (g *Graph) EdgeProperties(id EdgeID) (PropertyIterator, error)
+func (g *Graph) NodesWithLabel(ctx context.Context, label string) (*NodeSet, error)
+func (g *Graph) EdgesWithLabel(ctx context.Context, label string) (*EdgeSet, error)
+func (g *Graph) NodesWithProperty(ctx context.Context, key string, value Value) (*NodeSet, error)
+func (g *Graph) EdgesWithProperty(ctx context.Context, key string, value Value) (*EdgeSet, error)
+
+func (it *EdgeIterator) Next() bool
+func (it *EdgeIterator) Edge() Edge
+func (it *EdgeIterator) Err() error
+func (it *PropertyIterator) Next() bool
+func (it *PropertyIterator) Property() Property
+func (it *PropertyIterator) Err() error
+
+func NewNodeSet(g *Graph) (*NodeSet, error)
+func (s *NodeSet) Add(id NodeID) error
+func (s *NodeSet) Contains(id NodeID) bool
+func (s *NodeSet) Count() uint64
+func (s *NodeSet) Clone() *NodeSet
+func (s *NodeSet) Intersection(other *NodeSet) (*NodeSet, error)
+func (s *NodeSet) Union(other *NodeSet) (*NodeSet, error)
+func (s *NodeSet) Iterator() NodeIterator
+func (it *NodeIterator) Next() bool
+func (it *NodeIterator) ID() NodeID
+
+func NewEdgeSet(g *Graph) (*EdgeSet, error)
+func (s *EdgeSet) Add(id EdgeID) error
+func (s *EdgeSet) Contains(id EdgeID) bool
+func (s *EdgeSet) Count() uint64
+func (s *EdgeSet) Clone() *EdgeSet
+func (s *EdgeSet) Intersection(other *EdgeSet) (*EdgeSet, error)
+func (s *EdgeSet) Union(other *EdgeSet) (*EdgeSet, error)
+func (s *EdgeSet) Iterator() EdgeIDIterator
+func (it *EdgeIDIterator) Next() bool
+func (it *EdgeIDIterator) ID() EdgeID

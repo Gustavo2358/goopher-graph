@@ -1,0 +1,220 @@
+{
+  "description": "Tipos, limites, quoted empty/blank, UTF-8, arrays, escapes e multiline.",
+  "load": {
+    "completeness": "COMPLETE",
+    "nodes": 2,
+    "edges": 1,
+    "required_diagnostics": {
+      "BOOL_COERCED": 1
+    },
+    "report_exact": {}
+  },
+  "index_properties": [
+    "tags",
+    "i",
+    "absent"
+  ],
+  "graph": {
+    "nodes": [
+      {
+        "id": "A",
+        "labels": [
+          "PROGRAM"
+        ],
+        "properties": [
+          {
+            "key": "flag",
+            "type": "Bool",
+            "value": true
+          },
+          {
+            "key": "b",
+            "type": "Byte",
+            "value": -128
+          },
+          {
+            "key": "s",
+            "type": "Short",
+            "value": -32768
+          },
+          {
+            "key": "i",
+            "type": "Int",
+            "value": -2147483648
+          },
+          {
+            "key": "l",
+            "type": "Long",
+            "value": -9223372036854775808
+          },
+          {
+            "key": "f",
+            "type": "Float",
+            "value": 1.5
+          },
+          {
+            "key": "d",
+            "type": "Double",
+            "value": "Infinity"
+          },
+          {
+            "key": "text",
+            "type": "String",
+            "value": "Olá, \"GopherGraph\""
+          },
+          {
+            "key": "empty",
+            "type": "String",
+            "value": ""
+          },
+          {
+            "key": "tags",
+            "type": "String",
+            "value": "um"
+          },
+          {
+            "key": "tags",
+            "type": "String",
+            "value": "dois;com-separador"
+          },
+          {
+            "key": "born",
+            "type": "Date",
+            "value": "2024-02-29"
+          },
+          {
+            "key": "at",
+            "type": "Datetime",
+            "value": "2026-09-28T18:40:00.123-03:00"
+          },
+          {
+            "key": "ns:key",
+            "type": "String",
+            "value": "value"
+          }
+        ]
+      },
+      {
+        "id": "B",
+        "labels": [
+          "FILE"
+        ],
+        "properties": [
+          {
+            "key": "flag",
+            "type": "Bool",
+            "value": false
+          },
+          {
+            "key": "b",
+            "type": "Byte",
+            "value": 127
+          },
+          {
+            "key": "s",
+            "type": "Short",
+            "value": 32767
+          },
+          {
+            "key": "i",
+            "type": "Int",
+            "value": 2147483647
+          },
+          {
+            "key": "l",
+            "type": "Long",
+            "value": 9223372036854775807
+          },
+          {
+            "key": "f",
+            "type": "Float",
+            "value": -0.0
+          },
+          {
+            "key": "d",
+            "type": "Double",
+            "value": "NaN"
+          },
+          {
+            "key": "text",
+            "type": "String",
+            "value": "linha 1\nlinha 2"
+          }
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "id": "e_all",
+        "source": "A",
+        "target": "B",
+        "label": "LINK",
+        "properties": [
+          {
+            "key": "score",
+            "type": "Double",
+            "value": -2.5
+          },
+          {
+            "key": "note",
+            "type": "String",
+            "value": "edge, note"
+          }
+        ]
+      }
+    ]
+  },
+  "queries": [
+    {
+      "kind": "territory",
+      "start": "A",
+      "edge_labels": null,
+      "members": [
+        "A",
+        "B"
+      ],
+      "edges": [
+        "e_all"
+      ],
+      "ids_default": [
+        "B"
+      ]
+    },
+    {
+      "kind": "anti_territory",
+      "start": "A",
+      "edge_labels": null,
+      "members": [
+        "A"
+      ],
+      "edges": [],
+      "ids_default": []
+    },
+    {
+      "kind": "territory",
+      "start": "B",
+      "edge_labels": null,
+      "members": [
+        "B"
+      ],
+      "edges": [],
+      "ids_default": []
+    },
+    {
+      "kind": "anti_territory",
+      "start": "B",
+      "edge_labels": null,
+      "members": [
+        "A",
+        "B"
+      ],
+      "edges": [
+        "e_all"
+      ],
+      "ids_default": [
+        "A"
+      ]
+    }
+  ],
+  "lexically_invalid_sources": []
+}

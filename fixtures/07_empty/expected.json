@@ -1,0 +1,19 @@
+{
+  "description": "Headers válidos sem registros produzem snapshot vazio completo.",
+  "load": {
+    "completeness": "COMPLETE",
+    "nodes": 0,
+    "edges": 0,
+    "required_diagnostics": {
+      "EMPTY_GRAPH": 1
+    },
+    "report_exact": {}
+  },
+  "index_properties": [],
+  "graph": {
+    "nodes": [],
+    "edges": []
+  },
+  "queries": [],
+  "lexically_invalid_sources": []
+}

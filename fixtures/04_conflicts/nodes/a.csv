@@ -1,0 +1,4 @@
+~id,~label,sigla:String(single),tags:String(set)[]
+A,PROGRAM,CO,um;dois
+B,PROGRAM,CO,foo
+C,FILE,,

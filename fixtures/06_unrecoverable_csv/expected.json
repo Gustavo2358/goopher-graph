@@ -1,0 +1,96 @@
+{
+  "description": "Cauda com aspas não fechadas encerra somente a fonte; a fonte seguinte carrega.",
+  "load": {
+    "completeness": "PARTIAL",
+    "nodes": 2,
+    "edges": 1,
+    "required_diagnostics": {
+      "CSV_SOURCE_UNRECOVERABLE": 1,
+      "ENDPOINT_NOT_FOUND": 1
+    },
+    "report_exact": {}
+  },
+  "index_properties": [],
+  "graph": {
+    "nodes": [
+      {
+        "id": "A",
+        "labels": [
+          "PROGRAM"
+        ],
+        "properties": []
+      },
+      {
+        "id": "C",
+        "labels": [
+          "PROGRAM"
+        ],
+        "properties": []
+      }
+    ],
+    "edges": [
+      {
+        "id": "ok",
+        "source": "A",
+        "target": "C",
+        "label": "CALLS",
+        "properties": []
+      }
+    ]
+  },
+  "queries": [
+    {
+      "kind": "territory",
+      "start": "A",
+      "edge_labels": null,
+      "members": [
+        "A",
+        "C"
+      ],
+      "edges": [
+        "ok"
+      ],
+      "ids_default": [
+        "C"
+      ]
+    },
+    {
+      "kind": "anti_territory",
+      "start": "A",
+      "edge_labels": null,
+      "members": [
+        "A"
+      ],
+      "edges": [],
+      "ids_default": []
+    },
+    {
+      "kind": "territory",
+      "start": "C",
+      "edge_labels": null,
+      "members": [
+        "C"
+      ],
+      "edges": [],
+      "ids_default": []
+    },
+    {
+      "kind": "anti_territory",
+      "start": "C",
+      "edge_labels": null,
+      "members": [
+        "A",
+        "C"
+      ],
+      "edges": [
+        "ok"
+      ],
+      "ids_default": [
+        "A"
+      ]
+    }
+  ],
+  "lexically_invalid_sources": [
+    "nodes/00_broken.csv"
+  ]
+}

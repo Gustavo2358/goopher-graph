@@ -1,0 +1,4 @@
+~id,~label,flag:Boolean,b:Byte,s:Short,i:Int,l:Long,f:Float,d:Double,text:String,empty:String,absent:String,tags:String(set)[],born:Date,at:Datetime,ns\:key:String
+A,PROGRAM,true,-128,-32768,-2147483648,-9223372036854775808,1.5,Infinity,"Olá, ""GopherGraph""","",,"um;dois\;com-separador;um",2024-02-29,2026-09-28T18:40:00.123-03:00,value
+B,FILE,TRUE,127,32767,2147483647,9223372036854775807,-0.0,NaN,"linha 1
+linha 2",,,,,,

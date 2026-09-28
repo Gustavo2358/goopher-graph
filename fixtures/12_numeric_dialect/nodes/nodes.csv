@@ -1,0 +1,7 @@
+~id,~label,x:Double,b:Byte
+A,PROGRAM,+Infinity,-128
+badinf,PROGRAM,INF,0
+badhex,PROGRAM,0x1p2,0
+badover,PROGRAM,1,128
+B,PROGRAM,-0.0,127
+C,PROGRAM,NaN,0
