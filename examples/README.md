@@ -1,7 +1,13 @@
-# Exemplo de consulta Go
+# Consulta Go própria
 
-[shared_targets.go.txt](shared_targets.go.txt) é uma função consumidora da API planejada. Seu resultado é a interseção dos alcances reflexivos de duas origens.
+[shared_targets/query.go](shared_targets/query.go) calcula a interseção dos alcances reflexivos de duas origens, usando somente `graph` e `query`. O Graph pertence ao chamador.
 
-Em B09, copiar a função para um exemplo/consumidor real, adicionar um main pequeno que abre snapshot e imprime IDs, compilar e executar. O main não pertence à engine e a função não recebe path, CLI ou objeto HTTP.
+Após criar o snapshot da fixture conforme o README principal:
 
-O arquivo é textual porque a engine ainda não existe. Sua sintaxe pode ser verificada agora; a integração real é gate futuro. Não criar stubs do core para marcar esse gate como pronto.
+```sh
+go run ./examples/shared_targets/cmd bin/graph.snapshot A B
+```
+
+A saída contém `"B"`, `"D"` e `"F"`, um ID por linha JSON. O [programa consumidor](shared_targets/cmd/main.go) abre o mmap, chama a função e fecha explicitamente o Graph. Não altera a engine nem registra plugins.
+
+O E2E compila e executa um consumidor em módulo temporário separado, sem rede. [shared_targets.go.txt](shared_targets.go.txt) preserva a assinatura de referência original.

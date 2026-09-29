@@ -1,8 +1,8 @@
 # Progresso
 
-Estado: implementação incremental iniciada; CLI de ajuda e harness reais disponíveis.
+Estado: **produto concluído — B00 a B12**.
 
-Próxima fatia: **B12**.
+Próximo passo: **escopo encerrado**. HTTP, S3 e novas consultas são outro escopo.
 
 | Fatia | Estado | Evidência / próximo passo |
 |---|---|---|
@@ -18,14 +18,23 @@ Próxima fatia: **B12**.
 | B09 | Concluído | CLI build/territory/anti-territory/between, CSV IDs, DOT e exemplo público; E2E completos/parciais, consumidor em módulo externo offline, Graphviz e imports; regressão/vet/build passaram. |
 | B10 | Concluído | Race real com 16 leitores × 50 queries; 100 ciclos open/query/close sem fd/mmap retidos; fuzz CSV 10.010 e snapshot 10.000 execuções; falha do sink/cancelamento/short write testados; regressão/vet passaram. |
 | B11 | Concluído | Benchmarks nas três escalas até 100 mil/500 mil; fases/allocs, sete queries, fórmula, expansão única e RSS em processos separados. Resultados em docs/BENCHMARKS.md; regressão/vet passaram. |
-| B12 | Pendente | — |
+| B12 | Concluído | Cópia limpa sem rede: testes sem cache, vet/gofmt, build sem cgo, race, fuzz, benchmarks, goldens, E2E e comandos do README passaram. |
 
-## Última sessão de implementação
+## Fechamento — 2026-09-28
 
-2026-09-28: Go 1.26.0 instalado globalmente pelo usuário e conferido. B00 concluída com teste de ajuda em diretório vazio, falha de output e uso inválido. O teste temporário intencionalmente falho falhou e foi removido; regressão e build passaram. Git local inicializado a pedido do usuário; um commit por checkpoint concluído.
+Go 1.26.0 global instalado pelo usuário e conferido; GCC/libc, Python, GNU time e Graphviz disponíveis. x/sys v0.38.0 foi obtido pelo gerenciador normal de módulos. Git local mantém um commit por checkpoint, sem remote ou publicação externa.
 
-B01 concluída: `go test ./graph/... ./internal/graphdata/...`, `go test ./...`, `go vet ./...` e build sem cgo passaram. B02 concluída: `go test ./...` e `go vet ./...` passaram. B03 concluída: testes focais, regressão e vet passaram. B04 concluída: `go test ./...`, vet e build sem cgo passaram. B05 concluída: catálogos reais produzem os mesmos modelos; testes completos e vet passaram. B06 concluída: testes de graph/ingest, regressão e vet passaram. B07 concluída: goldens exatos e reader independente passaram, assim como regressão e vet. B08 concluída: `CGO_ENABLED=0 go test ./snapshot/...`, regressão, vet e build sem cgo passaram. Dependência x/sys v0.38.0 obtida pelo gerenciador normal Go, sem downloads nos testes. B09 concluída: `go test ./...`, vet e build sem cgo passaram, incluindo E2E, Graphviz e consumidor externo. B10 concluída: `CGO_ENABLED=1 go test -race ./...`, vet e ambas as campanhas `-fuzztime=10000x` passaram. Corrigida classificação de falha tipada do DiagnosticSink, com regressão. B11 concluída: `go test -run '^$' -bench . -benchmem ./...` executado antes/depois de reusar o validador CSV. RSS real medido com GNU time; custos em docs/BENCHMARKS.md. Regressão/vet passaram. Próximo passo: B12, documentação de uso e gates finais sem cache.
+Reproduzi o produto em cópia limpa do índice Git, sem binários anteriores e com `GOPROXY=off GOTOOLCHAIN=local`:
 
-## Notas para retomar
+- `go clean -testcache` e `go test -count=1 ./...`: passaram, incluindo 12 fixtures, consultas esperadas, seis goldens, reader Python, E2E em subprocessos e consumidor em módulo externo.
+- `go vet ./...`, gofmt em todas as fontes e `CGO_ENABLED=0 go build -o bin/gophergraph ./cmd/gophergraph`: passaram.
+- `CGO_ENABLED=1 go test -race -count=1 ./...`: passou, incluindo leituras simultâneas e ciclos de recursos.
+- As duas campanhas de TESTING com `-fuzztime=10000x`: 10.000 execuções cada, sem falhas.
+- `go test -run '^$' -bench . -benchmem ./...`: passou nas três escalas, até 100 mil nodes / 500 mil edges. Fases, alocações, heap, mapping e RSS estão em `docs/BENCHMARKS.md`.
+- `python3 tools/check_package.py`: referências e links passaram. Os comandos completos/parciais do README, as três consultas, DOT e o exemplo executável também foram executados com sucesso.
 
-Ler AGENTS e o próximo cartão liberado. Atualizar este arquivo, sem replicar estado no backlog ou gerar um relatório por sessão. Estados: Pendente, Em andamento, Concluído, Bloqueado (com causa concreta).
+A revisão final acrescentou igualdade de propriedades contra modelos independentes no backend de bytes e escaping de controles Unicode em DOT/diagnósticos. Fixtures e goldens originais foram preservados.
+
+## Limites da evidência
+
+Qualificação local Linux/amd64 com fixtures e dados sintéticos; nenhum corpus corporativo ou cluster Neptune foi fornecido ou acessado. O maior build medido atingiu cerca de 1,41 GiB de RSS; a query CLI correspondente, 56,5 MiB. Nenhuma promessa de SLA ou cold-cache. Leitores precisam terminar antes de Close, e inodes mapeados não podem sofrer writes/truncate externo.

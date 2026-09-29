@@ -26,3 +26,17 @@ func TestEscapedDiagnostics(t *testing.T) {
 		t.Fatal("write error lost")
 	}
 }
+func TestUnicodeControlEscaping(t *testing.T) {
+	var b bytes.Buffer
+	event := ports.Diagnostic{EntityID: "x\u0085\u009b", EntityIDKnown: true}
+	if e := New(&b).Emit(context.Background(), event); e != nil {
+		t.Fatal(e)
+	}
+	if strings.ContainsRune(b.String(), '\u0085') || strings.ContainsRune(b.String(), '\u009b') {
+		t.Fatal("raw control", b.String())
+	}
+	var got ports.Diagnostic
+	if e := json.Unmarshal(b.Bytes(), &got); e != nil || got.EntityID != event.EntityID {
+		t.Fatal(got, e)
+	}
+}

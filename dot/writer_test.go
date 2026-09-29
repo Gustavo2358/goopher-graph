@@ -62,3 +62,9 @@ func TestQuoteControls(t *testing.T) {
 		t.Fatalf("escaping: %v %s", e, out)
 	}
 }
+
+func TestC1ControlEscape(t *testing.T) {
+	if got := quote("\u0085"); got != "\"\\\\x85\"" {
+		t.Fatalf("unescaped control: %q", got)
+	}
+}

@@ -8,6 +8,7 @@ import (
 	"gophergraph/query"
 	"io"
 	"strings"
+	"unicode"
 )
 
 func quote(s string) string {
@@ -24,7 +25,7 @@ func quote(s string) string {
 		case '\r':
 			b.WriteString("\\r")
 		default:
-			if r < 32 || r == 127 {
+			if unicode.IsControl(r) {
 				fmt.Fprintf(&b, "\\\\x%02X", r)
 			} else {
 				b.WriteRune(r)

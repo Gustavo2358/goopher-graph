@@ -108,6 +108,7 @@ func Value(t testing.TB, p Property) graph.Value {
 }
 func CheckGraph(t testing.TB, g *graph.Graph, w Expected) {
 	t.Helper()
+	defer CheckPropertyLookups(t, g, w)
 	m := g.Metadata()
 	if m.Nodes != uint64(len(w.Graph.Nodes)) || m.Edges != uint64(len(w.Graph.Edges)) || m.PartialLoad != (w.Load.Completeness == "PARTIAL") {
 		t.Fatalf("metadata %+v expected %+v", m, w.Load)
@@ -265,4 +266,69 @@ func Payload(v graph.Value) uint64 {
 		return math.Float64bits(n)
 	}
 	return 0
+}
+
+// CheckPropertyLookups compares indexed/scan lookup results to the independent
+// normalized fixture, including when the graph is backed by mapped bytes.
+func CheckPropertyLookups(t testing.TB, g *graph.Graph, w Expected) {
+	t.Helper()
+	var all []Property
+	for _, n := range w.Graph.Nodes {
+		all = append(all, n.Properties...)
+	}
+	for _, e := range w.Graph.Edges {
+		all = append(all, e.Properties...)
+	}
+	for _, p := range all {
+		value := Value(t, p)
+		var wantNodes, wantEdges []string
+		matches := func(props []Property) bool {
+			for _, other := range props {
+				if other.Key == p.Key && Value(t, other).Equal(value) {
+					return true
+				}
+			}
+			return false
+		}
+		for _, n := range w.Graph.Nodes {
+			if matches(n.Properties) {
+				wantNodes = append(wantNodes, n.ID)
+			}
+		}
+		for _, e := range w.Graph.Edges {
+			if matches(e.Properties) {
+				wantEdges = append(wantEdges, e.ID)
+			}
+		}
+		sort.Strings(wantNodes)
+		sort.Strings(wantEdges)
+		ns, e := g.NodesWithProperty(context.Background(), p.Key, value)
+		if e != nil {
+			t.Fatal(e)
+		}
+		es, e := g.EdgesWithProperty(context.Background(), p.Key, value)
+		if e != nil {
+			t.Fatal(e)
+		}
+		var gotNodes, gotEdges []string
+		ni := ns.Iterator()
+		for ni.Next() {
+			id, e := g.NodeExternalID(ni.ID())
+			if e != nil {
+				t.Fatal(e)
+			}
+			gotNodes = append(gotNodes, id)
+		}
+		ei := es.Iterator()
+		for ei.Next() {
+			id, e := g.EdgeExternalID(ei.ID())
+			if e != nil {
+				t.Fatal(e)
+			}
+			gotEdges = append(gotEdges, id)
+		}
+		if fmt.Sprint(gotNodes) != fmt.Sprint(wantNodes) || fmt.Sprint(gotEdges) != fmt.Sprint(wantEdges) {
+			t.Fatalf("property lookup %s: nodes %q/%q edges %q/%q", p.Key, gotNodes, wantNodes, gotEdges, wantEdges)
+		}
+	}
 }

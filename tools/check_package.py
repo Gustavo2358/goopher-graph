@@ -149,7 +149,7 @@ def main() -> None:
     print(f'Fontes lexicais positivas: {lexical}, PASS (exclui negativos intencionais)')
     print(f'Goldens: {goldens}, bytes e round-trip de referência, PASS')
     print(f'Go: {snippets} snippets, {gresult}')
-    print('Motor Go, testes de produto, mmap real e Neptune: NÃO EXECUTADOS / NÃO IMPLEMENTADOS')
+    print('Este checker não executa a engine, mmap ou Neptune. Testes do produto: go test ./...')
 
 if __name__=='__main__':
     try: main()

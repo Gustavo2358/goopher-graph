@@ -1,56 +1,128 @@
 # GopherGraph
 
-**Um motor de grafos pequeno, escrito em Go. CSV entra; consultas atravessam um snapshot imutável.**
+Motor Go para carregar um multigrafo direcionado com propriedades e consultar snapshots imutáveis. Inclui biblioteca reutilizável, ingestão resiliente de Neptune Gremlin CSV, CSR nos dois sentidos, índices compactos, mmap e CLI local.
 
-GopherGraph reúne ingestão local compatível com o **Gremlin CSV do bulk loader do Neptune**, grafo direcionado com propriedades, CSR forward/reverse, persistência binária e leitura por mmap. Consultas são funções e programas Go que usam a API, não expressões em uma linguagem inventada.
+## Preparar e compilar
 
-O nome combina *Gopher* com *Graph*. É um nome de trabalho do projeto; não presume registro de marca, domínio disponível ou módulo publicado.
+Plataforma do produto: **Linux/amd64**, com **Go 1.26** instalado globalmente. Testes também usam Python 3; race exige GCC/libc. GNU time serve às medições e Graphviz é opcional para conferir DOT.
 
-## Começar
+Em Ubuntu, as ferramentas podem ser instaladas globalmente com:
 
-Abra esta pasta como raiz da sessão do agente e use o prompt de [START_HERE.md](START_HERE.md). [AGENTS.md](AGENTS.md) rege a execução; [SCOPE.md](SCOPE.md) define o produto; [BACKLOG.md](BACKLOG.md) vai do primeiro teste ao fechamento. **Todas as fatias começam pendentes em [PROGRESS.md](PROGRESS.md).**
-
-Este pacote contém especificação e material de referência, **não uma engine implementada**. Não depende de documentos anteriores, de um projeto C ou da conversa que o originou. Não há migração de produto nem séries de versões documentais.
-
-## Produto que será construído
-
-```text
-nodes/ + edges/ (declarados separadamente)
-          |
-  ingestão resiliente: todos os nodes, depois edges
-          |
-   canonicalização + CSR + índices
-          |
-    graph.snapshot (imutável)
-          |
-   mmap local -> graph.Graph
-          |
-   território / antiterritório / between / programas Go
-          |
-           CSV de IDs ou DOT
+```sh
+sudo apt-get install golang-go build-essential python3 time graphviz
 ```
 
-A estrutura é por capacidade: `graph`, `ingest`, `snapshot`, `query`, `dot`. Interfaces pequenas e adapters ficam na capacidade que possui a fronteira. CLI é apenas um driver. Não existe uma divisão horizontal global em application/domain/infrastructure.
+A única dependência Go é `golang.org/x/sys/unix`, isolada no adapter de mmap. Prepare o cache pelo gerenciador normal de módulos antes de construir/testar:
 
-## Mapa de leitura
+```sh
+GOTOOLCHAIN=local go mod download
+CGO_ENABLED=0 go build -o bin/gophergraph ./cmd/gophergraph
+./bin/gophergraph --help
+```
 
-| Preciso entender | Documento |
-|---|---|
-| Limites e motivo das escolhas | [SCOPE](SCOPE.md), [decisões](docs/DECISIONS.md) |
-| Packages, imports, Go idiomático | [arquitetura](docs/ARCHITECTURE.md), [práticas Go](docs/GO_ENGINEERING.md) |
-| Identidade, tipos, CSR e índices | [modelo](docs/DATA_MODEL.md) |
-| Nodes/edges, CSV, rejeições e relatórios | [ingestão](docs/INGEST.md), [ports](docs/PORTS.md) |
-| Arquivo byte a byte, validação, mmap e publicação | [snapshot](docs/SNAPSHOT.md) |
-| API, ownership e extensão por programas | [API](docs/API.md), [consultas](docs/QUERIES.md) |
-| Comandos que existirão | [CLI](docs/CLI.md) |
-| Gates e evidências necessárias | [testes](docs/TESTING.md), [desempenho](docs/PERFORMANCE.md), [fechamento](docs/CLOSEOUT.md) |
-| Fontes externas e limites da compatibilidade | [referências](docs/REFERENCES.md) |
-| Layout e exemplos verificáveis | [spec](spec/README.md), [fixtures](fixtures/README.md) |
+O binário de produção não usa cgo. Os testes não instalam dependências nem acessam serviços remotos.
 
-## Desenvolvimento lean
+## Carregar e consultar
 
-Um módulo Go, stdlib como padrão e `golang.org/x/sys/unix` restrito ao adapter de mmap/Linux. Nada de cgo, framework web, SDK AWS, parser de queries ou gerador de bindings no produto inicial. `go.mod`/`go.sum` são arquivos normais da ferramenta, não um ritual de aprovação. A versão de Go/dependência usada é a disponível e aprovada no ambiente, sem exigir um patch específico nesta spec.
+Nodes e edges vêm de **dois diretórios distintos**. Cada catálogo considera apenas entradas imediatas, sem filtro por extensão; symlinks e diretórios são rejeitados individualmente. Todos os nodes são consolidados antes de ler edges.
 
-A abertura segura e o ciclo de vida do mapping são requisitos; `mmap` não significa acesso instantâneo nem ausência de consumo de memória. Desempenho é medido, não presumido pela linguagem.
+Exemplo reproduzível com as fixtures incluídas:
 
-O verificador opcional `python3 tools/check_package.py` confere documentos, modelos e referências. Ele não implementa ingestão nem substitui `go test`. [PACKAGE_CHECK.md](PACKAGE_CHECK.md) distingue exatamente o que foi verificado na entrega.
+```sh
+./bin/gophergraph build \
+  --nodes fixtures/01_topology/nodes \
+  --edges fixtures/01_topology/edges \
+  --output bin/graph.snapshot \
+  --index-property sigla
+
+./bin/gophergraph territory --snapshot bin/graph.snapshot --node A
+./bin/gophergraph anti-territory --snapshot bin/graph.snapshot --node F
+./bin/gophergraph between --snapshot bin/graph.snapshot --from A --to F
+
+./bin/gophergraph territory --snapshot bin/graph.snapshot --node A \
+  --edge-label CALLS --format dot --output bin/territory.dot
+```
+
+A primeira consulta imprime:
+
+```csv
+id
+B
+C
+D
+F
+```
+
+- CSV de IDs omite a origem por padrão; `--include-origin` a inclui. DOT sempre inclui a origem e preserva paralelas e loops.
+- Um ID vazio é válido: passe `--node=""`. IDs com vírgulas, aspas e quebras de linha recebem escaping CSV.
+- Sem `--edge-label`, todas as relações são permitidas. Um label inexistente produz filtro vazio e alcance reflexivo.
+- `between(A,B)` retorna a interseção do alcance forward de A com o alcance reverse de B, com todas as edges permitidas entre os membros. Em ciclos, essa região pode incluir passeios que não são caminhos simples.
+- `--index-property` pode repetir. Igualdade tipada produz o mesmo resultado com índice ou scan, preservando distinções entre tags, NaN canônico e zeros assinados.
+
+### Cargas parciais
+
+```sh
+./bin/gophergraph build \
+  --nodes fixtures/02_resilient/nodes \
+  --edges fixtures/02_resilient/edges \
+  --output bin/partial.snapshot
+./bin/gophergraph territory --snapshot bin/partial.snapshot --node A
+```
+
+Registros inválidos, headers errados, fontes com falha e endpoints ausentes geram diagnósticos JSON em stderr. A carga continua sobre os dados aceitos e o resumo informa `PARTIAL`. Propriedades conflitantes são removidas; um EdgeID estruturalmente conflitante é quarentenado. Aspas abertas até EOF encerram apenas a fonte, preservando seu prefixo completo.
+
+Queries mantêm os dados limpos em stdout e avisam em stderr quando o snapshot veio de carga parcial. Cancelamento, falha do catálogo raiz ou do diagnóstico impedem publicação. O limite padrão por registro é 64 MiB, ajustável com `--max-record-bytes` (mínimo 1024).
+
+| Exit code | Significado |
+|---:|---|
+| 0 | Sucesso operacional, inclusive carga parcial publicada |
+| 1 | Falha operacional, cancelamento ou durabilidade não confirmada |
+| 2 | Argumentos ou caminhos de configuração inválidos |
+| 3 | ID requerido não encontrado |
+
+Output de build deve ficar fora dos catálogos. Output de query não pode ser o próprio snapshot ou um alias dele.
+
+## Usar como biblioteca
+
+`graph` oferece metadados, valores tipados, lookup, adjacências e conjuntos com identidade. `query` oferece `Reachable`, `FromNodes`, `Territory`, `AntiTerritory` e `Between`. `ingest.Build`, `snapshot.Open` e `snapshot.Write` recebem ports; os adapters concretos ficam na composição do programa.
+
+Uma consulta própria pode usar adjacências diretamente ou combinar resultados. O [exemplo shared_targets](examples/shared_targets/query.go) usa somente API pública, sem registry:
+
+```sh
+go run ./examples/shared_targets/cmd bin/graph.snapshot A B
+```
+
+Ele imprime `"B"`, `"D"` e `"F"`, um ID por linha JSON. O teste E2E também compila essa consulta em um módulo consumidor separado, com acesso apenas à API pública.
+
+### Ownership do snapshot
+
+O dono deve chamar `Graph.Close()` depois que todas as queries e iteradores terminarem. Close sequencial é idempotente; não há suporte para Close concorrente com leitores. Strings públicas são cópias seguras, e slices do armazenamento não são expostos para escrita.
+
+A publicação usa tempfile, validação, sync, rename e sync do diretório. Leitores antigos continuam usando o inode anterior. `PublishedUncertain` informa que o novo nome já está visível, mas a durabilidade não foi confirmada.
+
+**Não reescreva nem trunque um inode que tenha leitores mmap ativos.** `MAP_PRIVATE` não protege contra alteração externa; truncamento pode causar SIGBUS. Para substituir snapshots, use o fluxo de publicação da biblioteca/CLI.
+
+## Verificação
+
+Com o cache de módulos preparado:
+
+```sh
+GOPROXY=off GOTOOLCHAIN=local go test -count=1 ./...
+go vet ./...
+CGO_ENABLED=0 go build -o bin/gophergraph ./cmd/gophergraph
+CGO_ENABLED=1 go test -race ./...
+go test ./ingest/adapters/neptune -run '^$' -fuzz '^FuzzNeptuneCSV$' -fuzztime=10000x
+go test ./snapshot -run '^$' -fuzz '^FuzzSnapshotDecode$' -fuzztime=10000x
+go test -run '^$' -bench . -benchmem ./...
+python3 tools/check_package.py
+```
+
+A suíte inclui os 12 modelos de fixtures, oráculo de closure, seis goldens binários independentes, reader Python, corrupção, falhas de ports/publicação, concorrência, recursos, CLI em subprocessos e consumidor externo. O checker Python confere referências e documentos; os testes Go verificam a engine.
+
+[Medições locais](docs/BENCHMARKS.md) separam build, validação, consultas, exportação, heap, mapping e RSS. Elas cobrem até 100 mil nodes / 500 mil edges, sem prometer SLA ou desempenho sobre corpus não fornecido.
+
+## Contratos e continuidade
+
+[PROGRESS.md](PROGRESS.md) concentra o estado e as evidências dos checkpoints. [SCOPE](SCOPE.md), [ARCHITECTURE](docs/ARCHITECTURE.md), [API](docs/API.md), [INGEST](docs/INGEST.md), [SNAPSHOT](docs/SNAPSHOT.md), [CLI](docs/CLI.md) e [TESTING](docs/TESTING.md) detalham os contratos. Para retomar desenvolvimento, use [START_HERE](START_HERE.md).
+
+HTTP, S3, mutação online, DSL, planner e execução distribuída estão fora deste escopo. Não foi feito acesso a Neptune, cloud ou dados corporativos.
