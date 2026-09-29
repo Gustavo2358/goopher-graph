@@ -19,7 +19,16 @@ func (o Options) allows(label graph.StringID) bool {
 	}
 	return false
 }
+
+type traversalStats struct {
+	expansions  []uint32
+	adjacencies uint64
+}
+
 func Reachable(ctx context.Context, g *graph.Graph, start graph.NodeID, direction graph.Direction, options Options) (*graph.NodeSet, error) {
+	return reachable(ctx, g, start, direction, options, nil)
+}
+func reachable(ctx context.Context, g *graph.Graph, start graph.NodeID, direction graph.Direction, options Options, stats *traversalStats) (*graph.NodeSet, error) {
 	if e := ctx.Err(); e != nil {
 		return nil, e
 	}
@@ -39,12 +48,18 @@ func Reachable(ctx context.Context, g *graph.Graph, start graph.NodeID, directio
 		if e := ctx.Err(); e != nil {
 			return nil, e
 		}
+		if stats != nil {
+			stats.expansions[queue[head]]++
+		}
 		it, e := g.Adjacent(queue[head], direction)
 		if e != nil {
 			return nil, e
 		}
 		for it.Next() {
 			steps++
+			if stats != nil {
+				stats.adjacencies++
+			}
 			if steps%1024 == 0 {
 				if e := ctx.Err(); e != nil {
 					return nil, e

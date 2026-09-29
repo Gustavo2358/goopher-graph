@@ -16,6 +16,7 @@ import (
 	"io"
 	"math"
 	"strings"
+	"time"
 	"unicode/utf8"
 )
 
@@ -54,7 +55,9 @@ func buildCommand(ctx context.Context, args []string, stdout, stderr io.Writer) 
 	if e != nil {
 		return failure(stderr, e, 1)
 	}
+	writeStart := time.Now()
 	publication, e := snapshot.Write(ctx, g, file.New(*output))
+	writeDuration := time.Since(writeStart)
 	closeErr := g.Close()
 	if e != nil || closeErr != nil {
 		state := "NOT_PUBLISHED"
@@ -70,6 +73,9 @@ func buildCommand(ctx context.Context, args []string, stdout, stderr io.Writer) 
 		completeness = "PARTIAL"
 	}
 	_, e = fmt.Fprintf(stdout, "PUBLISHED_DURABLE %s nodes=%d edges=%d\nnode_sources=%+v\nedge_sources=%+v\nproperty_conflicts=%d cardinality_conflicts=%d quarantined_edges=%d warnings=%d\n", completeness, report.Nodes, report.Edges, report.NodeSources, report.EdgeSources, report.PropertyConflictGroups, report.PropertyCardinalityConflictGroups, report.QuarantinedEdgeIDs, report.Warnings)
+	if e == nil {
+		_, e = fmt.Fprintf(stdout, "ingest_merge=%s canonicalize_csr_indexes=%s write_validate_commit=%s\n", report.Times.IngestMerge, report.Times.Canonicalize, writeDuration)
+	}
 	if e != nil {
 		return failure(stderr, fmt.Errorf("PUBLISHED_DURABLE: report output failed: %w", e), 1)
 	}

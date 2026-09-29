@@ -15,11 +15,12 @@ import (
 
 type Decoder struct{}
 type reader struct {
-	f     framer
-	cols  []column
-	role  ports.Role
-	entry ports.Entry
-	done  bool
+	validator csvValidator
+	f         framer
+	cols      []column
+	role      ports.Role
+	entry     ports.Entry
+	done      bool
 }
 
 func NormalizeLimits(l ports.Limits) (ports.Limits, error) {
@@ -61,7 +62,7 @@ func (Decoder) New(ctx context.Context, role ports.Role, entry ports.Entry, inpu
 	if !utf8.Valid(raw) || bytes.IndexByte(raw, 0) >= 0 {
 		return nil, &ports.SourceError{Kind: ports.InvalidHeader, Location: loc, Cause: errors.New("invalid header encoding")}
 	}
-	fields, e := cells(raw)
+	fields, e := cells(raw, &r.validator)
 	if e == nil {
 		r.cols, e = header(fields, role)
 	}
@@ -107,7 +108,7 @@ func (r *reader) Next(ctx context.Context) (ports.Event, error) {
 	if bytes.IndexByte(raw, 0) >= 0 {
 		return reject("VALUE_INVALID", "record contains NUL"), nil
 	}
-	fields, e := cells(raw)
+	fields, e := cells(raw, &r.validator)
 	if e != nil {
 		return reject("VALUE_INVALID", "invalid CSV record"), nil
 	}

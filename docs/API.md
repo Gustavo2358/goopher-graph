@@ -32,7 +32,7 @@ Cancelar consulta retorna erro e nenhum resultado anunciado como completo. Não 
 
 ## Ingestão e persistência
 
-`ingest.Build` recebe contexto, dois Catalogs, Decoder, DiagnosticSink e Options. Retorna Graph consolidado, Report e error. Report parcial + error nil é sucesso operacional com rejeições. Graph ainda não está publicado: snapshot.Write é operação separada, com Publication explícita.
+`ingest.Build` recebe contexto, dois Catalogs, Decoder, DiagnosticSink e Options. Retorna Graph consolidado, Report e error. Report parcial + error nil é sucesso operacional com rejeições. Graph ainda não está publicado: snapshot.Write é operação separada, com Publication explícita. `Report.Times` informa tempos de leitura/merge e canonicalização/CSR/índices para medição local; esses tempos não são persistidos.
 
 `snapshot.Open(ctx,Source)` abre/valida o backing e transfere lifecycle para Graph. `snapshot.Write(ctx,g,Sink)` serializa, valida staging e publica. Não receber um path no domínio para facilitar a CLI; path fica em Source/Sink concretos.
 

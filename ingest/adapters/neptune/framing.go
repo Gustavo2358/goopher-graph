@@ -137,7 +137,27 @@ func (f *framer) frame(ctx context.Context) ([]byte, uint64, error) {
 		}
 	}
 }
-func cells(raw []byte) ([]cell, error) {
+
+type csvValidator struct {
+	input    bytes.Reader
+	buffered *bufio.Reader
+	csv      *csv.Reader
+}
+
+func (v *csvValidator) validate(data []byte) error {
+	v.input.Reset(data)
+	if v.buffered == nil {
+		v.buffered = bufio.NewReader(&v.input)
+		v.csv = csv.NewReader(v.buffered)
+		v.csv.FieldsPerRecord = -1
+		v.csv.ReuseRecord = true
+	} else {
+		v.buffered.Reset(&v.input)
+	}
+	_, err := v.csv.Read()
+	return err
+}
+func cells(raw []byte, v *csvValidator) ([]cell, error) {
 	var out []cell
 	var normalized bytes.Buffer
 	start := 0
@@ -171,9 +191,7 @@ func cells(raw []byte) ([]cell, error) {
 	// The stdlib validates CSV quoting. Cell contents above retain the CRLF bytes
 	// and quoted emptiness which encoding/csv intentionally normalizes.
 	normalized.WriteString(",\"sentinel\"")
-	r := csv.NewReader(&normalized)
-	r.FieldsPerRecord = -1
-	if _, e := r.Read(); e != nil {
+	if e := v.validate(normalized.Bytes()); e != nil {
 		return nil, e
 	}
 	return out, nil

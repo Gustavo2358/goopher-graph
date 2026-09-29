@@ -2,6 +2,7 @@ package ingest
 
 import (
 	"gophergraph/ingest/ports"
+	"time"
 )
 
 type Completeness uint8
@@ -28,7 +29,13 @@ type CatalogReport struct {
 	RecordsStaged         uint64
 }
 
+type PhaseTimes struct {
+	IngestMerge  time.Duration
+	Canonicalize time.Duration
+}
+
 type Report struct {
+	Times                             PhaseTimes
 	Completeness                      Completeness
 	NodeSources                       CatalogReport
 	EdgeSources                       CatalogReport

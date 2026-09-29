@@ -188,3 +188,44 @@ func TestCancelHub(t *testing.T) {
 		t.Fatal(e)
 	}
 }
+func TestExpansionAndHotLoopCosts(t *testing.T) {
+	const layers = 30
+	n := 2*layers + 2
+	var edges [][3]int
+	edges = append(edges, [3]int{0, 1, 0}, [3]int{0, 2, 0})
+	for layer := 0; layer < layers-1; layer++ {
+		for a := 1; a <= 2; a++ {
+			for b := 1; b <= 2; b++ {
+				edges = append(edges, [3]int{layer*2 + a, (layer+1)*2 + b, 0})
+			}
+		}
+	}
+	edges = append(edges, [3]int{2*layers - 1, n - 1, 0}, [3]int{2 * layers, n - 1, 0})
+	g := topology(t, n, edges)
+	stats := &traversalStats{expansions: make([]uint32, n)}
+	s, e := reachable(context.Background(), g, 0, graph.Forward, Options{}, stats)
+	if e != nil || s.Count() != uint64(n) || stats.adjacencies != uint64(len(edges)) {
+		t.Fatal(s, e, stats.adjacencies)
+	}
+	for _, count := range stats.expansions {
+		if count != 1 {
+			t.Fatal("expanded more than once", count)
+		}
+	}
+	allocs := func(parallel int) float64 {
+		edges := make([][3]int, parallel)
+		for i := range edges {
+			edges[i] = [3]int{0, 1, 0}
+		}
+		g := topology(t, 2, edges)
+		return testing.AllocsPerRun(20, func() {
+			if _, e := Reachable(context.Background(), g, 0, graph.Forward, Options{}); e != nil {
+				t.Fatal(e)
+			}
+		})
+	}
+	small, large := allocs(1), allocs(10000)
+	if large > small {
+		t.Fatalf("allocations grow per edge: %v -> %v", small, large)
+	}
+}

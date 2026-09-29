@@ -11,6 +11,7 @@ import (
 	"math"
 	"sort"
 	"strings"
+	"time"
 	"unicode/utf8"
 )
 
@@ -22,6 +23,7 @@ type builder struct {
 }
 
 func Build(ctx context.Context, nodes, edges ports.Catalog, decoder ports.Decoder, diagnostics ports.DiagnosticSink, options Options) (*graph.Graph, Report, error) {
+	started := time.Now()
 	b := &builder{ctx: ctx, sink: diagnostics, nodes: map[string]*entity{}, edges: map[string]*entity{}}
 	fail := func(e error) (*graph.Graph, Report, error) { return nil, b.report, e }
 	if e := ctx.Err(); e != nil {
@@ -125,7 +127,10 @@ func Build(ctx context.Context, nodes, edges ports.Catalog, decoder ports.Decode
 			return fail(e)
 		}
 	}
+	canonicalStart := time.Now()
+	b.report.Times.IngestMerge = canonicalStart.Sub(started)
 	g, e := b.canonicalize(options.IndexProperties)
+	b.report.Times.Canonicalize = time.Since(canonicalStart)
 	if e != nil {
 		return fail(e)
 	}
