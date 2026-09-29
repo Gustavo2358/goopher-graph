@@ -11,11 +11,14 @@ import (
 var ErrInvalid = errors.New("invalid graph columns")
 
 func invalid(s string) error { return fmt.Errorf("%w: %s", ErrInvalid, s) }
-func offsets(c U64, owners, total uint64) bool {
+func offsets(ctx context.Context, c U64, owners, total uint64) bool {
 	if c.Len() != owners+1 || c.At(0) != 0 || c.At(owners) != total {
 		return false
 	}
 	for i := uint64(1); i < c.Len(); i++ {
+		if i%1024 == 0 && ctx.Err() != nil {
+			return false
+		}
 		if c.At(i) < c.At(i-1) || c.At(i) > total {
 			return false
 		}
@@ -53,7 +56,12 @@ func ValidPayload(p Property, strings uint64) bool {
 	return false
 }
 func Validate(d *Data) error { return ValidateContext(context.Background(), d) }
-func ValidateContext(ctx context.Context, d *Data) error {
+func ValidateContext(ctx context.Context, d *Data) (err error) {
+	defer func() {
+		if ctx.Err() != nil {
+			err = ctx.Err()
+		}
+	}()
 	if e := ctx.Err(); e != nil {
 		return e
 	}
@@ -64,7 +72,7 @@ func ValidateContext(ctx context.Context, d *Data) error {
 	if n > math.MaxUint32 || e > math.MaxUint32 || s == 0 || s > math.MaxUint32 {
 		return invalid("counts")
 	}
-	if d.Strings == nil && !offsets(d.StringOffsets, s, uint64(len(d.StringBytes))) {
+	if d.Strings == nil && !offsets(ctx, d.StringOffsets, s, uint64(len(d.StringBytes))) {
 		return invalid("string offsets")
 	}
 	for i := uint64(0); i < s; i++ {
@@ -90,7 +98,7 @@ func ValidateContext(ctx context.Context, d *Data) error {
 			}
 		}
 	}
-	if !offsets(d.NodeLabelOffsets, n, d.NodeLabels.Len()) {
+	if !offsets(ctx, d.NodeLabelOffsets, n, d.NodeLabels.Len()) {
 		return invalid("labels offsets")
 	}
 	for u := uint64(0); u < n; u++ {
@@ -133,7 +141,7 @@ func ValidateContext(ctx context.Context, d *Data) error {
 		p     Properties
 		count uint64
 	}{{d.NodePropOffsets, d.NodeProps, n}, {d.EdgePropOffsets, d.EdgeProps, e}} {
-		if !offsets(v.o, v.count, v.p.Len()) {
+		if !offsets(ctx, v.o, v.count, v.p.Len()) {
 			return invalid("property offsets")
 		}
 		for u := uint64(0); u < v.count; u++ {
@@ -166,7 +174,7 @@ func ValidateContext(ctx context.Context, d *Data) error {
 		o                U64
 		neighbors, edges U32
 	}{{d.ForwardOffsets, d.ForwardNeighbors, d.ForwardEdges}, {d.ReverseOffsets, d.ReverseNeighbors, d.ReverseEdges}} {
-		if !offsets(v.o, n, e) || v.neighbors.Len() != e || v.edges.Len() != e {
+		if !offsets(ctx, v.o, n, e) || v.neighbors.Len() != e || v.edges.Len() != e {
 			return invalid("CSR shape")
 		}
 		seen := make([]uint64, (e+63)/64)

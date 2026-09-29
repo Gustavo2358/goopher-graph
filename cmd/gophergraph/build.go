@@ -14,6 +14,9 @@ import (
 	"gophergraph/snapshot/adapters/file"
 	"gophergraph/snapshot/ports"
 	"io"
+	"math"
+	"strings"
+	"unicode/utf8"
 )
 
 func buildCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
@@ -28,8 +31,13 @@ func buildCommand(ctx context.Context, args []string, stdout, stderr io.Writer) 
 	if code := parse(fs, args); code >= 0 {
 		return code
 	}
-	if *nodes == "" || *edges == "" || *output == "" || *limit < 1024 {
+	if *nodes == "" || *edges == "" || *output == "" || *limit < 1024 || *limit > uint64(math.MaxInt) {
 		return failure(stderr, errors.New("build requires --nodes, --edges, --output and max-record-bytes >= 1024"), 2)
+	}
+	for _, key := range keys {
+		if key == "" || !utf8.ValidString(key) || strings.ContainsRune(key, 0) {
+			return failure(stderr, errors.New("invalid index property key"), 2)
+		}
 	}
 	if e := filesystem.ValidateBuildPaths(*nodes, *edges, *output); e != nil {
 		return failure(stderr, e, 2)

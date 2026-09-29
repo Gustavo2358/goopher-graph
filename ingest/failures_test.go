@@ -121,3 +121,44 @@ func TestPermutationAndIdempotence(t *testing.T) {
 		}
 	}
 }
+
+type typedFailSink struct{ calls int }
+
+func (s *typedFailSink) Emit(context.Context, ports.Diagnostic) error {
+	s.calls++
+	return &ports.SourceError{Kind: ports.SourceIO, Cause: errors.New("diagnostic storage unavailable")}
+}
+func TestDiagnosticFailureIsOperational(t *testing.T) {
+	s := &typedFailSink{}
+	g, r, e := ingest.Build(context.Background(), memory{"n": "~id,x:Int\nA,bad\nB,1\n"}, memory{}, neptune.Decoder{}, s, ingest.Options{})
+	if g != nil || e == nil || s.calls != 1 || r.NodeSources.SourcesIOFailed != 0 {
+		t.Fatalf("graph=%v err=%v sink calls=%d report=%+v", g, e, s.calls, r)
+	}
+}
+
+type cancelReader struct {
+	cancel context.CancelFunc
+	done   bool
+}
+
+func (r *cancelReader) Read(p []byte) (int, error) {
+	if r.done {
+		return 0, io.EOF
+	}
+	r.done = true
+	n := copy(p, "~id\nA\n")
+	r.cancel()
+	return n, io.EOF
+}
+func TestCancelClosesSource(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	closed := 0
+	n := faultCatalog{entries: []ports.Entry{{Key: "n", Regular: true}}, open: func(string) (io.ReadCloser, error) {
+		return trackedReader{&cancelReader{cancel: cancel}, func() error { closed++; return nil }}, nil
+	}}
+	g, _, e := ingest.Build(ctx, n, memory{}, neptune.Decoder{}, &diagnostics{}, ingest.Options{})
+	if g != nil || !errors.Is(e, context.Canceled) || closed != 1 {
+		t.Fatal(g, e, closed)
+	}
+}

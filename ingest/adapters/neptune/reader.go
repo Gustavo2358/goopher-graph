@@ -79,8 +79,10 @@ func (r *reader) Next(ctx context.Context) (ports.Event, error) {
 	}
 	raw, line, e := r.f.frame(ctx)
 	loc := ports.Location{Role: r.role, Source: r.entry.Key, Record: r.f.record, Line: line}
+	var entityID string
+	entityKnown := false
 	reject := func(code, message string) ports.Event {
-		return ports.Event{Rejection: &ports.Diagnostic{Severity: ports.Rejection, Code: code, Location: loc, Message: message}}
+		return ports.Event{Rejection: &ports.Diagnostic{Severity: ports.Rejection, Code: code, Location: loc, EntityID: entityID, EntityIDKnown: entityKnown, Message: message}}
 	}
 	if errors.Is(e, errLimit) {
 		return reject("RECORD_LIMIT", "record exceeds configured limits"), nil
@@ -127,6 +129,7 @@ func (r *reader) Next(ctx context.Context) (ports.Event, error) {
 				switch col.name {
 				case "~id":
 					rec.ID = c.text
+					entityID, entityKnown = c.text, true
 				case "~from":
 					rec.Source = c.text
 				case "~to":

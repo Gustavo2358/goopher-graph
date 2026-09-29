@@ -86,6 +86,10 @@ func Build(ctx context.Context, nodes, edges ports.Catalog, decoder ports.Decode
 			if ctx.Err() != nil {
 				return fail(ctx.Err())
 			}
+			var diagnosticFailure *DiagnosticError
+			if errors.As(e, &diagnosticFailure) {
+				return fail(e)
+			}
 			var se *ports.SourceError
 			if !errors.As(e, &se) {
 				return fail(e)
@@ -138,7 +142,10 @@ func (b *builder) emit(d ports.Diagnostic) error {
 	if e := b.ctx.Err(); e != nil {
 		return e
 	}
-	return b.sink.Emit(b.ctx, d)
+	if err := b.sink.Emit(b.ctx, d); err != nil {
+		return &DiagnosticError{Cause: err}
+	}
+	return nil
 }
 func (b *builder) source(cat ports.Catalog, decoder ports.Decoder, role ports.Role, entry ports.Entry, limits ports.Limits, cr *CatalogReport) (err error) {
 	loc := ports.Location{Role: role, Source: entry.Key}
@@ -205,3 +212,9 @@ func (b *builder) source(cat ports.Catalog, decoder ports.Decoder, role ports.Ro
 	}
 }
 func structuralError(s string) error { return fmt.Errorf("invalid normalized record: %s", s) }
+
+// DiagnosticError marks a fatal failure of the diagnostic port.
+type DiagnosticError struct{ Cause error }
+
+func (e *DiagnosticError) Error() string { return "diagnostic sink: " + e.Cause.Error() }
+func (e *DiagnosticError) Unwrap() error { return e.Cause }

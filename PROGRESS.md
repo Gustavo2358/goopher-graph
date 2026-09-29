@@ -2,7 +2,7 @@
 
 Estado: implementação incremental iniciada; CLI de ajuda e harness reais disponíveis.
 
-Próxima fatia: **B10**.
+Próxima fatia: **B11**.
 
 | Fatia | Estado | Evidência / próximo passo |
 |---|---|---|
@@ -16,7 +16,7 @@ Próxima fatia: **B10**.
 | B07 | Concluído | Codec LE de 24 seções; seis goldens exatos, reader Python independente, truncamentos/mutações, short writes, ownership/abort e seeds de fuzz; regressão/vet passaram. |
 | B08 | Concluído | mmap read-only via x/sys; staging, validação, sync/rename/dir-sync; leitor antigo preservado e falhas com PublishedUncertain; gates snapshot sem cgo, regressão/vet/build passaram. |
 | B09 | Concluído | CLI build/territory/anti-territory/between, CSV IDs, DOT e exemplo público; E2E completos/parciais, consumidor em módulo externo offline, Graphviz e imports; regressão/vet/build passaram. |
-| B10 | Pendente | — |
+| B10 | Concluído | Race real com 16 leitores × 50 queries; 100 ciclos open/query/close sem fd/mmap retidos; fuzz CSV 10.010 e snapshot 10.000 execuções; falha do sink/cancelamento/short write testados; regressão/vet passaram. |
 | B11 | Pendente | — |
 | B12 | Pendente | — |
 
@@ -24,7 +24,7 @@ Próxima fatia: **B10**.
 
 2026-09-28: Go 1.26.0 instalado globalmente pelo usuário e conferido. B00 concluída com teste de ajuda em diretório vazio, falha de output e uso inválido. O teste temporário intencionalmente falho falhou e foi removido; regressão e build passaram. Git local inicializado a pedido do usuário; um commit por checkpoint concluído.
 
-B01 concluída: `go test ./graph/... ./internal/graphdata/...`, `go test ./...`, `go vet ./...` e build sem cgo passaram. B02 concluída: `go test ./...` e `go vet ./...` passaram. B03 concluída: testes focais, regressão e vet passaram. B04 concluída: `go test ./...`, vet e build sem cgo passaram. B05 concluída: catálogos reais produzem os mesmos modelos; testes completos e vet passaram. B06 concluída: testes de graph/ingest, regressão e vet passaram. B07 concluída: goldens exatos e reader independente passaram, assim como regressão e vet. B08 concluída: `CGO_ENABLED=0 go test ./snapshot/...`, regressão, vet e build sem cgo passaram. Dependência x/sys v0.38.0 obtida pelo gerenciador normal Go, sem downloads nos testes. B09 concluída: `go test ./...`, vet e build sem cgo passaram, incluindo E2E, Graphviz e consumidor externo. Próximo passo: B10, fuzz, race e estabilidade de recursos.
+B01 concluída: `go test ./graph/... ./internal/graphdata/...`, `go test ./...`, `go vet ./...` e build sem cgo passaram. B02 concluída: `go test ./...` e `go vet ./...` passaram. B03 concluída: testes focais, regressão e vet passaram. B04 concluída: `go test ./...`, vet e build sem cgo passaram. B05 concluída: catálogos reais produzem os mesmos modelos; testes completos e vet passaram. B06 concluída: testes de graph/ingest, regressão e vet passaram. B07 concluída: goldens exatos e reader independente passaram, assim como regressão e vet. B08 concluída: `CGO_ENABLED=0 go test ./snapshot/...`, regressão, vet e build sem cgo passaram. Dependência x/sys v0.38.0 obtida pelo gerenciador normal Go, sem downloads nos testes. B09 concluída: `go test ./...`, vet e build sem cgo passaram, incluindo E2E, Graphviz e consumidor externo. B10 concluída: `CGO_ENABLED=1 go test -race ./...`, vet e ambas as campanhas `-fuzztime=10000x` passaram. Corrigida classificação de falha tipada do DiagnosticSink, com regressão. Próximo passo: B11, medições em três escalas.
 
 ## Notas para retomar
 

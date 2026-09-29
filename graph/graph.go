@@ -71,6 +71,9 @@ func (g *Graph) InternalColumns(dst *graphdata.Data) error {
 	if err := g.check(); err != nil {
 		return err
 	}
+	if dst == nil {
+		return ErrOutOfRange
+	}
 	*dst = *g.data
 	return nil
 }

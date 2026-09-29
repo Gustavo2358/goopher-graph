@@ -38,6 +38,9 @@ func Write(output io.Writer, g *graph.Graph, s *query.Subgraph) error {
 	if !s.BelongsTo(g) {
 		return graph.ErrGraphMismatch
 	}
+	if _, _, e := g.FindString(""); e != nil {
+		return e
+	}
 	w := bufio.NewWriter(output)
 	if _, e := w.WriteString("digraph G {\n"); e != nil {
 		return e

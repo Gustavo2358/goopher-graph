@@ -12,6 +12,7 @@ import (
 	ingestports "gophergraph/ingest/ports"
 	"gophergraph/internal/testutil"
 	"gophergraph/snapshot/ports"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -203,5 +204,14 @@ func TestIndependentPythonReader(t *testing.T) {
 	}
 	if !json.Valid(out) {
 		t.Fatal("invalid oracle output")
+	}
+}
+
+type zeroWriter struct{}
+
+func (zeroWriter) Write([]byte) (int, error) { return 0, nil }
+func TestNoProgressWrite(t *testing.T) {
+	if n, e := (fullWriter{zeroWriter{}}).Write([]byte("data")); n != 0 || !errors.Is(e, io.ErrShortWrite) {
+		t.Fatal(n, e)
 	}
 }
