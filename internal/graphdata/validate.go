@@ -1,6 +1,7 @@
 package graphdata
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math"
@@ -51,7 +52,11 @@ func ValidPayload(p Property, strings uint64) bool {
 	}
 	return false
 }
-func Validate(d *Data) error {
+func Validate(d *Data) error { return ValidateContext(context.Background(), d) }
+func ValidateContext(ctx context.Context, d *Data) error {
+	if e := ctx.Err(); e != nil {
+		return e
+	}
 	if d == nil {
 		return invalid("nil")
 	}
@@ -63,6 +68,11 @@ func Validate(d *Data) error {
 		return invalid("string offsets")
 	}
 	for i := uint64(0); i < s; i++ {
+		if i%1024 == 0 {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+		}
 		v := d.String(uint32(i))
 		if !utf8.ValidString(v) || (i == 0 && v != "") || (i > 0 && d.String(uint32(i-1)) >= v) {
 			return invalid("dictionary")
@@ -70,6 +80,11 @@ func Validate(d *Data) error {
 	}
 	for _, c := range []U32{d.NodeIDs, d.EdgeIDs} {
 		for i := uint64(0); i < c.Len(); i++ {
+			if i%1024 == 0 {
+				if err := ctx.Err(); err != nil {
+					return err
+				}
+			}
 			if uint64(c.At(i)) >= s || (i > 0 && c.At(i-1) >= c.At(i)) {
 				return invalid("external ids")
 			}
@@ -79,11 +94,21 @@ func Validate(d *Data) error {
 		return invalid("labels offsets")
 	}
 	for u := uint64(0); u < n; u++ {
+		if u%1024 == 0 {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+		}
 		a, b := d.NodeLabelOffsets.At(u), d.NodeLabelOffsets.At(u+1)
 		if a == b {
 			return invalid("missing node labels")
 		}
 		for j := a; j < b; j++ {
+			if j%1024 == 0 {
+				if err := ctx.Err(); err != nil {
+					return err
+				}
+			}
 			v := d.NodeLabels.At(j)
 			if v == 0 || uint64(v) >= s || (j > a && d.NodeLabels.At(j-1) >= v) {
 				return invalid("node labels")
@@ -94,6 +119,11 @@ func Validate(d *Data) error {
 		return invalid("edge columns")
 	}
 	for i := uint64(0); i < e; i++ {
+		if i%1024 == 0 {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+		}
 		if uint64(d.Sources.At(i)) >= n || uint64(d.Targets.At(i)) >= n || d.EdgeLabels.At(i) == 0 || uint64(d.EdgeLabels.At(i)) >= s {
 			return invalid("edge reference")
 		}
@@ -107,8 +137,18 @@ func Validate(d *Data) error {
 			return invalid("property offsets")
 		}
 		for u := uint64(0); u < v.count; u++ {
+			if u%1024 == 0 {
+				if err := ctx.Err(); err != nil {
+					return err
+				}
+			}
 			a, b := v.o.At(u), v.o.At(u+1)
 			for j := a; j < b; j++ {
+				if j%1024 == 0 {
+					if err := ctx.Err(); err != nil {
+						return err
+					}
+				}
 				p := v.p.At(j)
 				if p.Key == 0 || uint64(p.Key) >= s || !ValidPayload(p, s) {
 					return invalid("property")
@@ -131,9 +171,19 @@ func Validate(d *Data) error {
 		}
 		seen := make([]uint64, (e+63)/64)
 		for u := uint64(0); u < n; u++ {
+			if u%1024 == 0 {
+				if err := ctx.Err(); err != nil {
+					return err
+				}
+			}
 			a, b := v.o.At(u), v.o.At(u+1)
 			var prevNeighbor, prevLabel, prevEdge uint32
 			for j := a; j < b; j++ {
+				if j%1024 == 0 {
+					if err := ctx.Err(); err != nil {
+						return err
+					}
+				}
 				id, neighbor := v.edges.At(j), v.neighbors.At(j)
 				if uint64(id) >= e || uint64(neighbor) >= n {
 					return invalid("CSR id")
@@ -154,5 +204,5 @@ func Validate(d *Data) error {
 			}
 		}
 	}
-	return validateIndexes(d)
+	return validateIndexes(ctx, d)
 }

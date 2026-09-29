@@ -2,6 +2,7 @@
 package graph
 
 import (
+	"context"
 	"errors"
 	"gophergraph/internal/graphdata"
 	"sort"
@@ -53,7 +54,12 @@ type Graph struct {
 // New transfers exclusive ownership of validated internal columns to a Graph.
 // Only implementation packages can construct graphdata.Data.
 func New(d *graphdata.Data, release func() error) (*Graph, error) {
-	if err := graphdata.Validate(d); err != nil {
+	return NewContext(context.Background(), d, release)
+}
+
+// NewContext validates internal columns while respecting cancellation.
+func NewContext(ctx context.Context, d *graphdata.Data, release func() error) (*Graph, error) {
+	if err := graphdata.ValidateContext(ctx, d); err != nil {
 		return nil, err
 	}
 	return &Graph{data: d, metadata: Metadata{d.NodeIDs.Len(), d.EdgeIDs.Len(), d.Partial}, release: release}, nil

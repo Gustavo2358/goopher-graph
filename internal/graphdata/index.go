@@ -120,8 +120,13 @@ func BuildIndexes(ctx context.Context, d *Data) error {
 	}
 	return ctx.Err()
 }
-func validateIndexes(d *Data) error {
+func validateIndexes(ctx context.Context, d *Data) error {
 	for i := uint64(0); i < d.IndexedKeys.Len(); i++ {
+		if i%1024 == 0 {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+		}
 		k := d.IndexedKeys.At(i)
 		if k == 0 || uint64(k) >= d.StringCount() || (i > 0 && d.IndexedKeys.At(i-1) >= k) {
 			return invalid("indexed keys")
@@ -129,6 +134,11 @@ func validateIndexes(d *Data) error {
 	}
 	var total uint64
 	for i := uint64(0); i < d.LabelIndex.Len(); i++ {
+		if i%1024 == 0 {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+		}
 		v := d.LabelIndex.At(i)
 		if v.Owner > 1 || v.Label == 0 || uint64(v.Label) >= d.StringCount() || v.Start != total || v.Count == 0 || v.Start > d.LabelPostings.Len() || v.Count > d.LabelPostings.Len()-v.Start {
 			return invalid("label group")
@@ -140,6 +150,11 @@ func validateIndexes(d *Data) error {
 			}
 		}
 		for j := uint64(0); j < v.Count; j++ {
+			if j%1024 == 0 {
+				if err := ctx.Err(); err != nil {
+					return err
+				}
+			}
 			id := d.LabelPostings.At(v.Start + j)
 			if j > 0 && d.LabelPostings.At(v.Start+j-1) >= id {
 				return invalid("label posting order")
@@ -160,6 +175,11 @@ func validateIndexes(d *Data) error {
 	var expected uint64
 	for _, p := range []Properties{d.NodeProps, d.EdgeProps} {
 		for i := uint64(0); i < p.Len(); i++ {
+			if i%1024 == 0 {
+				if err := ctx.Err(); err != nil {
+					return err
+				}
+			}
 			if HasU32(d.IndexedKeys, 0, d.IndexedKeys.Len(), p.At(i).Key) {
 				expected++
 			}
@@ -167,6 +187,11 @@ func validateIndexes(d *Data) error {
 	}
 	total = 0
 	for i := uint64(0); i < d.PropertyIndex.Len(); i++ {
+		if i%1024 == 0 {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+		}
 		v := d.PropertyIndex.At(i)
 		if v.Owner > 1 || !HasU32(d.IndexedKeys, 0, d.IndexedKeys.Len(), v.Key) || !ValidPayload(v.Property, d.StringCount()) || v.Start != total || v.Count == 0 || v.Start > d.PropertyPostings.Len() || v.Count > d.PropertyPostings.Len()-v.Start {
 			return invalid("property group")
@@ -182,6 +207,11 @@ func validateIndexes(d *Data) error {
 			off, props, count = d.EdgePropOffsets, d.EdgeProps, d.EdgeIDs.Len()
 		}
 		for j := uint64(0); j < v.Count; j++ {
+			if j%1024 == 0 {
+				if err := ctx.Err(); err != nil {
+					return err
+				}
+			}
 			id := uint64(d.PropertyPostings.At(v.Start + j))
 			if id >= count || (j > 0 && uint64(d.PropertyPostings.At(v.Start+j-1)) >= id) {
 				return invalid("property posting id")
