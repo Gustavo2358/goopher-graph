@@ -2,10 +2,8 @@
 
 Estado: **produto concluído — B00 a B12**.
 
-Campanha adicional — ingestão limitada: **em andamento**. Implementação,
-equivalência, falhas, escala e medições concluídas. Regressão sem cache, race,
-fuzz, vet e build sem cgo passaram; benchmarks/revisão final e PR em fechamento.
-HTTP/S3/queries adicionais fora do escopo.
+Campanha adicional — ingestão limitada: **concluída**. Próximo passo: review do
+PR solicitado. HTTP/S3/queries adicionais fora do escopo.
 
 | Fatia | Estado | Evidência / próximo passo |
 |---|---|---|
@@ -40,4 +38,40 @@ A revisão final acrescentou igualdade de propriedades contra modelos independen
 
 ## Limites da evidência
 
-Qualificação local Linux/amd64 com fixtures e dados sintéticos; nenhum corpus corporativo ou cluster Neptune foi fornecido ou acessado. O maior build medido atingiu cerca de 1,41 GiB de RSS; a query CLI correspondente, 56,5 MiB. Nenhuma promessa de SLA ou cold-cache. Leitores precisam terminar antes de Close, e inodes mapeados não podem sofrer writes/truncate externo.
+Qualificação local Linux/amd64 com fixtures e dados sintéticos; nenhum corpus corporativo ou cluster Neptune foi fornecido ou acessado. No fechamento B12, o maior build medido atingiu cerca de 1,41 GiB de RSS; a query CLI correspondente, 56,5 MiB. Nenhuma promessa de SLA ou cold-cache. Leitores precisam terminar antes de Close, e inodes mapeados não podem sofrer writes/truncate externo.
+
+## Fechamento — campanha de ingestão limitada
+
+CLI usa ordenação externa, consolidação por streams e colunas mmap; API de
+snapshot/queries e formato v1 preservados. `Options.Scratch` habilita o caminho
+limitado na biblioteca; `Options{}` mantém compatibilidade com o backend heap.
+Orçamento de sort e diretório scratch configuráveis; falhas operacionais não
+publicam prefixos. Detalhes e reprodução em [BOUNDED_INGEST](docs/BOUNDED_INGEST.md).
+
+Evidência executada:
+
+- Equivalência byte a byte, reports sem tempos e diagnósticos completos nas 12
+  fixtures; modelos/queries independentes, permutações, conflitos entre runs,
+  registros maiores que a arena, falhas de scratch e cancelamento passaram.
+- `GOPROXY=off GOTOOLCHAIN=local go test -count=1 ./...`, `go vet ./...`, gofmt,
+  build `CGO_ENABLED=0`, `CGO_ENABLED=1 go test -race -count=1 ./...`: passaram.
+- Fuzz Neptune: 10.002 execuções; snapshot: 10.000. Sem falhas.
+- `go test -run '^$' -bench . -benchmem -benchtime=1x ./...`: passou, incluindo
+  build, publicação, abertura, alcance, subgrafo e DOT nas três escalas existentes.
+- `GOPHERGRAPH_SCALE=1 go test ./ingest -run
+  'TestExternal(GeneratedScale|SingleEntityScale)$' -count=1 -v`: passou.
+  Com orçamento 1 MiB, 1,2M/2,4M registros tiveram heap máximo 5,58/5,71 MiB;
+  240 mil valores set em um ID, 5,25 MiB.
+- Medição isolada de 1,2M registros: heap 2.685,95 -> 34,48 MiB;
+  RSS 3.198,39 -> 208,45 MiB; build 9,23 -> 16,47 s; snapshots idênticos.
+  Em 2,4M registros, heap 34,60 MiB com o mesmo orçamento de 16 MiB.
+- Cgroups sem swap: 2,4M registros concluíram sob 256 MiB (sort 16 MiB) e
+  64 MiB (sort 1 MiB). Neste último, input ~85 MiB, snapshot ~197 MiB,
+  heap 5,42 MiB e build 90,33 s. Nenhum ajuste de GC.
+- Cópia limpa de `git archive`: regressão sem cache, vet, build sem cgo e CLI
+  completa/parcial passaram. `python3 tools/check_package.py` passou.
+
+A revisão acrescentou regressão para truncamento de scratch exatamente no começo
+do payload: deve falhar operacionalmente, nunca aceitar EOF como prefixo válido.
+Somente corpus sintético/local foi usado. Limites de record/header, metadados de
+catálogo, disco livre e páginas mmap são separados do orçamento de sort.
