@@ -14,7 +14,7 @@ O produto inicial é uma biblioteca Go reutilizável e uma CLI local. Cloud é u
 
 **Persistência:** layout binário desta spec, validação rigorosa, snapshot imutável, publicação local com staging e rename. Leitura por mmap em Linux/amd64. Codec testável em memória. Arquivo maior que 4 GiB não é proibido pelo layout, sujeito aos limites efetivos de memória/arquitetura.
 
-**Uso:** território, antiterritório, região entre dois nodes; filtro de labels de edge; lookup de metadados e igualdade de propriedades; bitsets e iteração para consultas Go próprias. Saída CSV de IDs ou DOT, sem integração com renderer.
+**Uso:** território, antiterritório, região entre dois nodes; filtro de labels de edge; lookup de metadados e igualdade de propriedades; bitsets e iteração para consultas Go próprias. Saída CSV de IDs, DOT ou JSON estruturado por streaming, sem integração com renderer.
 
 **Engenharia:** vertical slices, interfaces mínimas nas fronteiras, testes unitários/E2E, fuzz direcionado, race detector, benchmarks locais e documentação de uso real. O produto compila sem cgo.
 

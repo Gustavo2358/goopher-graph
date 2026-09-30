@@ -50,7 +50,13 @@ gophergraph territory --snapshot ./graph.snapshot --node PROGRAM:A \
 
 Sem `--edge-label`, todas as relações. Com uma ou mais, união dos labels solicitados. Se nenhum existir, filtro vazio e somente alcance reflexivo; não usar nil por engano. `--edge-label=""` é erro de uso porque label vazio não é válido.
 
-`--format ids` é padrão. Para território/antiterritório, listagem omite origem; `--include-origin` a inclui. Between lista todos os membros. DOT sempre inclui os nodes do subgrafo, inclusive a origem. `--output` omitido escreve em stdout; quando presente escreve no arquivo local. Biblioteca só recebe io.Writer.
+`--format ids` é padrão. Para território/antiterritório, listagem omite origem; `--include-origin` a inclui. Between lista todos os membros. DOT e JSON incluem todos os membros do subgrafo. `--output` omitido escreve em stdout; quando presente escreve no arquivo local. Biblioteca só recebe io.Writer.
+
+## JSON
+
+As três consultas aceitam `--format json`, com o [contrato de subgrafo completo](JSON.md).
+`--include-origin` continua restrito a IDs. JSON contém parâmetros, contagens e
+`partialSnapshot`; o aviso de carga parcial permanece em stderr.
 
 ## CSV de IDs
 

@@ -52,6 +52,11 @@ func TestCapabilityImports(t *testing.T) {
 			if strings.HasPrefix(rel, "snapshot/") && !strings.Contains(rel, "/adapters/") && strings.Contains(imp, "/adapters/") {
 				t.Errorf("snapshot imports adapter: %s", imp)
 			}
+			if strings.HasPrefix(rel, "graphjson/") {
+				if imp == "os" || strings.HasPrefix(imp, "net") || strings.HasPrefix(imp, "path") || (strings.HasPrefix(imp, "gophergraph/") && imp != "gophergraph/graph" && imp != "gophergraph/query") {
+					t.Errorf("JSON export dependency %s imports %s", rel, imp)
+				}
+			}
 			if strings.HasPrefix(rel, "cmd/") && strings.Contains(imp, "internal/") {
 				t.Errorf("CLI imports internals: %s", imp)
 			}

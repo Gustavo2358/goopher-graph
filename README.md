@@ -41,6 +41,9 @@ Exemplo reproduzível com as fixtures incluídas:
 
 ./bin/gophergraph territory --snapshot bin/graph.snapshot --node A \
   --edge-label CALLS --format dot --output bin/territory.dot
+
+./bin/gophergraph between --snapshot bin/graph.snapshot --from A --to F \
+  --format json --output bin/between.json
 ```
 
 A primeira consulta imprime:
@@ -53,11 +56,16 @@ D
 F
 ```
 
-- CSV de IDs omite a origem por padrão; `--include-origin` a inclui. DOT sempre inclui a origem e preserva paralelas e loops.
+- CSV de IDs omite a origem por padrão; `--include-origin` a inclui. DOT e JSON incluem todo o subgrafo e preservam paralelas e loops.
 - Um ID vazio é válido: passe `--node=""`. IDs com vírgulas, aspas e quebras de linha recebem escaping CSV.
 - Sem `--edge-label`, todas as relações são permitidas. Um label inexistente produz filtro vazio e alcance reflexivo.
 - `between(A,B)` retorna a interseção do alcance forward de A com o alcance reverse de B, com todas as edges permitidas entre os membros. Em ciclos, essa região pode incluir passeios que não são caminhos simples.
 - `--index-property` pode repetir. Igualdade tipada produz o mesmo resultado com índice ou scan, preservando distinções entre tags, NaN canônico e zeros assinados.
+
+JSON inclui nodes, edges, labels, propriedades tipadas, parâmetros da query,
+contagens e `partialSnapshot`. O writer reutilizável `graphjson.Write` recebe
+`io.Writer` e exporta por streaming. Veja o [contrato JSON](docs/JSON.md), incluindo
+inteiros de 64 bits, floats não finitos e propriedades multivaloradas.
 
 ### Cargas parciais
 

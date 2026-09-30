@@ -8,7 +8,7 @@ GopherGraph tem um núcleo de grafo imutável, uma capacidade de ingestão, uma 
 cmd/gophergraph (argv, sinais, composição, códigos de saída)
      |                 |                    |
      v                 v                    v
-ingest.Build      snapshot.Open         query.* + dot.Write
+ingest.Build      snapshot.Open         query.* + dot.Write / graphjson.Write
      |                 |                    |
      +-----------------+--------------------+
                        v
@@ -86,6 +86,7 @@ gophergraph/
 │   ├── territory.go
 │   ├── anti_territory.go
 │   └── between.go
+├── graphjson/writer.go            # JSON tipado por streaming
 ├── dot/writer.go
 ├── internal/graphdata/             # somente colunas/layout lógico compartilhado
 │   ├── columns.go
@@ -107,7 +108,7 @@ gophergraph/
 | ingest | graph/graphdata e seus ports | filesystem concreto, Neptune concreto, SDK |
 | ingest/ports | tipos de contribuição e tipos simples | implementação do builder ou adapters |
 | snapshot | graph/graphdata, seus ports, binário LE | mmap/file concretos, CLI |
-| dot | graph, query, io.Writer | Graphviz, os.Create, stdout global |
+| dot, graphjson | graph, query, io.Writer | Graphviz, os.Create, stdout global, HTTP |
 | adapters | port e APIs concretas necessárias | regras de negócio de consultas |
 | cmd | capacidades públicas e adapters locais | layout privado, algoritmos |
 
