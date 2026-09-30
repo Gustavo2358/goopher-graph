@@ -5,6 +5,10 @@ Estado: **produto concluído — B00 a B12**.
 Campanha adicional — ingestão limitada: **concluída**. Próximo passo: review do
 PR solicitado. HTTP/S3/queries adicionais fora do escopo.
 
+Campanha adicional — output JSON: **concluída** na branch `codex/query-json`,
+stacked sobre `codex/bounded-ingest` (PR #1). Próximo passo: review do PR stacked;
+PR #1 permanece inalterado.
+
 | Fatia | Estado | Evidência / próximo passo |
 |---|---|---|
 | B00 | Concluído | Go global 1.26.0; harness falho retornou 1; `go test ./...`, `go vet ./...`, build sem cgo e `--help` passaram. |
@@ -75,3 +79,29 @@ A revisão acrescentou regressão para truncamento de scratch exatamente no come
 do payload: deve falhar operacionalmente, nunca aceitar EOF como prefixo válido.
 Somente corpus sintético/local foi usado. Limites de record/header, metadados de
 catálogo, disco livre e páginas mmap são separados do orçamento de sort.
+
+## Fechamento — output JSON (2026-09-30)
+
+`graphjson.Write(ctx, io.Writer, graph, subgraph, metadata)` exporta o subgrafo
+completo por iteradores. CLI aceita `--format json` nas três queries; IDs/DOT,
+core e snapshots preservados. [Contrato público](docs/JSON.md).
+
+Evidência em cópia limpa do índice Git, com `GOPROXY=off GOTOOLCHAIN=local`:
+
+- `go test -count=1 ./...`, `go vet ./...`, gofmt e
+  `CGO_ENABLED=0 go build -o bin/gophergraph ./cmd/gophergraph`: passaram.
+- `CGO_ENABLED=1 go test -race -count=1 ./...`: passou, incluindo writers
+  concorrentes, testes grandes, ingestão e E2E.
+- Fixtures independentes e casos adicionais cobrem topologia completa, ciclos,
+  convergências, paralelas, loops, multilabel, sets, dez tipos, limites int64,
+  floats não finitos/zeros assinados, escaping, parcialidade e determinismo.
+  E2E cobrem filtros, três comandos, arquivo/stdout, ID vazio e consumidor externo.
+- `TestStreamingLargeResult`: 1 mil e 100 mil nodes/edges, limites fixos de
+  256 KiB alocados antes da primeira escrita e 8 MiB de heap vivo auxiliar
+  amostrado. A escala maior exportou 227.900.170 bytes; delta vivo observado
+  17.408 bytes com GC nas amostras. Erro de escrita e cancelamento interrompem
+  o fluxo. O teste descarta bytes e não mantém o JSON em memória.
+- Medição isolada do binário de teste, compilado antes: RSS máximo 56.564 KiB
+  incluindo construção/validação da fixture e query; grafo heap, sem mapping.
+  Isso não é uma medição isolada de RSS do serializer nem uma promessa de SLA.
+- `python3 tools/check_package.py` e `git diff --check`: passaram.

@@ -111,6 +111,11 @@ func TestEmptyAndMultilineIDs(t *testing.T) {
 	if e != nil || len(records) != 3 || records[1][0] != "" || records[2][0] != "line1\nline2" {
 		t.Fatal(records, e)
 	}
+	out, _ = invoke(t, bin, 0, "territory", "--snapshot", snapshot, "--node=", "--format", "json")
+	result := decodeResult(t, out)
+	if result.Query.Node == nil || *result.Query.Node != "" || len(result.Nodes) != 2 || result.Nodes[0].ID != "" || result.Nodes[1].ID != "line1\nline2" || len(result.Edges) != 1 || result.Edges[0].Source != "" || result.Edges[0].Target != "line1\nline2" {
+		t.Fatal(out)
+	}
 	invoke(t, bin, 2, "build", "--nodes", nodes, "--edges", edges, "--output", filepath.Join(nodes, "snapshot"))
 }
 func TestExternalConsumer(t *testing.T) {
@@ -124,8 +129,25 @@ func TestExternalConsumer(t *testing.T) {
 		t.Fatal(e)
 	}
 	source := `package main
-import("context";"fmt";"os"; shared "gophergraph/examples/shared_targets";"gophergraph/snapshot";"gophergraph/snapshot/adapters/mmap")
-func main(){g,e:=snapshot.Open(context.Background(),mmap.New(os.Args[1]));if e!=nil{panic(e)};defer g.Close();s,e:=shared.Execute(context.Background(),g,"A","B");if e!=nil{panic(e)};fmt.Println(s.Count())}
+import (
+ "context"
+ "fmt"
+ "io"
+ "os"
+ shared "gophergraph/examples/shared_targets"
+ "gophergraph/graphjson"
+ "gophergraph/query"
+ "gophergraph/snapshot"
+ "gophergraph/snapshot/adapters/mmap"
+)
+func main() {
+ ctx := context.Background()
+ g, err := snapshot.Open(ctx, mmap.New(os.Args[1])); if err != nil { panic(err) }; defer g.Close()
+ nodes, err := shared.Execute(ctx, g, "A", "B"); if err != nil { panic(err) }
+ sub, err := query.FromNodes(ctx, g, nodes, query.Options{}); if err != nil { panic(err) }
+ if err := graphjson.Write(ctx, io.Discard, g, sub, graphjson.Query{Name: "shared_targets"}); err != nil { panic(err) }
+ fmt.Println(nodes.Count())
+}
 `
 	if e = os.WriteFile(filepath.Join(dir, "main.go"), []byte(source), 0600); e != nil {
 		t.Fatal(e)
