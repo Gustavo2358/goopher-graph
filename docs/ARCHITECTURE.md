@@ -138,3 +138,17 @@ Uma consulta adicional importa `graph` e `query`, implementa funções normais e
 Futuro S3 implementa catálogo/abertura de streams; futuro HTTP chama as mesmas funções. Não mapear objeto S3 diretamente: o adapter materializa um snapshot local/estável antes da abertura. Nenhum desses adapters futuros é implementado agora.
 
 Um único processo pode executar consultas simultâneas sobre o mesmo Graph aberto, com scratch por chamada. Não há goroutines de background no core, nem necessidade de pool ou locks por edge. O driver garante quiescência antes do Close; hot swap de snapshots é outro escopo.
+
+## Queries WebAssembly
+
+`cmd/gophergraph -> wasmquery -> graph/query`; o resultado segue para
+`graphjson.Write`. `wasmquery` recebe Graph, bytes WASM, argumentos e contexto.
+Não importa filesystem, snapshot ou transporte. Wazero fica isolado nessa
+capacidade. `wasmquery/sdk` depende apenas de stdlib e da definição privada da
+ABI, sem importar engine/runtime. Os exemplos externos usam somente o SDK.
+
+Uma tabela privada por execução associa tokens a NodeSets, EdgeSets e Subgraphs.
+As operações usam APIs públicas do grafo e mantêm trabalho intensivo no host.
+Módulos compilados imutáveis são cacheados por conteúdo no runtime; instâncias
+WASI, conjuntos e contexto de execução são novos por chamada. A Host API não
+expõe memória interna nem permite mutar o Graph. [Contrato e lifecycle](WASM.md).

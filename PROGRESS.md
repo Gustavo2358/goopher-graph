@@ -1,5 +1,9 @@
 # Progresso
 
+Campanha adicional — queries WebAssembly: **concluída** na branch
+`codex/wasm-queries`, stacked sobre `codex/query-json` (PR #2).
+Próximo passo: review do novo PR. PRs #1 e #2 preservados.
+
 Estado: **produto concluído — B00 a B12**.
 
 Campanha adicional — ingestão limitada: **concluída**. Próximo passo: review do
@@ -105,3 +109,46 @@ Evidência em cópia limpa do índice Git, com `GOPROXY=off GOTOOLCHAIN=local`:
   incluindo construção/validação da fixture e query; grafo heap, sem mapping.
   Isso não é uma medição isolada de RSS do serializer nem uma promessa de SLA.
 - `python3 tools/check_package.py` e `git diff --check`: passaram.
+
+
+## Fechamento — queries WebAssembly (2026-09-30)
+
+`wasmquery` adiciona runtime wazero pure Go, Host API v1 por handles e SDK Go
+para `wasip1/wasm`. O CLI recebe snapshot, módulo e argumentos; exporta com o
+serializer graphjson existente. Cache por SHA-256, instâncias privadas,
+limites de memória/tabela/handles/chamadas/tempo/concorrência e cleanup explícito.
+[Uso, semântica e limites](docs/WASM.md). Nenhuma mudança em graph, query,
+snapshot ou ingestão; x/sys atualizado por requisito do wazero.
+
+Evidência executada com `GOPROXY=off GOTOOLCHAIN=local`:
+
+- Primeiro teste de runtime falhou antes da implementação; depois passaram os
+  testes focais, as três queries externas, ABI malformada, imports proibidos,
+  isolamento de filesystem/rede/ambiente/stdio, argumentos, handles inválidos,
+  stale e de outra execução, release, traps, exit, timeout e Close ativo.
+- `go test -count=1 ./...`: passou em cópia limpa do índice e novamente no
+  workspace final. Inclui SDK compilado em módulo Go externo offline, CLI real,
+  resultado completo/parcial e igualdade determinística com graphjson nativo.
+- `CGO_ENABLED=1 go test -race -count=1 ./...`: passou em cópia limpa. Após
+  isolar valores de contexto externos (opt-ins WASI), os testes de sandbox e
+  cancelamento passaram novamente; o sandbox também passou com `-race`.
+- `go vet ./...`, gofmt, `CGO_ENABLED=0 go build`, checker de documentos/goldens
+  e `git diff --check`: passaram. O teste de arquitetura também passou no
+  workspace, excluindo as cópias de qualificação do diretório ignorado `.measure`.
+- Reachable/subgrafo comparados às APIs nativas nas 12 fixtures, em heap e mmap,
+  forward/reverse, labels nil/vazios/conhecidos/ausentes. Os dez tipos de property,
+  valores set, NaN e zeros assinados foram comparados à API nativa. Concorrência
+  com oito execuções, compilação única por conteúdo e lifecycle de resultados
+  passaram. Cancelamento também foi exercitado dentro de loops do host.
+- Prova de fronteira: 100 e 100.000 nodes (500 e 500.000 edges de entrada) usam
+  as mesmas 8 chamadas, 123 bytes de parâmetros e zero bytes de payload de
+  resposta da Host API. O resultado maior tem 90.000 nodes e 450.000 edges;
+  os handles/contagens são escalares. Bitsets e fila cresceram somente no host.
+- Fuzz de admissão WASM: 10.029 execuções; Neptune: 10.001; snapshot: 10.000.
+  Sem falhas. O limite de tabela foi testado contra `table.grow`, além do
+  limite de memória linear. Nenhuma alteração nas fixtures existentes.
+
+Os limites contabilizados não são teto de RSS; compilação, stacks, grafo e
+resultados retidos têm custos separados. Qualificação local Linux/amd64, Go
+1.26.0, fixtures e dados sintéticos. HTTP, registry, S3, autenticação, result
+cache e compilação de source no servidor permanecem fora do escopo.

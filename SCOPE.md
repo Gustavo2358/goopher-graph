@@ -37,3 +37,13 @@ O snapshot não autentica a origem nem tolera alteração externa dos bytes enqu
 As 13 fatias estão concluídas por evidência: diretórios reais -> carga resiliente -> snapshot -> mmap -> três consultas corretas; propriedades/labels/identidades preservadas; índices e scan concordam; rejeições não abortam o lote; corrupção é rejeitada; publicação e fechamento de recursos são testados; consulta externa usa somente API pública; fuzz/race/bench foram executados e o README reproduz uso real.
 
 Não há meta de linhas de código, marcação de release ou SLA inventado. Um arquivo real do usuário pode qualificar o ambiente depois; não se declara testado um corpus que não foi disponibilizado.
+
+## Extensão solicitada: queries WASM
+
+Programas Go externos compilados para `wasip1/wasm` podem compor operações de
+grafo por uma Host API pública de handles. `wasmquery` usa wazero pure Go, mantém
+cache local de módulos compilados e isola cada execução. O CLI aceita snapshot,
+WASM e argumentos; retorna o contrato graphjson existente. O SDK e os limites
+estão em [WASM](docs/WASM.md). Essa extensão não altera o snapshot nem as queries
+nativas. HTTP, registry, S3, autenticação e compilação de source no servidor
+continuam excluídos.
