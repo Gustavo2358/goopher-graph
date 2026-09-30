@@ -2,7 +2,10 @@
 
 Estado: **produto concluído — B00 a B12**.
 
-Próximo passo: **escopo encerrado**. HTTP, S3 e novas consultas são outro escopo.
+Campanha adicional — ingestão limitada: **em andamento**. Implementação,
+equivalência, falhas, escala e medições concluídas. Regressão sem cache, race,
+fuzz, vet e build sem cgo passaram; benchmarks/revisão final e PR em fechamento.
+HTTP/S3/queries adicionais fora do escopo.
 
 | Fatia | Estado | Evidência / próximo passo |
 |---|---|---|

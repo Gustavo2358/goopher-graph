@@ -145,3 +145,30 @@ func main(){g,e:=snapshot.Open(context.Background(),mmap.New(os.Args[1]));if e!=
 		t.Fatalf("consumer %v: %s", e, out)
 	}
 }
+
+func TestCLIBoundedBuildAndScratchFailure(t *testing.T) {
+	bin := binary(t)
+	dir := t.TempDir()
+	path := filepath.Join(dir, "graph")
+	nodes, edges := "../../fixtures/01_topology/nodes", "../../fixtures/01_topology/edges"
+	base := []string{"build", "--nodes", nodes, "--edges", edges, "--output", path}
+	invoke(t, bin, 0, append(base, "--memory-budget", "1048576", "--temp-dir", dir)...)
+	before, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	invoke(t, bin, 2, append(base, "--memory-budget", "1024")...)
+	invoke(t, bin, 2, append(base, "--temp-dir", nodes)...)
+	// A regular file cannot be a scratch parent; publication must preserve the
+	// previous snapshot and leave it queryable after this operational failure.
+	invoke(t, bin, 1, append(base, "--temp-dir", path)...)
+	after, err := os.ReadFile(path)
+	if err != nil || !bytes.Equal(before, after) {
+		t.Fatal("previous snapshot changed", err)
+	}
+	invoke(t, bin, 0, "territory", "--snapshot", path, "--node", "A")
+	entries, err := os.ReadDir(dir)
+	if err != nil || len(entries) != 1 {
+		t.Fatal("scratch leak", entries, err)
+	}
+}

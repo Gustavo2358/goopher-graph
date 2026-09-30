@@ -100,3 +100,24 @@ Mutar snapshots de forma estruturada e saber qual invariante cada mutação viol
 ## Relato
 
 Comando, resultado e escopo realmente exercitado. Falta de Graphviz só deixa verificação externa de DOT não executada; testes semânticos internos continuam obrigatórios. Falta de suporte de race exige registrar bloqueio desse gate, não torná-lo verde. Não acessar Neptune, buckets ou dados reais sem autorização.
+
+## Ingestão externa
+
+`go test ./ingest -run TestExternal -count=1` compara snapshots byte a byte,
+relatórios sem tempos e diagnósticos completos entre os backends. Inclui as 12
+fixtures com oráculos independentes, grupos atravessando runs, registro maior
+que a arena, permutações e falhas de scratch/cancelamento/diagnóstico.
+
+A regressão normal gera 7.200 e 72.000 registros em subprocessos, com teto fixo
+para heap e verificação de queries após remoção dos nomes temporários. A
+qualificação maior gera 1,2M/2,4M registros e 240 mil valores set no mesmo ID:
+
+```sh
+# TMPDIR deve ser um diretório existente em disco, com espaço para scratch.
+GOPHERGRAPH_SCALE=1 go test ./ingest \
+  -run 'TestExternal(GeneratedScale|SingleEntityScale)$' -count=1 -v
+```
+
+A validação CSR usa membership + ordenação estrita + contagem para provar
+unicidade/cobertura, sem bitset proporcional às edges. Casos de duplicação no
+mesmo dono e entre donos, em ambas as direções, protegem essa mudança.

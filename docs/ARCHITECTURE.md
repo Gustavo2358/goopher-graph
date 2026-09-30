@@ -121,7 +121,14 @@ Graph expõe métodos e iteradores; internamente usa colunas de IDs/offsets, nã
 
 O formato de arquivo é responsabilidade de snapshot. `internal/graphdata` só conhece colunas, contagens, tipos e invariantes lógicas. Não recebe offsets do diretório on-disk como parte da API pública.
 
-Ingestão pode usar maps/slices temporários; a representação de consulta não herda esses mapas. Canonicalização encerra staging e fixa IDs. Índices são postings; scratch de consultas são bitsets/fila. Dados do mapping não são expostos como `[]byte` ou slices graváveis ao consumidor.
+A CLI passa `Options.Scratch` para ingestão externa: contribuições atômicas,
+ordenação externa, consolidação em streams e colunas temporárias mmap. O port
+`ingest/ports.Scratch` cria um workspace privado por build; o adapter filesystem
+usa o adapter mmap já existente. O núcleo não importa filesystem ou mmap.
+Sem Scratch, `ingest.Build` conserva o caminho heap para consumidores existentes
+e testes de equivalência. Ver [desenho e limites](BOUNDED_INGEST.md).
+
+A representação de consulta não herda mapas de staging. Canonicalização encerra staging e fixa IDs. Índices são postings; scratch de consultas são bitsets/fila. Dados do mapping não são expostos como `[]byte` ou slices graváveis ao consumidor.
 
 ## Reuso e evolução
 

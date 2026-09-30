@@ -13,6 +13,11 @@ const (
 )
 
 type Options struct {
+	// Scratch enables external ingestion. Without it Build retains its in-memory API.
+	Scratch ports.Scratch
+	// MemoryBudget bounds sort buffers, not the process RSS or decoder record.
+	// Zero selects 64 MiB. Minimum: 1 MiB.
+	MemoryBudget    uint64
 	IndexProperties []string
 	Limits          ports.Limits
 }

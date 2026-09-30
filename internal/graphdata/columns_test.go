@@ -1,6 +1,7 @@
 package graphdata
 
 import (
+	"context"
 	"encoding/binary"
 	"testing"
 )
@@ -24,6 +25,43 @@ func TestInvalidColumns(t *testing.T) {
 		mutate(d)
 		if Validate(d) == nil {
 			t.Fatal("accepted malformed columns")
+		}
+	}
+}
+
+func TestCSRRejectsRepeatedMembershipWithoutSeenBitmap(t *testing.T) {
+	for _, reverse := range []bool{false, true} {
+		for _, acrossOwners := range []bool{false, true} {
+			d := Empty()
+			d.Strings = []string{"", "A", "B", "L", "e0", "e1", "e2"}
+			d.NodeIDs.Heap = []uint32{1, 2}
+			d.NodeLabels.Heap = []uint32{3, 3}
+			d.NodeLabelOffsets.Heap = []uint64{0, 1, 2}
+			d.NodePropOffsets.Heap = []uint64{0, 0, 0}
+			d.EdgeIDs.Heap = []uint32{4, 5, 6}
+			d.Sources.Heap = []uint32{0, 0, 1}
+			d.Targets.Heap = []uint32{0, 0, 1}
+			d.EdgeLabels.Heap = []uint32{3, 3, 3}
+			d.EdgePropOffsets.Heap = []uint64{0, 0, 0, 0}
+			BuildCSR(d)
+			if err := BuildIndexes(context.Background(), d); err != nil {
+				t.Fatal(err)
+			}
+			if err := Validate(d); err != nil {
+				t.Fatal(err)
+			}
+			ids := d.ForwardEdges.Heap
+			if reverse {
+				ids = d.ReverseEdges.Heap
+			}
+			if acrossOwners {
+				ids[2] = ids[0]
+			} else {
+				ids[1] = ids[0]
+			}
+			if Validate(d) == nil {
+				t.Fatal("duplicate replaced missing edge", reverse, acrossOwners)
+			}
 		}
 	}
 }

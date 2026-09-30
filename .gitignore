@@ -2,3 +2,4 @@
 *.test
 *.prof
 __pycache__/
+/.measure/

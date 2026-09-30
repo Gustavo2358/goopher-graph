@@ -20,6 +20,21 @@ Output não pode coincidir nem ficar dentro de nodes/edges; validar caminhos res
 
 Ao fim, stdout recebe um resumo legível: publicação, completeness, fontes, registros vistos/rejeitados/staged, conflitos e contagens finais. Diagnósticos vão a stderr. Carga parcial publicada com sucesso retorna 0, com `PARTIAL` explícito; não anunciar completa. O bit de parcialidade fica no snapshot. Empty válido também publica; EMPTY_GRAPH é aviso, não aborto.
 
+### Recursos de build
+
+- `--memory-budget`: bytes para buffers de ordenação externa; padrão 67108864,
+  mínimo 1048576. Não é um limite global de RSS ou do heap do processo.
+- `--temp-dir`: diretório pai existente para scratch privado; padrão é o diretório
+  de `--output`. Precisa ficar fora dos catálogos, inclusive quando há symlinks.
+- `--max-record-bytes` continua limitando cada registro/header, independentemente
+  do orçamento de ordenação. Um token maior que a arena vira um run separado.
+
+Colunas, strings e índices são construídos em disco. Escolha armazenamento com
+espaço livre para os passes e evite tmpfs em cargas maiores que a RAM. Falhas de
+scratch são operacionais; publicação anterior permanece intacta. SIGKILL ou queda
+do processo podem deixar diretórios `.gophergraph-build-*`; remova somente os de
+processos encerrados. Ver [garantias e medições](BOUNDED_INGEST.md).
+
 ## Consultas
 
 ```sh

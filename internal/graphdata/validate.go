@@ -170,6 +170,9 @@ func ValidateContext(ctx context.Context, d *Data) (err error) {
 			}
 		}
 	}
+	// Membership fixes each edge's owner/neighbor/label. Strict tuple ordering
+	// then forbids repeats within that owner; the total count proves coverage.
+	// No graph-sized seen bitset is needed (including during mmap validation).
 	for dir, v := range []struct {
 		o                U64
 		neighbors, edges U32
@@ -177,7 +180,6 @@ func ValidateContext(ctx context.Context, d *Data) (err error) {
 		if !offsets(ctx, v.o, n, e) || v.neighbors.Len() != e || v.edges.Len() != e {
 			return invalid("CSR shape")
 		}
-		seen := make([]uint64, (e+63)/64)
 		for u := uint64(0); u < n; u++ {
 			if u%1024 == 0 {
 				if err := ctx.Err(); err != nil {
@@ -201,10 +203,9 @@ func ValidateContext(ctx context.Context, d *Data) (err error) {
 					src, dst = dst, src
 				}
 				label := d.EdgeLabels.At(uint64(id))
-				if uint64(src) != u || dst != neighbor || seen[id/64]&(uint64(1)<<(id%64)) != 0 {
+				if uint64(src) != u || dst != neighbor {
 					return invalid("CSR membership")
 				}
-				seen[id/64] |= uint64(1) << (id % 64)
 				if j > a && (neighbor < prevNeighbor || (neighbor == prevNeighbor && (label < prevLabel || (label == prevLabel && id <= prevEdge)))) {
 					return invalid("CSR order")
 				}

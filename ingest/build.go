@@ -20,10 +20,17 @@ type builder struct {
 	sink         ports.DiagnosticSink
 	report       Report
 	nodes, edges map[string]*entity
+	disk         *diskBuilder
 }
 
 func Build(ctx context.Context, nodes, edges ports.Catalog, decoder ports.Decoder, diagnostics ports.DiagnosticSink, options Options) (*graph.Graph, Report, error) {
 	started := time.Now()
+	if options.Scratch == nil && options.MemoryBudget != 0 {
+		return nil, Report{}, errors.New("memory budget requires a scratch port")
+	}
+	if options.Scratch != nil {
+		return buildDisk(ctx, nodes, edges, decoder, diagnostics, options)
+	}
 	b := &builder{ctx: ctx, sink: diagnostics, nodes: map[string]*entity{}, edges: map[string]*entity{}}
 	fail := func(e error) (*graph.Graph, Report, error) { return nil, b.report, e }
 	if e := ctx.Err(); e != nil {
@@ -32,95 +39,13 @@ func Build(ctx context.Context, nodes, edges ports.Catalog, decoder ports.Decode
 	if nodes == nil || edges == nil || decoder == nil || diagnostics == nil {
 		return fail(errors.New("nil ingest port"))
 	}
-	l := options.Limits
-	if l.MaxRecordBytes == 0 {
-		l.MaxRecordBytes = 67108864
+	var e error
+	options, e = normalizeOptions(options)
+	if e != nil {
+		return fail(e)
 	}
-	if l.MaxColumns == 0 {
-		l.MaxColumns = 65536
-	}
-	if l.MaxRecordBytes < 1024 || l.MaxRecordBytes > uint64(math.MaxInt) || l.MaxColumns > 65536 {
-		return fail(errors.New("invalid limits"))
-	}
-	options.Limits = l
-	for _, key := range options.IndexProperties {
-		if key == "" || !utf8.ValidString(key) || strings.ContainsRune(key, 0) {
-			return fail(errors.New("invalid index key"))
-		}
-	}
-	lists := [2][]ports.Entry{}
-	for role, cat := range []ports.Catalog{nodes, edges} {
-		entries, e := cat.List(ctx)
-		if e != nil {
-			return fail(e)
-		}
-		sort.Slice(entries, func(i, j int) bool { return entries[i].Key < entries[j].Key })
-		for i := 1; i < len(entries); i++ {
-			if entries[i-1].Key == entries[i].Key {
-				return fail(errors.New("duplicate catalog key"))
-			}
-		}
-		lists[role] = entries
-	}
-	for role, cat := range []ports.Catalog{nodes, edges} {
-		cr := &b.report.NodeSources
-		if role == 1 {
-			cr = &b.report.EdgeSources
-		}
-		for _, entry := range lists[role] {
-			if e := ctx.Err(); e != nil {
-				return fail(e)
-			}
-			cr.SourcesSeen++
-			loc := ports.Location{Role: ports.Role(role), Source: entry.Key}
-			if !entry.Regular {
-				cr.SourcesNonRegular++
-				if e := b.emit(ports.Diagnostic{Severity: ports.Rejection, Code: "SOURCE_NON_REGULAR", Location: loc, Message: "catalog entry is not a regular source"}); e != nil {
-					return fail(e)
-				}
-				continue
-			}
-			e := b.source(cat, decoder, ports.Role(role), entry, l, cr)
-			if e == nil {
-				cr.SourcesCompleted++
-				continue
-			}
-			if ctx.Err() != nil {
-				return fail(ctx.Err())
-			}
-			var diagnosticFailure *DiagnosticError
-			if errors.As(e, &diagnosticFailure) {
-				return fail(e)
-			}
-			var se *ports.SourceError
-			if !errors.As(e, &se) {
-				return fail(e)
-			}
-			code := "SOURCE_IO"
-			switch se.Kind {
-			case ports.InvalidHeader:
-				cr.SourcesRejectedHeader++
-				code = "HEADER_INVALID"
-			case ports.SourceIO:
-				cr.SourcesIOFailed++
-			case ports.UnrecoverableCSV:
-				cr.SourcesInterrupted++
-				code = "CSV_SOURCE_UNRECOVERABLE"
-			default:
-				return fail(e)
-			}
-			if e := b.emit(ports.Diagnostic{Severity: ports.Rejection, Code: code, Location: se.Location, Message: "source ended with " + code}); e != nil {
-				return fail(e)
-			}
-		}
-		// This barrier resolves node properties before any edge source is opened.
-		owners := b.nodes
-		if role == 1 {
-			owners = b.edges
-		}
-		if e := b.consolidate(owners); e != nil {
-			return fail(e)
-		}
+	if e = b.load(nodes, edges, decoder, options.Limits); e != nil {
+		return fail(e)
 	}
 	if len(b.nodes) == 0 {
 		if e := b.emit(ports.Diagnostic{Severity: ports.Warning, Code: "EMPTY_GRAPH", Message: "no accepted nodes"}); e != nil {
@@ -197,6 +122,10 @@ func (b *builder) source(cat ports.Catalog, decoder ports.Decoder, role ports.Ro
 		if role == ports.Edges {
 			_, src := b.nodes[rec.Source]
 			_, dst := b.nodes[rec.Target]
+			if b.disk != nil {
+				_, src = b.disk.nodes.find(rec.Source)
+				_, dst = b.disk.nodes.find(rec.Target)
+			}
 			if !src || !dst {
 				cr.RecordsRejected++
 				if e := b.emit(ports.Diagnostic{Severity: ports.Rejection, Code: "ENDPOINT_NOT_FOUND", Location: rec.Location, EntityID: rec.ID, EntityIDKnown: true, Message: "edge endpoint absent"}); e != nil {
@@ -210,7 +139,16 @@ func (b *builder) source(cat ports.Catalog, decoder ports.Decoder, role ports.Ro
 				return e
 			}
 		}
-		if e := b.stage(rec); e != nil {
+		var stageErr error
+		if b.disk != nil {
+			stageErr = b.disk.stage(rec)
+			if stageErr != nil {
+				stageErr = &scratchError{stageErr}
+			}
+		} else {
+			stageErr = b.stage(rec)
+		}
+		if e := stageErr; e != nil {
 			return e
 		}
 		cr.RecordsStaged++
@@ -223,3 +161,115 @@ type DiagnosticError struct{ Cause error }
 
 func (e *DiagnosticError) Error() string { return "diagnostic sink: " + e.Cause.Error() }
 func (e *DiagnosticError) Unwrap() error { return e.Cause }
+
+func (b *builder) load(nodes, edges ports.Catalog, decoder ports.Decoder, limits ports.Limits) error {
+	lists := [2][]ports.Entry{}
+	for role, cat := range []ports.Catalog{nodes, edges} {
+		entries, e := cat.List(b.ctx)
+		if e != nil {
+			return e
+		}
+		sort.Slice(entries, func(i, j int) bool { return entries[i].Key < entries[j].Key })
+		for i := 1; i < len(entries); i++ {
+			if entries[i-1].Key == entries[i].Key {
+				return errors.New("duplicate catalog key")
+			}
+		}
+		lists[role] = entries
+	}
+	for role, cat := range []ports.Catalog{nodes, edges} {
+		cr := &b.report.NodeSources
+		if role == 1 {
+			cr = &b.report.EdgeSources
+		}
+		for _, entry := range lists[role] {
+			if e := b.ctx.Err(); e != nil {
+				return e
+			}
+			cr.SourcesSeen++
+			loc := ports.Location{Role: ports.Role(role), Source: entry.Key}
+			if !entry.Regular {
+				cr.SourcesNonRegular++
+				if e := b.emit(ports.Diagnostic{Severity: ports.Rejection, Code: "SOURCE_NON_REGULAR", Location: loc, Message: "catalog entry is not a regular source"}); e != nil {
+					return e
+				}
+				continue
+			}
+			e := b.source(cat, decoder, ports.Role(role), entry, limits, cr)
+			if e == nil {
+				cr.SourcesCompleted++
+				continue
+			}
+			if b.ctx.Err() != nil {
+				return b.ctx.Err()
+			}
+			var diagnosticFailure *DiagnosticError
+			var scratchFailure *scratchError
+			if errors.As(e, &diagnosticFailure) || errors.As(e, &scratchFailure) {
+				return e
+			}
+			var se *ports.SourceError
+			if !errors.As(e, &se) {
+				return e
+			}
+			code := "SOURCE_IO"
+			switch se.Kind {
+			case ports.InvalidHeader:
+				cr.SourcesRejectedHeader++
+				code = "HEADER_INVALID"
+			case ports.SourceIO:
+				cr.SourcesIOFailed++
+			case ports.UnrecoverableCSV:
+				cr.SourcesInterrupted++
+				code = "CSV_SOURCE_UNRECOVERABLE"
+			default:
+				return e
+			}
+			if e := b.emit(ports.Diagnostic{Severity: ports.Rejection, Code: code, Location: se.Location, Message: "source ended with " + code}); e != nil {
+				return e
+			}
+		}
+		// This barrier resolves node properties before any edge source is opened.
+		owners := b.nodes
+		if role == 1 {
+			owners = b.edges
+		}
+		var err error
+		if b.disk != nil {
+			err = b.disk.consolidate(ports.Role(role))
+		} else {
+			err = b.consolidate(owners)
+		}
+		if e := err; e != nil {
+			return e
+		}
+	}
+	return nil
+}
+
+func normalizeOptions(options Options) (Options, error) {
+	l := options.Limits
+	if l.MaxRecordBytes == 0 {
+		l.MaxRecordBytes = 67108864
+	}
+	if l.MaxColumns == 0 {
+		l.MaxColumns = 65536
+	}
+	if l.MaxRecordBytes < 1024 || l.MaxRecordBytes > uint64(math.MaxInt) || l.MaxColumns > 65536 {
+		return options, errors.New("invalid limits")
+	}
+	options.Limits = l
+	for _, key := range options.IndexProperties {
+		if key == "" || !utf8.ValidString(key) || strings.ContainsRune(key, 0) {
+			return options, errors.New("invalid index key")
+		}
+	}
+	return options, nil
+}
+
+// A scratch failure must not be reclassified as a recoverable source failure,
+// even when a custom storage port wraps a SourceError.
+type scratchError struct{ cause error }
+
+func (e *scratchError) Error() string { return "build scratch: " + e.cause.Error() }
+func (e *scratchError) Unwrap() error { return e.cause }
