@@ -1,17 +1,17 @@
 # Progresso
 
-Campanha adicional — queries WebAssembly: **concluída** na branch
-`codex/wasm-queries`, stacked sobre `codex/query-json` (PR #2).
-Próximo passo: review do novo PR. PRs #1 e #2 preservados.
-
 Estado: **produto concluído — B00 a B12**.
 
-Campanha adicional — ingestão limitada: **concluída**. Próximo passo: review do
-PR solicitado. HTTP/S3/queries adicionais fora do escopo.
+Campanhas adicionais **concluídas e incorporadas à `main`**, após aprovação do
+usuário em 2026-09-30:
 
-Campanha adicional — output JSON: **concluída** na branch `codex/query-json`,
-stacked sobre `codex/bounded-ingest` (PR #1). Próximo passo: review do PR stacked;
-PR #1 permanece inalterado.
+- Ingestão limitada: [PR #1](https://github.com/Gustavo2358/goopher-graph/pull/1).
+- Output JSON: [PR #2](https://github.com/Gustavo2358/goopher-graph/pull/2).
+- Queries WebAssembly: [PR #3](https://github.com/Gustavo2358/goopher-graph/pull/3).
+
+Fechamento concluído; nenhum próximo passo pendente nesta campanha.
+HTTP, registry, S3, autenticação e compilação de source no servidor seguem
+fora do escopo.
 
 | Fatia | Estado | Evidência / próximo passo |
 |---|---|---|
@@ -152,3 +152,17 @@ Os limites contabilizados não são teto de RSS; compilação, stacks, grafo e
 resultados retidos têm custos separados. Qualificação local Linux/amd64, Go
 1.26.0, fixtures e dados sintéticos. HTTP, registry, S3, autenticação, result
 cache e compilação de source no servidor permanecem fora do escopo.
+
+
+## Integração final — 2026-09-30
+
+Aprovação do usuário recebida. PRs #1, #2 e #3 incorporados nessa ordem por
+merge commits; #2 e #3 tiveram a base atualizada para `main` após a integração
+da dependência. Todos constam como MERGED no GitHub, com os heads aprovados
+preservados. Não havia checks de CI configurados nos PRs.
+
+`git diff --exit-code 8e88748 5467f3a` passou: o conteúdo de `main` após os
+três merges é idêntico à árvore validada no fechamento WASM acima. As evidências
+de regressão, race, vet, build e fuzz continuam aplicáveis; esta atualização
+altera somente o registro de progresso. Branch local `main` atualizada por
+fast-forward. Campanha encerrada.
