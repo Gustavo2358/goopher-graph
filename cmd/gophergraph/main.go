@@ -11,7 +11,7 @@ import (
 	"os/signal"
 )
 
-const help = "Usage: gophergraph <command> [options]\nCommands: build, territory, anti-territory, between\nUse gophergraph <command> --help for options."
+const help = "Usage: gophergraph <command> [options]\nCommands: build, territory, anti-territory, between, wasm\nUse gophergraph <command> --help for options."
 
 func run(args []string, stdout, stderr io.Writer) int {
 	return runContext(context.Background(), args, stdout, stderr)
@@ -27,6 +27,8 @@ func runContext(ctx context.Context, args []string, stdout, stderr io.Writer) in
 		return failure(stderr, errors.New(help), 2)
 	}
 	switch args[0] {
+	case "wasm":
+		return wasmCommand(ctx, args[1:], stdout, stderr)
 	case "build":
 		return buildCommand(ctx, args[1:], stdout, stderr)
 	case "territory", "anti-territory", "between":

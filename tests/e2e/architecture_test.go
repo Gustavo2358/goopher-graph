@@ -17,7 +17,8 @@ func TestCapabilityImports(t *testing.T) {
 			return e
 		}
 		if d.IsDir() {
-			if d.Name() == ".git" || d.Name() == "bin" {
+			// .measure holds ignored copies used by the repository qualification tools.
+			if d.Name() == ".git" || d.Name() == "bin" || d.Name() == ".measure" {
 				return filepath.SkipDir
 			}
 			return nil
@@ -56,6 +57,17 @@ func TestCapabilityImports(t *testing.T) {
 				if imp == "os" || strings.HasPrefix(imp, "net") || strings.HasPrefix(imp, "path") || (strings.HasPrefix(imp, "gophergraph/") && imp != "gophergraph/graph" && imp != "gophergraph/query") {
 					t.Errorf("JSON export dependency %s imports %s", rel, imp)
 				}
+			}
+			if strings.HasPrefix(rel, "wasmquery/") && !strings.Contains(rel, "/testdata/") {
+				if imp == "os" || strings.HasPrefix(imp, "net") || strings.HasPrefix(imp, "path") || strings.HasPrefix(imp, "gophergraph/snapshot") || strings.HasPrefix(imp, "gophergraph/ingest") || strings.Contains(imp, "internal/graphdata") {
+					t.Errorf("WASM capability imports storage/transport: %s %s", rel, imp)
+				}
+				if strings.HasPrefix(rel, "wasmquery/sdk/") && (imp == "gophergraph/graph" || imp == "gophergraph/query" || strings.HasPrefix(imp, "github.com/")) {
+					t.Errorf("SDK imports host implementation: %s", imp)
+				}
+			}
+			if strings.HasPrefix(imp, "github.com/tetratelabs/wazero") && !strings.HasPrefix(rel, "wasmquery/") {
+				t.Errorf("WASM runtime outside capability: %s", rel)
 			}
 			if strings.HasPrefix(rel, "cmd/") && strings.Contains(imp, "internal/") {
 				t.Errorf("CLI imports internals: %s", imp)

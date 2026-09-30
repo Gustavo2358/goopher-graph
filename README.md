@@ -155,3 +155,17 @@ A suíte inclui os 12 modelos de fixtures, oráculo de closure, seis goldens bin
 [PROGRESS.md](PROGRESS.md) concentra o estado e as evidências dos checkpoints. [SCOPE](SCOPE.md), [ARCHITECTURE](docs/ARCHITECTURE.md), [API](docs/API.md), [INGEST](docs/INGEST.md), [SNAPSHOT](docs/SNAPSHOT.md), [CLI](docs/CLI.md) e [TESTING](docs/TESTING.md) detalham os contratos. Para retomar desenvolvimento, use [START_HERE](START_HERE.md).
 
 HTTP, S3, mutação online, DSL, planner e execução distribuída estão fora deste escopo. Não foi feito acesso a Neptune, cloud ou dados corporativos.
+
+## Queries programáveis em WebAssembly
+
+Pequenos programas Go podem usar `wasmquery/sdk`, compilar para `wasip1/wasm`
+e executar pelo comando `wasm`. Conjuntos ficam no host, por handles; o resultado
+usa o mesmo JSON tipado das queries nativas. O runtime pure Go é reutilizável,
+com cache de módulos compilados, instâncias isoladas e limites configuráveis.
+
+```sh
+GOOS=wasip1 GOARCH=wasm CGO_ENABLED=0 go build -o /tmp/between.wasm ./examples/wasm/between
+bin/gophergraph wasm --snapshot /tmp/graph.snapshot --module /tmp/between.wasm --arg A --arg F
+```
+
+Veja [Host API, SDK, exemplos, lifecycle e limites](docs/WASM.md).
