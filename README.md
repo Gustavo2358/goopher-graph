@@ -82,6 +82,27 @@ Queries mantêm os dados limpos em stdout e avisam em stderr quando o snapshot v
 
 Output de build deve ficar fora dos catálogos. Output de query não pode ser o próprio snapshot ou um alias dele.
 
+## Build com memória limitada
+
+A CLI usa ordenação externa e arquivos temporários por padrão. O orçamento de
+ordenação é 64 MiB; o diretório temporário padrão é o diretório do snapshot.
+Para controlar recursos:
+
+```sh
+./bin/gophergraph build \
+  --nodes fixtures/01_topology/nodes --edges fixtures/01_topology/edges \
+  --output bin/graph.snapshot --memory-budget 16777216 --temp-dir bin \
+  --max-record-bytes 1048576
+```
+
+`--memory-budget` limita buffers de ordenação, com mínimo de 1 MiB. O heap também
+inclui o registro/header atual, buffers fixos, entradas dos catálogos e opções.
+RSS inclui páginas de arquivos mmap recuperáveis pelo sistema operacional.
+Use um filesystem em disco para scratch; tmpfs usa RAM. Reserve espaço para
+passes intermediários e a publicação, conforme as [medições](docs/BOUNDED_INGEST.md).
+Falta de espaço, erro de scratch ou cancelamento falham o build sem publicar
+um prefixo. Temporários são removidos nos retornos normais e de erro.
+
 ## Usar como biblioteca
 
 `graph` oferece metadados, valores tipados, lookup, adjacências e conjuntos com identidade. `query` oferece `Reachable`, `FromNodes`, `Territory`, `AntiTerritory` e `Between`. `ingest.Build`, `snapshot.Open` e `snapshot.Write` recebem ports; os adapters concretos ficam na composição do programa.
@@ -119,7 +140,7 @@ python3 tools/check_package.py
 
 A suíte inclui os 12 modelos de fixtures, oráculo de closure, seis goldens binários independentes, reader Python, corrupção, falhas de ports/publicação, concorrência, recursos, CLI em subprocessos e consumidor externo. O checker Python confere referências e documentos; os testes Go verificam a engine.
 
-[Medições locais](docs/BENCHMARKS.md) separam build, validação, consultas, exportação, heap, mapping e RSS. Elas cobrem até 100 mil nodes / 500 mil edges, sem prometer SLA ou desempenho sobre corpus não fornecido.
+[Medições locais](docs/BENCHMARKS.md) separam build, validação, consultas, exportação, heap, mapping e RSS. A [qualificação da ingestão limitada](docs/BOUNDED_INGEST.md) cobre até 400 mil nodes / 2 milhões de edges sintéticos, sem prometer SLA ou desempenho sobre corpus não fornecido.
 
 ## Contratos e continuidade
 

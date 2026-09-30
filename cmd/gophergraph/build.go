@@ -15,6 +15,7 @@ import (
 	"gophergraph/snapshot/ports"
 	"io"
 	"math"
+	"path/filepath"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -26,11 +27,16 @@ func buildCommand(ctx context.Context, args []string, stdout, stderr io.Writer) 
 	nodes := fs.String("nodes", "", "node catalog directory (required)")
 	edges := fs.String("edges", "", "edge catalog directory (required)")
 	output := fs.String("output", "", "snapshot destination (required)")
+	budget := fs.Uint64("memory-budget", 64<<20, "sort buffer budget in bytes (minimum 1 MiB; excludes record buffers and mappings)")
+	tempDir := fs.String("temp-dir", "", "build scratch parent directory (default: output directory)")
 	limit := fs.Uint64("max-record-bytes", 67108864, "maximum logical record bytes (minimum 1024)")
 	var keys repeated
 	fs.Var(&keys, "index-property", "property key to index (repeatable)")
 	if code := parse(fs, args); code >= 0 {
 		return code
+	}
+	if *budget < 1<<20 || *budget > uint64(math.MaxInt) {
+		return failure(stderr, errors.New("memory-budget must be 1 MiB..MaxInt"), 2)
 	}
 	if *nodes == "" || *edges == "" || *output == "" || *limit < 1024 || *limit > uint64(math.MaxInt) {
 		return failure(stderr, errors.New("build requires --nodes, --edges, --output and max-record-bytes >= 1024"), 2)
@@ -51,7 +57,13 @@ func buildCommand(ctx context.Context, args []string, stdout, stderr io.Writer) 
 	if e != nil {
 		return failure(stderr, e, 2)
 	}
-	g, report, e := ingest.Build(ctx, n, r, neptune.Decoder{}, diagnostic.New(stderr), ingest.Options{IndexProperties: keys, Limits: ingestports.Limits{MaxRecordBytes: *limit}})
+	if *tempDir == "" {
+		*tempDir = filepath.Dir(*output)
+	}
+	if e := filesystem.ValidateBuildPaths(*nodes, *edges, *tempDir); e != nil {
+		return failure(stderr, fmt.Errorf("temp-dir: %w", e), 2)
+	}
+	g, report, e := ingest.Build(ctx, n, r, neptune.Decoder{}, diagnostic.New(stderr), ingest.Options{Scratch: filesystem.Scratch{Dir: *tempDir}, MemoryBudget: *budget, IndexProperties: keys, Limits: ingestports.Limits{MaxRecordBytes: *limit}})
 	if e != nil {
 		return failure(stderr, e, 1)
 	}

@@ -16,6 +16,15 @@ As declarações estão em [spec/api/ingest_ports.go.txt](../spec/api/ingest_por
 | Decoder | New(ctx,role,entry,reader,limits) valida header e cria RecordReader |
 | RecordReader | Next(ctx) retorna record normalizado, rejeição delimitada ou erro terminal/EOF |
 | DiagnosticSink | Emit(ctx,Diagnostic) registra evento; retorna erro se não puder registrá-lo |
+| Scratch | New(ctx) cria um Workspace privado por build |
+
+As interfaces de scratch estão em [ingest/ports/scratch.go](../ingest/ports/scratch.go).
+Workspace cria arquivos com Writer/ReaderAt/Closer, remove arquivos, mapeia
+arquivos completos e fecha todos os arquivos remanescentes. Map retorna um
+Mapping com Bytes/Close: a view permanece estável mesmo após Remove/Close do
+workspace. O dono deve fechar o Mapping separadamente. Build transfere apenas
+os mappings finais ao Graph; todos os outros recursos são liberados antes do
+retorno. Erros de scratch nunca são classificados como rejeições de fonte CSV.
 
 Catalog fornece coleção finita, com keys únicas e descriptors estáveis durante a carga. Entry distingue regular de não regular. A aplicação ordena entries por key e rejeita não regulares com diagnóstico. List falhando no catálogo raiz é fatal; Open/read de uma entry é recuperável.
 

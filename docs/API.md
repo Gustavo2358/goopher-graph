@@ -36,6 +36,15 @@ Cancelar consulta retorna erro e nenhum resultado anunciado como completo. Não 
 
 `snapshot.Open(ctx,Source)` abre/valida o backing e transfere lifecycle para Graph. `snapshot.Write(ctx,g,Sink)` serializa, valida staging e publica. Não receber um path no domínio para facilitar a CLI; path fica em Source/Sink concretos.
 
+Para ingestão limitada, configure `Options{Scratch: filesystem.Scratch{Dir: dir},
+MemoryBudget: 16 << 20}`. `MemoryBudget=0` com Scratch seleciona 64 MiB; valores
+positivos exigem Scratch e devem ser pelo menos 1 MiB. `Options{}` mantém o
+backend heap existente. A CLI sempre fornece Scratch. O Graph retornado pelo
+caminho externo mantém mappings das colunas; chame Close mesmo sem publicar.
+O builder fecha o workspace em sucesso/erro; mappings sobrevivem à remoção dos
+nomes temporários até Graph.Close. O chamador de biblioteca deve manter scratch
+fora dos catálogos. [Limites de memória](BOUNDED_INGEST.md).
+
 A CLI compõe Build + Write. Um driver futuro pode chamar exatamente as mesmas funções, sem importar `cmd/` nem repetir regras de dados.
 
 ## Recursos e concorrência

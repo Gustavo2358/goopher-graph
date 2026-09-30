@@ -24,6 +24,11 @@ validar opções e enumerar catálogos
 
 Ordenar descriptors por key em bytes torna os diagnósticos mais previsíveis, mas a semântica de merge não depende dessa ordenação. Antes da barreira, nenhum registro de edge é consumido. Não criar placeholder para node inexistente nem agendar retries esperando um node que já não pode surgir.
 
+A implementação externa usada pela CLI mantém a mesma ordem, contadores,
+diagnósticos e canonicalização. Os catálogos de origem são consumidos uma vez;
+os passes adicionais leem scratch. Um único ID ou set enorme também é processado
+em streams. [Desenho, limites e falhas](BOUNDED_INGEST.md).
+
 ## Contrato de CSV do adapter Neptune
 
 Alvo: **Gremlin CSV** (`format=csv`), não openCypher. As colunas reservadas, tipos e regras básicas vêm de [N1 e N2](REFERENCES.md). O restante desta seção é o perfil executável do nosso adapter; a política de resiliência/merge é própria do GopherGraph.
@@ -109,7 +114,7 @@ Trecho incompleto não é um registro completo e não entra em `records_seen`; o
 
 ## Erros que realmente encerram o build
 
-Argumentos ou catálogo raiz inválidos; cancelamento; limites de recursos declarados ou estouro de capacidade estrutural; invariante interna violada; falha de diagnóstico; falha ao serializar/validar/publicar o snapshot. Falha de abrir/ler arquivo individual é recuperável e conserva seu prefixo já admitido. A distinção entre essas situações é implementada em status, não por substring da mensagem.
+Argumentos ou catálogo raiz inválidos; cancelamento; limites de recursos declarados ou estouro de capacidade estrutural; invariante interna violada; falha de diagnóstico ou de scratch (incluindo falta de espaço); falha ao serializar/validar/publicar o snapshot. Falha de abrir/ler arquivo individual é recuperável e conserva seu prefixo já admitido. A distinção entre essas situações é implementada em status, não por substring da mensagem.
 
 A publicação é assunto de SNAPSHOT.md. Não declarar o snapshot anterior preservado quando o rename já ocorreu e falhou apenas a sincronização final do diretório.
 

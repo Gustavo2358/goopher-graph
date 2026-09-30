@@ -2,6 +2,10 @@
 
 Execução em 2026-09-28, Linux/amd64, Go 1.26.0, AMD Ryzen 5 5600GT, 12 CPUs lógicas. GC padrão, sem pools ou unsafe. As medidas são locais, com caches aquecidos ou sem controle do page cache; não representam cold-cache nem SLA.
 
+A medição histórica abaixo usa o backend heap. A CLI agora usa ingestão externa;
+[antes/depois e qualificação de memória](BOUNDED_INGEST.md) medem esse caminho.
+O benchmark nativo de Build mantém `Options{}` para medir a API heap compatível.
+
 ## Dataset e método
 
 O gerador `tools/benchdata` produz duas componentes desconexas, cadeias, diamantes sobrepostos, ciclos, hubs, loops, paralelas, multilabel e propriedades tipadas. Cada node tem cinco edges. São indexadas as chaves `group` e `score`. O alcance a partir de `n000000000` contém 90% dos nodes e das edges.
