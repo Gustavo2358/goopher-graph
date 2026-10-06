@@ -169,7 +169,8 @@ fast-forward. Campanha encerrada.
 
 ## Campanha GGPB — 2026-10-06
 
-Implementação e qualificação concluídas; publicação da branch/PR em andamento.
+Campanha concluída; [PR #4](https://github.com/Gustavo2358/goopher-graph/pull/4)
+aberto para revisão, sem merge. Branch `feat/ggpb-streaming-results` publicada.
 Adapter externo `ggpb`/`ggpb/pb`, batches Protobuf limitados, framing CRC32,
 reader incremental e CLI `--format ggpb` / `decode --format json`. Única extensão
 mínima do core: IterateNodeLabels sem cópia, para limitar memória mesmo em um node
@@ -202,5 +203,6 @@ Evidência executada com dependências locais, GOPROXY=off e Go 1.26.0:
   contornam somente as restrições/broken /tmp/.git do ambiente de teste.
 
 [Contrato](docs/GGPB.md), [resultados completos](docs/GGPB_BENCHMARKS.md) e
-[amostras brutas](docs/benchmarks/ggpb_samples.jsonl). Próximo: conferir árvore
-versionada em cópia limpa e publicar PR para revisão; não fazer merge.
+[amostras brutas](docs/benchmarks/ggpb_samples.jsonl). Cópia limpa de `git archive`
+passou offline em graph/GGPB/E2E e build sem cgo, sem binários anteriores.
+Próximo: revisão do PR; nenhum merge autorizado nesta entrega.
