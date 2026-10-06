@@ -309,3 +309,16 @@ Protótipo usou limite conservador do batch, Size somente no oversize e len(enco
 | 10000 | 33.855 | 37.103 | 1.62 | 77091 | 2199660 | 39.904 | 32.763 |
 | 100000 | 333.030 | 365.917 | 12.34 | 739357 | 22070295 | 376.398 | 324.551 |
 | empty | 0.175 | 0.266 | 0.07 | 530 | 67 | 0.171 | 0.015 |
+
+### C3 — marshal com protowire oficial (KEEP)
+
+Codec específico para batches produzidos pelo encoder, sobre slots reutilizados de C1; não duplica traversal nem monta objetos por scalar. Usa google.golang.org/protobuf/encoding/protowire. Emit continua oferecendo pb.Batch; EmitEncoded oferece bytes do mesmo Batch, sem framing, para adapters que possam consumir wire diretamente. Borrow/copy explícito. Grande 331,488→260,279 ms (−21,5%), CPU 363,687→294,540; wire byte a byte idêntico ao marshal determinístico oficial nas seis fixtures. Complexidade adicional ~180 linhas e manutenção de tags; aceito por ganho material. Size ainda presente nessa medição para separar D2.
+
+[Dados brutos](benchmarks/ggpb_c3-wire.jsonl). Medianas de três execuções; CPU/alloc cold incluem query. Resident abaixo mede somente encode, após warmup.
+
+| Caso | Encode cold ms | CPU cold ms | TotalAlloc MiB | Allocs | Payload bytes | Consumer ms | Encode residente ms |
+|---|---|---|---|---|---|---|---|
+| 100 | 0.795 | 0.928 | 0.44 | 3595 | 22026 | 0.815 | 0.423 |
+| 10000 | 27.517 | 30.511 | 1.67 | 77112 | 2199660 | 42.983 | 27.451 |
+| 100000 | 260.279 | 294.540 | 12.39 | 739384 | 22070295 | 376.970 | 255.849 |
+| empty | 0.191 | 0.260 | 0.07 | 539 | 67 | 0.166 | 0.019 |

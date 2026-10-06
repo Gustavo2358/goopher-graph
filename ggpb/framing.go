@@ -23,8 +23,7 @@ func Write(ctx context.Context, out io.Writer, g *graph.Graph, s *query.Subgraph
 }
 func WriteOptions(ctx context.Context, out io.Writer, g *graph.Graph, s *query.Subgraph, q Query, o Options) error {
 	first := true
-	var buf []byte
-	return Emit(ctx, g, s, q, o, func(b *pb.Batch) error {
+	return EmitEncoded(ctx, g, s, q, o, func(buf []byte) error {
 		if first {
 			if e := writeAll(out, magic[:]); e != nil {
 				return e
@@ -35,10 +34,6 @@ func WriteOptions(ctx context.Context, out io.Writer, g *graph.Graph, s *query.S
 			return e
 		}
 		var e error
-		buf, e = (proto.MarshalOptions{Deterministic: true, UseCachedSize: true}).MarshalAppend(buf[:0], b)
-		if e != nil {
-			return e
-		}
 		var word [4]byte
 		binary.LittleEndian.PutUint32(word[:], uint32(len(buf)))
 		if e = writeAll(out, word[:]); e != nil {

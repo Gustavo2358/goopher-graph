@@ -222,3 +222,5 @@ Checkpoint C1 concluído: reuso local de slots e slices, ggpb/E2E/vet passaram; 
 Checkpoint C2 concluído: maps/Records/slices reutilizados, testes ggpb e matriz cold/resident passaram. Grande encoding −5,2%, TotalAlloc −63,8%. Próximo: medir eliminação do Size externo.
 
 Experimento D1 concluído/rejeitado: remover Size externo não ganhou no marshaler gerado (331,5→333,0 ms); revertido. Testes ggpb passaram. Próximo: protowire sobre slots reutilizados.
+
+Checkpoint C3 concluído: protowire específico, EmitEncoded transport-neutral, mesmo wire; ggpb/E2E e diferenciais oficiais passaram. Encoding −21,5%. Próximo: reavaliar Size e batch sizing.

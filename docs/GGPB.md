@@ -210,3 +210,5 @@ e contagens incrementalmente, e imprime contagens/tipos. Não é uma dependênci
 operacional da engine nem um validador completo de entradas hostis.
 
 Labels/keys usam cache privado por StringID no encoder, limitado ao batch. Endpoints usam cache privado por NodeID. Nenhum desses IDs internos aparece no protocolo; apenas referências lógicas locais e os textos correspondentes.
+
+`EmitEncoded` entrega o payload Protobuf canônico de cada Batch, sem magic/length/CRC. Os bytes são emprestados somente durante o callback. Um adapter assíncrono deve copiá-los; `Emit` continua disponível para mensagens geradas. Framing usa EmitEncoded. O codec hot path usa primitivas oficiais protowire e tem testes diferenciais byte a byte contra o marshaler gerado; não é outro protocolo. Futuro gRPC pode usar Emit com codec padrão ou adapter de codec compatível com os payloads de EmitEncoded, sem escrever/ler arquivo. Não se assume que qualquer transport retenha ou copie mensagens após Send.
