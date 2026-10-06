@@ -686,6 +686,8 @@ Caso adicional determinístico sem hubs/localidade: mesmos 90k/450k retornados, 
 
 ### Gates finais executados
 
+- Cópia limpa de `git archive f6845ce`: `go test -count=1 ./...`, `go vet ./...` e `CGO_ENABLED=0 go build ./cmd/gophergraph` passaram offline (`GOPROXY=off`), sem binários anteriores.
+
 - `go test -count=1 ./...`: passou, incluindo E2E/arquitetura/WASM e paridade JSON.
 - `CGO_ENABLED=1 go test -race -count=1 ./...`: passou, inclusive runtime WASM completo (~237 s).
 - `go vet ./...`, gofmt, `CGO_ENABLED=0 go build ./cmd/gophergraph`, `git diff --check`: passaram.
