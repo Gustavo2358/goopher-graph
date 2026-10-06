@@ -1,0 +1,26 @@
+File: encodingmeasure
+Build ID: 0d95136b3c01582f9188c9a9112b0037f9d17817
+Type: alloc_objects
+Time: 2026-10-06 16:02:03 -03
+Showing nodes accounting for 53379874, 99.80% of 53488715 total
+Dropped 37 nodes (cum <= 267443)
+      flat  flat%   sum%        cum   cum%
+  19530021 36.51% 36.51%   19596143 36.64%  encoding/json.Marshal
+  18841883 35.23% 71.74%   36832372 68.86%  gophergraph/graphjson.(*writer).text (inline)
+   8913030 16.66% 88.40%    8913030 16.66%  gophergraph/internal/graphdata.(*Data).String (inline)
+   4390979  8.21% 96.61%   15630862 29.22%  gophergraph/graphjson.(*writer).properties
+    720906  1.35% 97.96%     720906  1.35%  internal/strconv.FormatInt
+    524296  0.98% 98.94%    1867803  3.49%  gophergraph/graphjson.(*writer).value
+    458759  0.86% 99.80%     458759  0.86%  gophergraph/graph.(*Graph).NodeLabels
+         0     0% 99.80%    2588711  4.84%  gophergraph/graph.(*Graph).EdgeExternalID
+         0     0% 99.80%    5439570 10.17%  gophergraph/graph.(*Graph).NodeExternalID
+         0     0% 99.80%     884749  1.65%  gophergraph/graph.(*Graph).String
+         0     0% 99.80%   43189461 80.74%  gophergraph/graphjson.(*writer).edge
+         0     0% 99.80%   19596143 36.64%  gophergraph/graphjson.(*writer).json
+         0     0% 99.80%   10256535 19.18%  gophergraph/graphjson.(*writer).node
+         0     0% 99.80%   53445996 99.92%  gophergraph/graphjson.Write
+         0     0% 99.80%   53446072 99.92%  main.main
+         0     0% 99.80%   53446072 99.92%  main.run
+         0     0% 99.80%   53445996 99.92%  main.run.func1 (inline)
+         0     0% 99.80%   53446072 99.92%  runtime.main
+         0     0% 99.80%     720906  1.35%  strconv.FormatInt (inline)

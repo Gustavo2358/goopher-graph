@@ -1,0 +1,34 @@
+File: encodingmeasure
+Build ID: 0d95136b3c01582f9188c9a9112b0037f9d17817
+Type: cpu
+Time: 2026-10-06 16:02:00 -03
+Duration: 2.95s, Total samples = 3100ms (105.11%)
+Showing nodes accounting for 1990ms, 64.19% of 3100ms total
+Dropped 53 nodes (cum <= 15.50ms)
+Showing top 25 nodes out of 99
+      flat  flat%   sum%        cum   cum%
+     160ms  5.16%  5.16%      290ms  9.35%  gophergraph/graphjson.(*writer).raw
+     140ms  4.52%  9.68%     1600ms 51.61%  encoding/json.Marshal
+     120ms  3.87% 13.55%      140ms  4.52%  encoding/json.appendString[go.shape.string]
+     110ms  3.55% 17.10%      360ms 11.61%  runtime.growslice
+     110ms  3.55% 20.65%      110ms  3.55%  runtime.memmove
+     110ms  3.55% 24.19%      110ms  3.55%  runtime.nextFreeFast (inline)
+     100ms  3.23% 27.42%      200ms  6.45%  runtime.mallocgcTiny
+      90ms  2.90% 30.32%       90ms  2.90%  bytes.(*Buffer).Write
+      80ms  2.58% 32.90%      130ms  4.19%  bufio.(*Writer).WriteString
+      80ms  2.58% 35.48%      290ms  9.35%  internal/sync.(*HashTrieMap[go.shape.interface {},go.shape.interface {}]).Load
+      80ms  2.58% 38.06%      180ms  5.81%  sync.(*Pool).Get
+      70ms  2.26% 40.32%       80ms  2.58%  gophergraph/graph.(*PropertyIterator).Next
+      70ms  2.26% 42.58%     1770ms 57.10%  gophergraph/graphjson.(*writer).json
+      70ms  2.26% 44.84%      180ms  5.81%  gophergraph/internal/graphdata.(*Data).String
+      70ms  2.26% 47.10%      210ms  6.77%  runtime.mallocgcSmallScanNoHeader
+      70ms  2.26% 49.35%      120ms  3.87%  sync.runtime_procPin
+      60ms  1.94% 51.29%      100ms  3.23%  bufio.(*Writer).Write
+      60ms  1.94% 53.23%       60ms  1.94%  runtime.memhash64
+      60ms  1.94% 55.16%      140ms  4.52%  runtime.nilinterhash
+      50ms  1.61% 56.77%       50ms  1.61%  gophergraph/internal/graphdata.U32.At
+      50ms  1.61% 58.39%      550ms 17.74%  runtime.mallocgc
+      50ms  1.61% 60.00%       50ms  1.61%  runtime.memclrNoHeapPointers
+      50ms  1.61% 61.61%       50ms  1.61%  runtime.procPin (inline)
+      40ms  1.29% 62.90%      310ms 10.00%  encoding/json.stringEncoder
+      40ms  1.29% 64.19%       60ms  1.94%  gophergraph/graph.(*Graph).EdgeProperties

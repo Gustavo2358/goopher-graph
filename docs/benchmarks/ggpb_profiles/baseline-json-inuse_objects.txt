@@ -1,0 +1,32 @@
+File: encodingmeasure
+Build ID: 0d95136b3c01582f9188c9a9112b0037f9d17817
+Type: inuse_objects
+Time: 2026-10-06 16:02:03 -03
+Showing nodes accounting for 42643, 100% of 42644 total
+Dropped 4 nodes (cum <= 213)
+      flat  flat%   sum%        cum   cum%
+     42643   100%   100%      42643   100%  runtime.mallocgc
+         0     0%   100%      32768 76.84%  runtime.(*scavengerState).sleep
+         0     0%   100%      32768 76.84%  runtime.(*timer).maybeAdd
+         0     0%   100%      32768 76.84%  runtime.(*timer).modify
+         0     0%   100%      32768 76.84%  runtime.(*timer).reset (inline)
+         0     0%   100%      32768 76.84%  runtime.(*timers).addHeap
+         0     0%   100%       9363 21.96%  runtime.acquireSudog
+         0     0%   100%        512  1.20%  runtime.allocm
+         0     0%   100%      32768 76.84%  runtime.bgscavenge
+         0     0%   100%       9363 21.96%  runtime.gcBgMarkWorker
+         0     0%   100%       9363 21.96%  runtime.gcMarkDone
+         0     0%   100%      32768 76.84%  runtime.growslice
+         0     0%   100%        256   0.6%  runtime.mcall
+         0     0%   100%        256   0.6%  runtime.mstart
+         0     0%   100%        256   0.6%  runtime.mstart0
+         0     0%   100%        256   0.6%  runtime.mstart1
+         0     0%   100%        512  1.20%  runtime.newm
+         0     0%   100%       9875 23.16%  runtime.newobject
+         0     0%   100%        256   0.6%  runtime.park_m
+         0     0%   100%        512  1.20%  runtime.resetspinning
+         0     0%   100%        512  1.20%  runtime.schedule
+         0     0%   100%       9363 21.96%  runtime.semacquire (inline)
+         0     0%   100%       9363 21.96%  runtime.semacquire1
+         0     0%   100%        512  1.20%  runtime.startm
+         0     0%   100%        512  1.20%  runtime.wakep

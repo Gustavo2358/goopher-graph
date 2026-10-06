@@ -208,3 +208,7 @@ Evidência executada com dependências locais, GOPROXY=off e Go 1.26.0:
 [amostras brutas](docs/benchmarks/ggpb_samples.jsonl). Cópia limpa de `git archive`
 passou offline em graph/GGPB/E2E e build sem cgo, sem binários anteriores.
 Próximo: revisão do PR; nenhum merge autorizado nesta entrega.
+
+## Otimização GGPB — 2026-10-06
+
+Em andamento no PR #4, branch existente. Checkpoint 0: capturar CPU/alloc_space/alloc_objects de JSON, GGPB e inline no mesmo snapshot grande antes de alterar o hot path. Próximo: medir cada hipótese isoladamente.

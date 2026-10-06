@@ -1,0 +1,26 @@
+File: encodingmeasure
+Build ID: 0d95136b3c01582f9188c9a9112b0037f9d17817
+Type: alloc_space
+Time: 2026-10-06 16:02:03 -03
+Showing nodes accounting for 814.51MB, 99.08% of 822.09MB total
+Dropped 37 nodes (cum <= 4.11MB)
+      flat  flat%   sum%        cum   cum%
+     298MB 36.25% 36.25%   299.51MB 36.43%  encoding/json.Marshal
+  287.50MB 34.97% 71.22%   563.01MB 68.48%  gophergraph/graphjson.(*writer).text (inline)
+     136MB 16.54% 87.77%      136MB 16.54%  gophergraph/internal/graphdata.(*Data).String (inline)
+      67MB  8.15% 95.92%   238.50MB 29.01%  gophergraph/graphjson.(*writer).properties
+      11MB  1.34% 97.25%       11MB  1.34%  internal/strconv.FormatInt
+       8MB  0.97% 98.23%    28.50MB  3.47%  gophergraph/graphjson.(*writer).value
+       7MB  0.85% 99.08%        7MB  0.85%  gophergraph/graph.(*Graph).NodeLabels
+         0     0% 99.08%    39.50MB  4.80%  gophergraph/graph.(*Graph).EdgeExternalID
+         0     0% 99.08%       83MB 10.10%  gophergraph/graph.(*Graph).NodeExternalID
+         0     0% 99.08%    13.50MB  1.64%  gophergraph/graph.(*Graph).String
+         0     0% 99.08%   660.01MB 80.28%  gophergraph/graphjson.(*writer).edge
+         0     0% 99.08%   299.51MB 36.43%  gophergraph/graphjson.(*writer).json
+         0     0% 99.08%      156MB 18.98%  gophergraph/graphjson.(*writer).node
+         0     0% 99.08%   816.01MB 99.26%  gophergraph/graphjson.Write
+         0     0% 99.08%   819.59MB 99.70%  main.main
+         0     0% 99.08%   819.59MB 99.70%  main.run
+         0     0% 99.08%   816.01MB 99.26%  main.run.func1 (inline)
+         0     0% 99.08%   819.59MB 99.70%  runtime.main
+         0     0% 99.08%       11MB  1.34%  strconv.FormatInt (inline)

@@ -1,0 +1,34 @@
+File: encodingmeasure
+Build ID: 0d95136b3c01582f9188c9a9112b0037f9d17817
+Type: cpu
+Time: 2026-10-06 16:02:07 -03
+Duration: 3.22s, Total samples = 3970ms (123.39%)
+Showing nodes accounting for 2230ms, 56.17% of 3970ms total
+Dropped 94 nodes (cum <= 19.85ms)
+Showing top 25 nodes out of 169
+      flat  flat%   sum%        cum   cum%
+     250ms  6.30%  6.30%      250ms  6.30%  runtime.nextFreeFast (inline)
+     160ms  4.03% 10.33%      840ms 21.16%  google.golang.org/protobuf/internal/impl.(*MessageInfo).marshalAppendPointer
+     150ms  3.78% 14.11%      780ms 19.65%  runtime.mallocgcSmallScanNoHeader
+     150ms  3.78% 17.88%      150ms  3.78%  runtime.memclrNoHeapPointers
+     120ms  3.02% 20.91%      570ms 14.36%  google.golang.org/protobuf/internal/impl.(*MessageInfo).sizePointerSlow
+     120ms  3.02% 23.93%     3320ms 83.63%  gophergraph/ggpb.Emit
+     120ms  3.02% 26.95%      120ms  3.02%  runtime.futex
+     110ms  2.77% 29.72%      110ms  2.77%  google.golang.org/protobuf/encoding/protowire.AppendVarint
+      90ms  2.27% 31.99%     1050ms 26.45%  runtime.mallocgc
+      80ms  2.02% 34.01%      100ms  2.52%  gophergraph/graph.(*PropertyIterator).Next
+      80ms  2.02% 36.02%       80ms  2.02%  gophergraph/internal/graphdata.U64.At (inline)
+      80ms  2.02% 38.04%       90ms  2.27%  reflect.Value.Elem
+      80ms  2.02% 40.05%       80ms  2.02%  runtime.memmove
+      80ms  2.02% 42.07%       80ms  2.02%  unicode/utf8.ValidString
+      60ms  1.51% 43.58%      300ms  7.56%  gophergraph/internal/graphdata.(*Data).String (inline)
+      60ms  1.51% 45.09%       60ms  1.51%  runtime.acquirem (inline)
+      50ms  1.26% 46.35%      600ms 15.11%  google.golang.org/protobuf/internal/impl.(*MessageInfo).sizePointer
+      50ms  1.26% 47.61%      830ms 20.91%  google.golang.org/protobuf/internal/impl.appendMessageSliceInfo
+      50ms  1.26% 48.87%      160ms  4.03%  gophergraph/graph.(*Graph).NodeExternalID
+      50ms  1.26% 50.13%       60ms  1.51%  gophergraph/internal/graphdata.U32.At (inline)
+      50ms  1.26% 51.39%      140ms  3.53%  reflect.(*rtype).ptrTo
+      50ms  1.26% 52.64%       70ms  1.76%  runtime.(*mspan).writeHeapBitsSmall
+      50ms  1.26% 53.90%       50ms  1.26%  runtime.heapArenaOf
+      50ms  1.26% 55.16%       70ms  1.76%  runtime.typePointers.next
+      40ms  1.01% 56.17%       90ms  2.27%  google.golang.org/protobuf/encoding/protowire.AppendString (inline)

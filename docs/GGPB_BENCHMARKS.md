@@ -223,3 +223,24 @@ time com arquivo não estabelece menor custo de CPU do encoder.
 | 1.000 / 5.000 | 5,263 | 6,188 | 1.249.928 | 3.833.232 |
 | 10.000 / 50.000 | 50,586 | 48,109 | 12.396.512 | 36.727.432 |
 | 100.000 / 500.000 | 500,971 | 510,652 | 123.920.288 | 366.996.792 |
+
+## Campanha de otimização: checkpoint 0
+
+Baseline capturado antes de alterar o encoder, no HEAD a6e3d32. CPU profile cobre seis encodings com io.Discard após um warmup, snapshot/query abertos uma vez; memprofile amostrado inclui open/query e sete encodings (warmup incluído). Perfis de heap foram escritos após GC: não equivalem a peak heap. [Hotspots](benchmarks/ggpb_profiles/baseline-ggpb-cpu.txt), [alloc_space](benchmarks/ggpb_profiles/baseline-ggpb-alloc_space.txt), [alloc_objects](benchmarks/ggpb_profiles/baseline-ggpb-alloc_objects.txt). Tabelas de JSON/inline estão no mesmo diretório. Dados brutos dos quatro casos em [c0](benchmarks/ggpb_c0.jsonl).
+
+No GGPB, mallocgc soma 23,9% CPU cumulativa, marshalAppendPointer 21,3%, sizePointer 14,4%. Emit/property/closures concentram a alocação; Data.String representa 5,85% alloc_space e 15,74% alloc_objects. CRC/syscalls não dominam esse perfil com Discard. Porcentagens cumulativas têm sobreposição e não devem ser somadas.
+
+| Caso | Formato | Encode ms | CPU query+encode ms | TotalAlloc MiB | Allocs | Bytes | Consumer ms |
+|---|---|---|---|---|---|---|---|
+| 100 | json | 0.722 | 0.820 | 0.13 | 9377 | 72103 | 1.384 |
+| 100 | ggpb | 0.891 | 1.021 | 0.51 | 10414 | 29850 | 0.957 |
+| 100 | ggpb-inline | 0.885 | 1.019 | 0.49 | 10398 | 34096 | 0.864 |
+| 10000 | json | 59.423 | 64.975 | 11.98 | 936037 | 7212557 | 122.044 |
+| 10000 | ggpb | 59.022 | 70.807 | 35.32 | 931932 | 2984088 | 49.045 |
+| 10000 | ggpb-inline | 55.947 | 66.918 | 35.26 | 931079 | 3412371 | 49.366 |
+| 100000 | json | 556.494 | 610.529 | 120.18 | 9360212 | 72214059 | 1143.122 |
+| 100000 | ggpb | 510.982 | 607.138 | 352.13 | 9309134 | 29914323 | 422.519 |
+| 100000 | ggpb-inline | 605.020 | 702.232 | 351.50 | 9300716 | 34197379 | 596.339 |
+| empty | json | 0.058 | 0.129 | 0.01 | 114 | 178 | 0.052 |
+| empty | ggpb | 0.185 | 0.270 | 0.07 | 529 | 67 | 0.165 |
+| empty | ggpb-inline | 0.168 | 0.240 | 0.07 | 529 | 67 | 0.182 |
