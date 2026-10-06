@@ -102,6 +102,19 @@ func (v *validator) records(ctx context.Context, r *pb.Records) error {
 			return ErrLimit
 		}
 	}
+	if len(r.EndpointIds) > maxEndpoints {
+		return invalid("endpoint bounds")
+	}
+	endpointSize := 0
+	for _, s := range r.EndpointIds {
+		if e := text(s); e != nil {
+			return e
+		}
+		endpointSize += len(s)
+		if endpointSize > endpointBytes {
+			return ErrLimit
+		}
+	}
 	props := func(ps []*pb.Property) error {
 		for _, p := range ps {
 			if e := ctx.Err(); e != nil {
@@ -173,10 +186,16 @@ func (v *validator) records(ctx context.Context, r *pb.Records) error {
 				return invalid("missing edge")
 			}
 			if n.Id != nil {
-				if v.open != 0 || n.Source == nil || n.Target == nil || n.Label == nil {
+				if v.open != 0 || n.Label == nil {
 					return invalid("edge start")
 				}
-				for _, s := range []string{*n.Id, *n.Source, *n.Target} {
+				if _, e := endpoint(n.Source, n.SourceRef, r.EndpointIds); e != nil {
+					return e
+				}
+				if _, e := endpoint(n.Target, n.TargetRef, r.EndpointIds); e != nil {
+					return e
+				}
+				for _, s := range []string{*n.Id} {
 					if e := text(s); e != nil {
 						return e
 					}
@@ -191,7 +210,7 @@ func (v *validator) records(ctx context.Context, r *pb.Records) error {
 				v.lastEdge = *n.Id
 				v.open = 2
 				v.edges = true
-			} else if v.open != 2 || n.Source != nil || n.Target != nil || n.Label != nil {
+			} else if v.open != 2 || n.Source != nil || n.Target != nil || n.SourceRef != 0 || n.TargetRef != 0 || n.Label != nil {
 				return invalid("edge continuation")
 			}
 			if e := props(n.Properties); e != nil {
@@ -212,4 +231,17 @@ func (v *validator) end(e *pb.ResultEnd, nodes, edges uint64) error {
 		return invalid("incomplete result or counts")
 	}
 	return nil
+}
+
+func endpoint(inline *string, ref uint32, ids []string) (string, error) {
+	if ref != 0 {
+		if inline != nil || uint64(ref) > uint64(len(ids)) {
+			return "", invalid("endpoint reference")
+		}
+		return ids[ref-1], nil
+	}
+	if inline == nil {
+		return "", invalid("missing endpoint")
+	}
+	return *inline, text(*inline)
 }

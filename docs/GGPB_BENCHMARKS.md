@@ -257,3 +257,16 @@ Dicionário e cache bounded indexados por StringID somente dentro do adapter. Re
 | 10000 | 53.364 | 62.906 | 34.86 | 851673 | 2984088 | 46.141 | 55.408 |
 | 100000 | 484.577 | 585.396 | 347.59 | 8506529 | 29914323 | 417.655 | 491.571 |
 | empty | 0.175 | 0.251 | 0.07 | 528 | 67 | 0.166 | 0.017 |
+
+### B — referências locais de endpoints (KEEP)
+
+Records.endpoint_ids contém uma tabela lógica local de até 512 IDs externos/64 KiB; EdgePart.source_ref/target_ref são ordinais 1-based locais, nunca NodeID. Fallback inline para limites. Cache privado por NodeID elimina resoluções repetidas; refs transitórios não saem do adapter. Tabela global/ordinal de todos os nodes foi descartada por exigir retenção proporcional ao resultado; rank sem índice implicaria scan repetido dos sets. Grande: payload 29.914.323→22.070.295 bytes (−26,2% adicionais), allocations 8.506.529→7.746.858. Encode 484,577→498,489 ms (+2,9%) e CPU 585,396→596,853 (+2,0%); mantido pelo benefício substancial de bytes, explicitando o custo. Schema v1 ainda não estabilizado no PR; string source/target continuam como fallback legítimo, não protocolo experimental.
+
+[Dados brutos](benchmarks/ggpb_c2.jsonl). Medianas de três execuções; CPU/alloc cold incluem query. Resident abaixo mede somente encode, após warmup.
+
+| Caso | Encode cold ms | CPU cold ms | TotalAlloc MiB | Allocs | Payload bytes | Consumer ms | Encode residente ms |
+|---|---|---|---|---|---|---|---|
+| 100 | 1.066 | 1.215 | 0.49 | 8905 | 22026 | 0.884 | 0.632 |
+| 10000 | 54.391 | 66.205 | 34.80 | 775740 | 2199660 | 41.642 | 54.687 |
+| 100000 | 498.489 | 596.853 | 346.87 | 7746858 | 22070295 | 377.994 | 499.497 |
+| empty | 0.153 | 0.214 | 0.07 | 530 | 67 | 0.196 | 0.020 |

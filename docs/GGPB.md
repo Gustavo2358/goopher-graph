@@ -71,7 +71,7 @@ mmap no protocolo. Os nodes/edges seguem a ordem crescente de ID externo.
 
 `NodePart`/`EdgePart` permitem uma entidade atravessar batches: a primeira parte
 tem `id` **presente**, mesmo quando `""`; continuations omitem `id`. Na primeira
-parte de edge, `source`, `target` e `label` são obrigatórios. Continuations não
+parte de edge, os endpoints e `label` são obrigatórios. Cada endpoint usa exatamente uma forma: `source_ref`/`target_ref` não zero, apontando para `Records.endpoint_ids` (1-based), ou `source`/`target` inline presente. A tabela de endpoints é local ao batch, limitada a 512 entradas/64 KiB; refs não possuem semântica de NodeID/CSR/bitmap. Ela carrega IDs externos e torna cada batch independente para resolução de endpoints. Continuations não
 repetem esses campos. Partes são contíguas, sem intercalar entidades. `last=true`
 encerra a entidade. Labels precedem properties; cada lista concatena suas partes.
 Um node isolado e um resultado vazio são válidos. Paralelas e loops mantêm IDs
@@ -208,3 +208,5 @@ O consumidor Python opcional precisa do pacote oficial protobuf e do módulo
 result_pb2 gerado. Ele verifica framing, valores oneof, dictionaries, continuidade
 e contagens incrementalmente, e imprime contagens/tipos. Não é uma dependência
 operacional da engine nem um validador completo de entradas hostis.
+
+Labels/keys usam cache privado por StringID no encoder, limitado ao batch. Endpoints usam cache privado por NodeID. Nenhum desses IDs internos aparece no protocolo; apenas referências lógicas locais e os textos correspondentes.

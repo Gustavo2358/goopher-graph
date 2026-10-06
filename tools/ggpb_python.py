@@ -43,7 +43,12 @@ with open(a.input,'rb') as f:
                     if phase is not None: raise ValueError('interleaving')
                     phase=entity
                     if entity=='edge':
-                        if not record.HasField('source') or not record.HasField('target'): raise ValueError('endpoints')
+                        for field in ['source','target']:
+                            ref=getattr(record,field+'_ref')
+                            if ref:
+                                if record.HasField(field) or ref>len(records.endpoint_ids): raise ValueError('endpoint ref')
+                                external_id=records.endpoint_ids[ref-1]
+                            elif not record.HasField(field): raise ValueError('missing endpoint')
                         symbol(record.label)
                 elif phase!=entity: raise ValueError('continuation')
                 if entity=='node':

@@ -177,11 +177,11 @@ func Emit(ctx context.Context, g *graph.Graph, s *query.Subgraph, q Query, optio
 		if e != nil {
 			return e
 		}
-		source, e := g.NodeExternalID(edge.Source)
+		source, e := enc.endpointText(edge.Source)
 		if e != nil {
 			return e
 		}
-		target, e := g.NodeExternalID(edge.Target)
+		target, e := enc.endpointText(edge.Target)
 		if e != nil {
 			return e
 		}
@@ -194,7 +194,7 @@ func Emit(ctx context.Context, g *graph.Graph, s *query.Subgraph, q Query, optio
 				return ErrLimit
 			}
 		}
-		n := &pb.EdgePart{Id: &id, Source: &source, Target: &target, Label: &pb.Symbol{Text: label, Ref: uint32(edge.Label) + 1}}
+		n := &pb.EdgePart{Id: &id, Source: &source, Target: &target, SourceRef: uint32(edge.Source) + 1, TargetRef: uint32(edge.Target) + 1, Label: &pb.Symbol{Text: label, Ref: uint32(edge.Label) + 1}}
 		size := len(id) + len(source) + len(target) + len(label) + 64
 		flush := func(last bool) error {
 			n.Last = last
@@ -237,14 +237,18 @@ func Emit(ctx context.Context, g *graph.Graph, s *query.Subgraph, q Query, optio
 }
 
 type batcher struct {
-	emit            func(*pb.Batch) error
-	records         *pb.Records
-	dict            map[graph.StringID]uint32
-	g               *graph.Graph
-	cache           map[graph.StringID]string
-	cacheBytes      int
-	size, textBytes int
-	inline          bool
+	emit               func(*pb.Batch) error
+	records            *pb.Records
+	dict               map[graph.StringID]uint32
+	g                  *graph.Graph
+	cache              map[graph.StringID]string
+	cacheBytes         int
+	endpointCache      map[graph.NodeID]string
+	endpointCacheBytes int
+	endpoints          map[graph.NodeID]uint32
+	endpointBytes      int
+	size, textBytes    int
+	inline             bool
 }
 
 func (b *batcher) flush() error {
@@ -256,6 +260,10 @@ func (b *batcher) flush() error {
 	b.dict = nil
 	b.cache = nil
 	b.cacheBytes = 0
+	b.endpointCache = nil
+	b.endpointCacheBytes = 0
+	b.endpoints = nil
+	b.endpointBytes = 0
 	b.size = 0
 	b.textBytes = 0
 	return e
@@ -306,6 +314,8 @@ func (b *batcher) add(p *pb.Part, size int) error {
 		}
 	}
 	if n := p.GetEdge(); n != nil {
+		b.endpoint(&n.Source, &n.SourceRef)
+		b.endpoint(&n.Target, &n.TargetRef)
 		b.symbol(n.Label)
 		for _, p := range n.Properties {
 			b.symbol(p.Key)
@@ -378,4 +388,52 @@ func (b *batcher) string(id graph.StringID) (string, error) {
 		b.cacheBytes += len(s)
 	}
 	return s, nil
+}
+
+const maxEndpoints = 512
+const endpointBytes = 64 << 10
+
+func (b *batcher) endpointText(id graph.NodeID) (string, error) {
+	if s, ok := b.endpointCache[id]; ok {
+		return s, nil
+	}
+	s, e := b.g.NodeExternalID(id)
+	if e != nil {
+		return "", e
+	}
+	if len(s) > MaxScalar {
+		return "", ErrLimit
+	}
+	if len(b.endpointCache) < maxEndpoints && b.endpointCacheBytes+len(s) <= endpointBytes {
+		if b.endpointCache == nil {
+			b.endpointCache = make(map[graph.NodeID]string)
+		}
+		b.endpointCache[id] = s
+		b.endpointCacheBytes += len(s)
+	}
+	return s, nil
+}
+func (b *batcher) endpoint(inline **string, ref *uint32) {
+	if *inline == nil {
+		return
+	}
+	id := graph.NodeID(*ref - 1)
+	if v, ok := b.endpoints[id]; ok {
+		*ref = v
+		*inline = nil
+		return
+	}
+	s := **inline
+	if len(b.endpoints) >= maxEndpoints || b.endpointBytes+len(s) > endpointBytes {
+		*ref = 0
+		return
+	}
+	if b.endpoints == nil {
+		b.endpoints = make(map[graph.NodeID]uint32)
+	}
+	b.records.EndpointIds = append(b.records.EndpointIds, s)
+	b.endpointBytes += len(s)
+	*ref = uint32(len(b.records.EndpointIds))
+	b.endpoints[id] = *ref
+	*inline = nil
 }
