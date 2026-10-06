@@ -335,3 +335,24 @@ Batches usam o limite conservador pré-interning já existente; somente um envel
 | 10000 | 18.032 | 21.499 | 1.54 | 76025 | 2199660 | 39.337 | 17.901 |
 | 100000 | 178.254 | 210.229 | 12.26 | 738292 | 22070295 | 372.788 | 179.830 |
 | empty | 0.036 | 0.099 | 0.01 | 49 | 67 | 0.185 | 0.017 |
+
+### E — matriz de batches (KEEP default / REJECT maiores)
+
+Alvos 64/128/256/512/1024/2048 KiB, com cap de 256 partes e com cap experimental de 4096. Cache de slots continuou limitado a 256, tables mantiveram limites; cada variante medida nas quatro escalas cold/resident, três repetições. [Todos os dados](benchmarks/ggpb_batch_matrix.jsonl). Com 256 partes o cap de records domina e mudar alvo não muda os bytes: nenhum ganho consistente justifica alterar o default. Aumentar o cap introduz objetos além do cache e esgota a tabela de endpoints, com fallback inline; piora tempo/alloc/payload. Mantidos 256 partes/256 KiB como antes, adequados para backpressure e mensagens pequenas no futuro gRPC. Nenhuma opção experimental entrou no produto.
+
+| Cap partes | Target KiB | Encode grande ms | CPU ms | TotalAlloc MiB | Allocs | Payload bytes | Consumer ms | HeapAfter MiB |
+|---|---|---|---|---|---|---|---|---|
+| 256 | 64 | 178.676 | 210.746 | 12.26 | 738289 | 22070295 | 375.470 | 3.63 |
+| 256 | 128 | 178.378 | 210.403 | 12.27 | 738297 | 22070295 | 374.095 | 3.62 |
+| 256 | 256 | 179.948 | 212.500 | 12.26 | 738291 | 22070295 | 377.067 | 3.64 |
+| 256 | 512 | 178.854 | 210.224 | 12.26 | 738292 | 22070295 | 373.045 | 3.63 |
+| 256 | 1024 | 175.490 | 207.151 | 12.27 | 738297 | 22070295 | 373.832 | 3.63 |
+| 256 | 2048 | 178.966 | 211.275 | 12.27 | 738298 | 22070295 | 377.050 | 3.62 |
+| 4096 | 64 | 223.948 | 290.689 | 174.26 | 1919833 | 22009602 | 371.473 | 2.19 |
+| 4096 | 128 | 272.291 | 406.705 | 302.02 | 2850471 | 22154725 | 377.485 | 2.01 |
+| 4096 | 256 | 325.108 | 570.606 | 366.13 | 3315691 | 22403986 | 382.023 | 2.90 |
+| 4096 | 512 | 332.904 | 545.311 | 400.92 | 3699129 | 23820940 | 428.329 | 3.32 |
+| 4096 | 1024 | 360.570 | 713.372 | 408.64 | 3828849 | 24581109 | 431.834 | 6.23 |
+| 4096 | 2048 | 368.129 | 729.538 | 408.63 | 3828846 | 24581109 | 431.410 | 6.23 |
+
+HeapAfter é heap alocado no término, incluindo lixo ainda não coletado, não peak live. Amostragem de heap vivo/batches é qualificada separadamente fora dos tempos.
