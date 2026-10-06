@@ -441,3 +441,16 @@ Três ondas por combinação, nas quatro escalas; [192 amostras](benchmarks/ggpb
 | 8 | 8 | 1257.648 | 6.36 | 1211.468 | 1376.669 | 286.50 | 6259787 |
 
 O clone domina o pipeline paralelo: uma query passa de ~166 ms encoding/12 MiB alocados para ~559–565 ms/286 MiB. Nem 8 workers recuperam esse custo; com 8 queries o caminho sequencial entrega ~26 queries/s, contra ~6 no paralelo. Rejeitado. Distribuir diretamente a materialização exigiria mudar a montagem/particionamento de batches para preservar exatamente os bytes e lidar com continuations; sem benefício deste protótipo, não foi introduzido outro scheduler/segundo traversal. A capacidade existente de queries concorrentes escala melhor neste workload. Não se extrapola throughput do sintético para produção.
+
+### G — caches de strings entre batches (REJECT)
+
+Cache bounded de StringID persistiu entre batches; endpoint cache bounded teve limpeza por capacidade, independente do dictionary local. Grande: 178,254→172,318 ms (−3,3%), contra 175,187 ms na requalificação final; TotalAlloc 12,26→12,21 MiB (−0,4%), allocations 738.292→729.336 (−1,2%). Sem benefício relevante e com nova política de eviction, revertido. A/B já removem as chamadas repetidas mais importantes. Value.Text é apenas accessor: a cópia mmap→string ocorre em PropertyIterator.Next/Data.String, não no accessor. Nenhuma nova API de bytes/unsafe foi adicionada ao core. O perfil final quantifica a parcela remanescente; não se afirma que ela seja um limite inevitável.
+
+[Dados brutos](benchmarks/ggpb_g-caches.jsonl). Medianas de três execuções; CPU/alloc cold incluem query. Resident abaixo mede somente encode, após warmup.
+
+| Caso | Encode cold ms | CPU cold ms | TotalAlloc MiB | Allocs | Payload bytes | Consumer ms | Encode residente ms |
+|---|---|---|---|---|---|---|---|
+| 100 | 0.523 | 0.634 | 0.32 | 2498 | 22026 | 0.938 | 0.361 |
+| 10000 | 17.874 | 20.911 | 1.58 | 75139 | 2199660 | 39.558 | 18.082 |
+| 100000 | 172.318 | 204.119 | 12.21 | 729336 | 22070295 | 379.407 | 179.426 |
+| empty | 0.034 | 0.121 | 0.01 | 49 | 67 | 0.177 | 0.014 |
