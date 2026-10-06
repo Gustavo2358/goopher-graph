@@ -102,12 +102,24 @@ func Emit(ctx context.Context, g *graph.Graph, s *query.Subgraph, q Query, optio
 		if len(id) > MaxScalar {
 			return ErrLimit
 		}
-		n := &pb.NodePart{Id: &id}
+		slot := enc.slot()
+		slot.id = id
+		n := &slot.node
+		n.Id = &slot.id
+		slot.nodeWrap.Node = n
+		slot.part.Entity = &slot.nodeWrap
 		size := len(id) + 8
 		flush := func(last bool) error {
 			n.Last = last
-			e := enc.add(&pb.Part{Entity: &pb.Part_Node{Node: n}}, size)
-			n = &pb.NodePart{}
+			n.Labels = slot.ls
+			n.Properties = slot.ps
+			e := enc.addSlot(slot, size)
+			if !last {
+				slot = enc.slot()
+				n = &slot.node
+				slot.nodeWrap.Node = n
+				slot.part.Entity = &slot.nodeWrap
+			}
 			size = 0
 			return e
 		}
@@ -131,7 +143,7 @@ func Emit(ctx context.Context, g *graph.Graph, s *query.Subgraph, q Query, optio
 					return e
 				}
 			}
-			n.Labels = append(n.Labels, &pb.Symbol{Text: text, Ref: uint32(ls.ID()) + 1})
+			slot.label(text, uint32(ls.ID())+1)
 			size += len(text) + 12
 		}
 		if e := ls.Err(); e != nil {
@@ -145,16 +157,16 @@ func Emit(ctx context.Context, g *graph.Graph, s *query.Subgraph, q Query, optio
 			if e := ctx.Err(); e != nil {
 				return e
 			}
-			p, e := enc.property(props.Property())
-			if e != nil {
-				return e
-			}
 			if size >= partTarget {
 				if e := flush(false); e != nil {
 					return e
 				}
 			}
-			n.Properties = append(n.Properties, p)
+			p, e := enc.property(slot, props.Property())
+			if e != nil {
+				return e
+			}
+			slot.ps = append(slot.ps, p)
 			size += propertyBound(p)
 		}
 		if e := props.Err(); e != nil {
@@ -194,12 +206,30 @@ func Emit(ctx context.Context, g *graph.Graph, s *query.Subgraph, q Query, optio
 				return ErrLimit
 			}
 		}
-		n := &pb.EdgePart{Id: &id, Source: &source, Target: &target, SourceRef: uint32(edge.Source) + 1, TargetRef: uint32(edge.Target) + 1, Label: &pb.Symbol{Text: label, Ref: uint32(edge.Label) + 1}}
+		slot := enc.slot()
+		slot.id = id
+		slot.source = source
+		slot.target = target
+		n := &slot.edge
+		n.Id = &slot.id
+		n.Source = &slot.source
+		n.Target = &slot.target
+		n.SourceRef = uint32(edge.Source) + 1
+		n.TargetRef = uint32(edge.Target) + 1
+		n.Label = slot.label(label, uint32(edge.Label)+1)
+		slot.edgeWrap.Edge = n
+		slot.part.Entity = &slot.edgeWrap
 		size := len(id) + len(source) + len(target) + len(label) + 64
 		flush := func(last bool) error {
 			n.Last = last
-			e := enc.add(&pb.Part{Entity: &pb.Part_Edge{Edge: n}}, size)
-			n = &pb.EdgePart{}
+			n.Properties = slot.ps
+			e := enc.addSlot(slot, size)
+			if !last {
+				slot = enc.slot()
+				n = &slot.edge
+				slot.edgeWrap.Edge = n
+				slot.part.Entity = &slot.edgeWrap
+			}
 			size = 0
 			return e
 		}
@@ -211,16 +241,16 @@ func Emit(ctx context.Context, g *graph.Graph, s *query.Subgraph, q Query, optio
 			if e := ctx.Err(); e != nil {
 				return e
 			}
-			p, e := enc.property(props.Property())
-			if e != nil {
-				return e
-			}
 			if size >= partTarget {
 				if e := flush(false); e != nil {
 					return e
 				}
 			}
-			n.Properties = append(n.Properties, p)
+			p, e := enc.property(slot, props.Property())
+			if e != nil {
+				return e
+			}
+			slot.ps = append(slot.ps, p)
 			size += propertyBound(p)
 		}
 		if e := props.Err(); e != nil {
@@ -247,6 +277,7 @@ type batcher struct {
 	endpointCacheBytes int
 	endpoints          map[graph.NodeID]uint32
 	endpointBytes      int
+	free, used         []*recordSlot
 	size, textBytes    int
 	inline             bool
 }
@@ -256,6 +287,14 @@ func (b *batcher) flush() error {
 		return nil
 	}
 	e := b.emit(&pb.Batch{Payload: &pb.Batch_Records{Records: b.records}})
+	for _, s := range b.used {
+		if cap(s.props) <= 16 && cap(s.labels) <= 16 && len(b.free) < maxParts {
+			s.reset()
+			b.free = append(b.free, s)
+		}
+	}
+	clear(b.used)
+	b.used = b.used[:0]
 	b.records = nil
 	b.dict = nil
 	b.cache = nil
@@ -325,7 +364,7 @@ func (b *batcher) add(p *pb.Part, size int) error {
 	b.size += size
 	return nil
 }
-func (b *batcher) property(p graph.Property) (*pb.Property, error) {
+func (b *batcher) property(slot *recordSlot, p graph.Property) (*pb.Property, error) {
 	key, e := b.string(p.Key)
 	if e != nil {
 		return nil, e
@@ -333,26 +372,37 @@ func (b *batcher) property(p graph.Property) (*pb.Property, error) {
 	if len(key) > MaxScalar {
 		return nil, ErrLimit
 	}
-	out := &pb.Property{Key: &pb.Symbol{Text: key, Ref: uint32(p.Key) + 1}, Kind: pb.Kind(p.Value.Kind())}
+	slot.props = append(slot.props, propertySlot{})
+	ps := &slot.props[len(slot.props)-1]
+	out := &ps.p
+	out.Key = &ps.key
+	out.Key.Text = key
+	out.Key.Ref = uint32(p.Key) + 1
+	out.Kind = pb.Kind(p.Value.Kind())
 	switch p.Value.Kind() {
 	case graph.BoolKind:
 		v, _ := p.Value.Bool()
-		out.Value = &pb.Property_Boolean{Boolean: v}
+		ps.boolean.Boolean = v
+		out.Value = &ps.boolean
 	case graph.ByteKind, graph.ShortKind, graph.IntKind, graph.LongKind:
 		v, _ := p.Value.Int64()
-		out.Value = &pb.Property_Integer{Integer: v}
+		ps.integer.Integer = v
+		out.Value = &ps.integer
 	case graph.FloatKind:
 		v, _ := p.Value.Float64()
-		out.Value = &pb.Property_FloatValue{FloatValue: float32(v)}
+		ps.float.FloatValue = float32(v)
+		out.Value = &ps.float
 	case graph.DoubleKind:
 		v, _ := p.Value.Float64()
-		out.Value = &pb.Property_DoubleValue{DoubleValue: v}
+		ps.double.DoubleValue = v
+		out.Value = &ps.double
 	case graph.StringKind, graph.DateKind, graph.DatetimeKind:
 		v, _ := p.Value.Text()
 		if len(v) > MaxScalar {
 			return nil, ErrLimit
 		}
-		out.Value = &pb.Property_Text{Text: v}
+		ps.text.Text = v
+		out.Value = &ps.text
 	default:
 		return nil, graph.ErrInvalidValue
 	}

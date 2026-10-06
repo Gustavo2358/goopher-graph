@@ -270,3 +270,16 @@ Records.endpoint_ids contém uma tabela lógica local de até 512 IDs externos/6
 | 10000 | 54.391 | 66.205 | 34.80 | 775740 | 2199660 | 41.642 | 54.687 |
 | 100000 | 498.489 | 596.853 | 346.87 | 7746858 | 22070295 | 377.994 | 499.497 |
 | empty | 0.153 | 0.214 | 0.07 | 530 | 67 | 0.196 | 0.020 |
+
+### C1 — reuso bounded de objetos/slices (KEEP)
+
+Slots locais concretos reutilizam Part/NodePart/EdgePart, Symbol/Property e wrappers tipados após callback síncrono. Sem pool global, unsafe ou allocator genérico. Partes grandes (mais de 16 properties/labels de capacidade) são liberadas; cache tem no máximo 256 slots. Grande c2→C1: 498,489→349,586 ms (−29,9%); CPU 596,853→387,062 ms; TotalAlloc 346,87→34,06 MiB (−90,2%); allocations 7.746.858→819.162. Mesmos bytes. O buffer MarshalAppend já era reutilizado no baseline; C2 abaixo avalia maps/Records também.
+
+[Dados brutos](benchmarks/ggpb_c3-reuse.jsonl). Medianas de três execuções; CPU/alloc cold incluem query. Resident abaixo mede somente encode, após warmup.
+
+| Caso | Encode cold ms | CPU cold ms | TotalAlloc MiB | Allocs | Payload bytes | Consumer ms | Encode residente ms |
+|---|---|---|---|---|---|---|---|
+| 100 | 0.901 | 1.042 | 0.41 | 3636 | 22026 | 0.767 | 0.560 |
+| 10000 | 36.834 | 40.966 | 3.79 | 85044 | 2199660 | 41.943 | 36.594 |
+| 100000 | 349.586 | 387.062 | 34.06 | 819162 | 22070295 | 374.213 | 357.199 |
+| empty | 0.173 | 0.242 | 0.07 | 531 | 67 | 0.143 | 0.018 |
