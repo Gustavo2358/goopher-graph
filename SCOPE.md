@@ -47,3 +47,12 @@ WASM e argumentos; retorna o contrato graphjson existente. O SDK e os limites
 estão em [WASM](docs/WASM.md). Essa extensão não altera o snapshot nem as queries
 nativas. HTTP, registry, S3, autenticação e compilação de source no servidor
 continuam excluídos.
+
+## Extensão solicitada: resultados GGPB
+
+Adapter Protobuf lógico e versionado, externo ao core; query completa → Subgraph
+→ batches limitados → framing de arquivo. CLI das três queries nativas, WASM e decoder
+incremental para o contrato JSON. [Contrato](docs/GGPB.md) e
+[medições](docs/GGPB_BENCHMARKS.md). Runtime oficial Protobuf autorizado por essa
+extensão. Dicionários locais não alteram layout de snapshot nem execução da query.
+API gRPC, HTTP, Lambda e streaming durante traversal permanecem excluídos.

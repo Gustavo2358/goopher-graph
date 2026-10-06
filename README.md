@@ -12,7 +12,7 @@ Em Ubuntu, as ferramentas podem ser instaladas globalmente com:
 sudo apt-get install golang-go build-essential python3 time graphviz
 ```
 
-A única dependência Go é `golang.org/x/sys/unix`, isolada no adapter de mmap. Prepare o cache pelo gerenciador normal de módulos antes de construir/testar:
+As dependências Go são `golang.org/x/sys/unix` (adapter mmap), wazero (queries WASM) e o runtime oficial Protobuf (adapter GGPB). Prepare o cache pelo gerenciador normal de módulos antes de construir/testar:
 
 ```sh
 GOTOOLCHAIN=local go mod download
@@ -56,7 +56,7 @@ D
 F
 ```
 
-- CSV de IDs omite a origem por padrão; `--include-origin` a inclui. DOT e JSON incluem todo o subgrafo e preservam paralelas e loops.
+- CSV de IDs omite a origem por padrão; `--include-origin` a inclui. DOT, JSON e GGPB incluem todo o subgrafo e preservam paralelas e loops.
 - Um ID vazio é válido: passe `--node=""`. IDs com vírgulas, aspas e quebras de linha recebem escaping CSV.
 - Sem `--edge-label`, todas as relações são permitidas. Um label inexistente produz filtro vazio e alcance reflexivo.
 - `between(A,B)` retorna a interseção do alcance forward de A com o alcance reverse de B, com todas as edges permitidas entre os membros. Em ciclos, essa região pode incluir passeios que não são caminhos simples.
@@ -169,3 +169,20 @@ bin/gophergraph wasm --snapshot /tmp/graph.snapshot --module /tmp/between.wasm -
 ```
 
 Veja [Host API, SDK, exemplos, lifecycle e limites](docs/WASM.md).
+
+## Resultados Protobuf GGPB
+
+As três queries nativas e `wasm` aceitam `--format ggpb`; WASM mantém JSON como padrão. O resultado é autocontido,
+versionado e escrito como batches Protobuf limitados, com framing/checksum.
+**GGPB é um protocolo lógico compacto, não um snapshot e não um dump das
+estruturas internas do engine.**
+
+```sh
+bin/gophergraph territory --snapshot bin/topology.snapshot --node A \
+  --format ggpb --output bin/territory.ggpb
+bin/gophergraph decode --input bin/territory.ggpb --format json
+```
+
+O decoder funciona sem o snapshot e preserva o contrato JSON existente.
+[Formato, API e limites](docs/GGPB.md); [campanha JSON vs GGPB](docs/GGPB_BENCHMARKS.md).
+Batches lógicos podem alimentar um futuro stream gRPC, ainda fora do escopo.

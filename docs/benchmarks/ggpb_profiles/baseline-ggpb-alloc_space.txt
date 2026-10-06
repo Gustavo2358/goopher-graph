@@ -1,0 +1,20 @@
+File: encodingmeasure
+Build ID: 0d95136b3c01582f9188c9a9112b0037f9d17817
+Type: alloc_space
+Time: 2026-10-06 16:02:07 -03
+Showing nodes accounting for 2468.26MB, 99.55% of 2479.38MB total
+Dropped 30 nodes (cum <= 12.40MB)
+      flat  flat%   sum%        cum   cum%
+  875.06MB 35.29% 35.29%  2474.26MB 99.79%  gophergraph/ggpb.Emit
+  702.04MB 28.32% 63.61%   703.04MB 28.36%  gophergraph/ggpb.property
+  573.55MB 23.13% 86.74%   634.63MB 25.60%  gophergraph/ggpb.Emit.func3 (inline)
+     145MB  5.85% 92.59%      145MB  5.85%  gophergraph/internal/graphdata.(*Data).String (inline)
+  108.51MB  4.38% 96.97%   117.52MB  4.74%  gophergraph/ggpb.Emit.func2 (inline)
+   64.09MB  2.58% 99.55%    70.09MB  2.83%  gophergraph/ggpb.(*batcher).add
+         0     0% 99.55%  2474.26MB 99.79%  gophergraph/ggpb.WriteOptions
+         0     0% 99.55%    43.50MB  1.75%  gophergraph/graph.(*Graph).EdgeExternalID
+         0     0% 99.55%    90.50MB  3.65%  gophergraph/graph.(*Graph).NodeExternalID
+         0     0% 99.55%  2477.88MB 99.94%  main.main
+         0     0% 99.55%  2477.88MB 99.94%  main.run
+         0     0% 99.55%  2474.26MB 99.79%  main.run.func1 (inline)
+         0     0% 99.55%  2477.88MB 99.94%  runtime.main

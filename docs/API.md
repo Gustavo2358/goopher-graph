@@ -64,3 +64,9 @@ Os arquivos `.go.txt` são documentação de assinaturas: checagem sintática do
 `Options{}` usa limites padrão: MaxRecordBytes=67108864 e MaxColumns=65536. Zero nesses campos significa default na API; valor explícito fora da faixa é erro de configuração. Para MaxColumns, a faixa configurável é 1..65536. A CLI distingue ausência de flag de `--max-record-bytes=0`, que é uso inválido. Contexto nil não é suportado: o driver usa Background/sinal e propaga cancelamento.
 
 FindString informa `(id, found, error)` para distinguir ausência de string de Graph fechado. Não transformar ErrClosed em conjunto vazio. As operações de conjunto não leem bytes do mapping, mas sua identidade continua sendo a do Graph em que nasceram.
+
+## GGPB
+
+`ggpb.Write`, `ggpb.Emit`, `ggpb.EmitEncoded`, `ggpb.NewReader`/`Next` e `ggpb.JSON` formam a API de
+exportação/consumo incremental. O contrato lógico é `ggpb/pb/result.proto`.
+Ver [GGPB](GGPB.md) para ownership, limites, framing e compatibilidade.

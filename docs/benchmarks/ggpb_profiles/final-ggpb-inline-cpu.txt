@@ -1,0 +1,34 @@
+File: encodingmeasure
+Build ID: 016fe191a28a0f81ea2ee9f9ec8da1e4abe19f7c
+Type: cpu
+Time: 2026-10-06 16:53:39 -03
+Duration: 3.38s, Total samples = 3450ms (102.15%)
+Showing nodes accounting for 2670ms, 77.39% of 3450ms total
+Dropped 48 nodes (cum <= 17.25ms)
+Showing top 25 nodes out of 72
+      flat  flat%   sum%        cum   cum%
+     320ms  9.28%  9.28%      320ms  9.28%  google.golang.org/protobuf/encoding/protowire.AppendVarint
+     210ms  6.09% 15.36%     1000ms 28.99%  gophergraph/ggpb.(*wireEncoder).batch
+     210ms  6.09% 21.45%     3410ms 98.84%  gophergraph/ggpb.Emit
+     150ms  4.35% 25.80%      200ms  5.80%  gophergraph/graph.(*PropertyIterator).Next
+     130ms  3.77% 29.57%      130ms  3.77%  internal/runtime/maps.(*groupReference).key (inline)
+     130ms  3.77% 33.33%      470ms 13.62%  runtime.mapaccess2_fast32
+     120ms  3.48% 36.81%      120ms  3.48%  runtime.memhash32
+     110ms  3.19% 40.00%      160ms  4.64%  gophergraph/graph.(*Graph).properties
+     100ms  2.90% 42.90%     1790ms 51.88%  gophergraph/ggpb.(*batcher).add
+     100ms  2.90% 45.80%      100ms  2.90%  gophergraph/ggpb.(*recordSlot).label (inline)
+     100ms  2.90% 48.70%      140ms  4.06%  gophergraph/graph.(*Graph).Edge
+     100ms  2.90% 51.59%      100ms  2.90%  runtime.memclrNoHeapPointers
+      90ms  2.61% 54.20%      300ms  8.70%  gophergraph/internal/graphdata.(*Data).String (inline)
+      90ms  2.61% 56.81%      110ms  3.19%  gophergraph/internal/graphdata.U64.At (inline)
+      80ms  2.32% 59.13%      180ms  5.22%  gophergraph/ggpb.(*batcher).property
+      80ms  2.32% 61.45%      110ms  3.19%  gophergraph/ggpb.symSize
+      80ms  2.32% 63.77%       80ms  2.32%  internal/runtime/maps.ctrlGroup.matchH2 (inline)
+      70ms  2.03% 65.80%      300ms  8.70%  gophergraph/ggpb.prop
+      70ms  2.03% 67.83%       70ms  2.03%  runtime.memmove
+      60ms  1.74% 69.57%      180ms  5.22%  gophergraph/ggpb.(*recordSlot).reset (inline)
+      60ms  1.74% 71.30%      160ms  4.64%  gophergraph/ggpb.str
+      60ms  1.74% 73.04%       60ms  1.74%  math/bits.LeadingZeros64 (inline)
+      50ms  1.45% 74.49%     1840ms 53.33%  gophergraph/ggpb.(*batcher).addSlot (inline)
+      50ms  1.45% 75.94%      190ms  5.51%  gophergraph/ggpb.field
+      50ms  1.45% 77.39%      190ms  5.51%  gophergraph/graph.(*Graph).EdgeProperties (inline)

@@ -1,0 +1,91 @@
+syntax = "proto3";
+package gophergraph.ggpb.v1;
+option go_package = "gophergraph/ggpb/pb";
+
+// Logical messages; the .ggpb file framing is independent of this schema.
+message Batch {
+  oneof payload {
+    ResultHeader header = 1;
+    Records records = 2;
+    ResultEnd end = 3;
+  }
+}
+message Query {
+  string name = 1;
+  optional string node = 2;
+  optional string from = 3;
+  optional string to = 4;
+  bool filtered = 5; // false => unrestricted; true + empty => no labels
+  repeated string edge_labels = 6;
+}
+message ResultHeader {
+  uint32 version = 1;
+  Query query = 2;
+  bool directed = 3;
+  bool partial_snapshot = 4;
+  uint64 nodes = 5;
+  uint64 edges = 6;
+}
+// Dictionary is LOCAL to this Records batch. References are 1-based.
+// Zero references use the inline string, including an empty string.
+message Records {
+  repeated string dictionary = 1;
+  repeated Part parts = 2;
+  repeated string endpoint_ids = 3; // LOCAL 1-based logical endpoint references
+}
+message Part {
+  oneof entity {
+    NodePart node = 1;
+    EdgePart edge = 2;
+  }
+}
+// First part has id present, continuations omit it. Parts are contiguous.
+// Labels and properties concatenate in order; last closes the entity.
+message NodePart {
+  optional string id = 1;
+  repeated Symbol labels = 2;
+  repeated Property properties = 3;
+  bool last = 4;
+}
+message EdgePart {
+  optional string id = 1;
+  optional string source = 2;
+  optional string target = 3;
+  Symbol label = 4;
+  repeated Property properties = 5;
+  bool last = 6;
+  uint32 source_ref = 7; // either this ref or optional source inline, never both
+  uint32 target_ref = 8;
+}
+message Symbol {
+  uint32 ref = 1;
+  string text = 2;
+}
+enum Kind {
+  INVALID = 0;
+  BOOL = 1;
+  BYTE = 2;
+  SHORT = 3;
+  INT = 4;
+  LONG = 5;
+  FLOAT = 6;
+  DOUBLE = 7;
+  STRING = 8;
+  DATE = 9;
+  DATETIME = 10;
+}
+message Property {
+  Symbol key = 1;
+  Kind kind = 2;
+  oneof value {
+    bool boolean = 3;
+    sint64 integer = 4;
+    float float_value = 5;
+    double double_value = 6;
+    string text = 7;
+  }
+}
+message ResultEnd {
+  uint64 nodes = 1;
+  uint64 edges = 2;
+}

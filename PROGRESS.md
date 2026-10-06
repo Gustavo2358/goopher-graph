@@ -166,3 +166,79 @@ três merges é idêntico à árvore validada no fechamento WASM acima. As evid�
 de regressão, race, vet, build e fuzz continuam aplicáveis; esta atualização
 altera somente o registro de progresso. Branch local `main` atualizada por
 fast-forward. Campanha encerrada.
+
+## Campanha GGPB — 2026-10-06
+
+Campanha concluída; [PR #4](https://github.com/Gustavo2358/goopher-graph/pull/4)
+aberto para revisão, sem merge. Branch `feat/ggpb-streaming-results` publicada.
+Adapter externo `ggpb`/`ggpb/pb`, batches Protobuf limitados, framing CRC32,
+reader incremental e CLI `--format ggpb` / `decode --format json`, incluindo
+WASM (JSON continua padrão, sem mudar runtime/SDK). Única extensão
+mínima do core: IterateNodeLabels sem cópia, para limitar memória mesmo em um node
+com muitos labels. Queries, sets, snapshot e formatos anteriores preservados.
+
+Evidência executada com dependências locais, GOPROXY=off e Go 1.26.0:
+
+- `go test -count=1 ./...`, `CGO_ENABLED=1 go test -race -count=1 ./...`,
+  `go vet ./...`, gofmt, `CGO_ENABLED=0 go build`: passaram.
+- Framing/golden, truncamento de todos os prefixos, corrupção, Protobuf inválido,
+  versão, ordering/continuidade/counts, erro de I/O, short writes, cancelamento,
+  vazios, tipos/extremos, labels e 30 mil properties em partes passaram.
+- Paridade JSON byte a byte nos seis goldens e casos adicionais; CLI nas três
+  queries, partial, filtros, IDs vazios, stdout/arquivo e proteção de input.
+  WASM completo/parcial também passou em GGPB → JSON com metadata idêntica.
+- Memória: 214.422.538 bytes descartados em 100 mil nodes/edges, heap auxiliar
+  vivo amostrado 365.752 bytes; mesma tolerância fixa nas duas escalas. Não foi
+  usado buffer de resultado nem dictionary global. Iterador de labels não aloca.
+- Fuzz: GGPB 10.000, Neptune 10.000, snapshot 10.000 e WASM 10.008 execuções;
+  sem falhas. `go test -run '^$' -bench . -benchmem -benchtime=1x ./...` passou.
+- Campanha real: 300 amostras, três escalas/três queries e caso vazio, producer
+  e consumer em processos separados; cinco repetições/format com hashes iguais.
+  Territory grande: payload −58,58%, encoding 1,08x mais rápido, decode 2,69x;
+  CPU producer +0,6%, RSS 57,30 → 57,94 MiB, TotalAlloc ~120 → ~352 MiB.
+  Casos pequenos/vazios e io.Discard grande foram mais lentos em GGPB.
+- Conversão real do payload grande comparada por cmp ao JSON direto; três
+  emissões de 29.914.323 bytes tiveram mesmo SHA-256. Python oficial Protobuf
+  validou arquivo grande e fixtures typed/numeric/presence com os dez tipos.
+- `python3 tools/check_package.py` e `git diff --check`: passaram. Nenhuma
+  fixture/golden original alterada. GOCACHE em /tmp e TMPDIR em .measure/tmp
+  contornam somente as restrições/broken /tmp/.git do ambiente de teste.
+
+[Contrato](docs/GGPB.md), [resultados completos](docs/GGPB_BENCHMARKS.md) e
+[amostras brutas](docs/benchmarks/ggpb_samples.jsonl). Cópia limpa de `git archive`
+passou offline em graph/GGPB/E2E e build sem cgo, sem binários anteriores.
+Próximo: revisão do PR; nenhum merge autorizado nesta entrega.
+
+## Otimização GGPB — 2026-10-06
+
+Em andamento no PR #4, branch existente. Checkpoint 0: capturar CPU/alloc_space/alloc_objects de JSON, GGPB e inline no mesmo snapshot grande antes de alterar o hot path. Próximo: medir cada hipótese isoladamente.
+
+Checkpoint A concluído: StringID dictionary/cache bounded, sem mudar wire; testes ggpb/graph/E2E passaram. Quatro casos cold/resident medidos; grande encode −5,2%, allocations −8,6%. Próximo: endpoints lógicos locais.
+
+Checkpoint B concluído: endpoints locais bounded, schema/reader/JSON/Python atualizados; teste falhou antes, ggpb/E2E e consumidor Python grande passaram. Payload adicional −26,2%, encoding +2,9% justificado pela redução. Próximo: reuso de objetos.
+
+Checkpoint C1 concluído: reuso local de slots e slices, ggpb/E2E/vet passaram; quatro escalas medidas. Encoding grande −29,9%, bytes alocados −90,2%, wire idêntico. Próximo: C2 e proto.Size isolados.
+
+Checkpoint C2 concluído: maps/Records/slices reutilizados, testes ggpb e matriz cold/resident passaram. Grande encoding −5,2%, TotalAlloc −63,8%. Próximo: medir eliminação do Size externo.
+
+Experimento D1 concluído/rejeitado: remover Size externo não ganhou no marshaler gerado (331,5→333,0 ms); revertido. Testes ggpb passaram. Próximo: protowire sobre slots reutilizados.
+
+Checkpoint C3 concluído: protowire específico, EmitEncoded transport-neutral, mesmo wire; ggpb/E2E e diferenciais oficiais passaram. Encoding −21,5%. Próximo: reavaliar Size e batch sizing.
+
+Checkpoint D2 concluído: orçamento conservador + check final de wire, sem Size normal; ggpb passou e quatro casos medidos. Grande 260,3→178,3 ms, CPU 294,5→210,2. Próximo: matriz de batches.
+
+Experimento E concluído: 12 variantes (6 targets × 2 caps) nas quatro escalas. Default 256 partes limita os batches antes do target; 4096 partes piorou encode/alloc/payload. Default preservado. Próximo: dictionary policy e paralelo.
+
+Experimento F concluído: inline e três heurísticas de frequência medidos nas quatro escalas; thresholds 2/4 e símbolos curtos não ganharam e aumentaram payload. Default imediato mantido. Testes ggpb passaram após restauração. Próximo: geometria/live heap, paralelismo e perfis finais.
+
+Experimento H concluído/rejeitado: 192 amostras nas quatro escalas. Cópias de ownership elevaram encoding grande ~166→559+ ms e TotalAlloc ~12→286 MiB/query; 1 worker/8 queries alcançou ~26 queries/s vs ~6 paralelo. Testes de ordem/cancelamento/erro e ggpb/vet passaram. Próximo: residente baseline/final, profiling final e gates completos.
+
+Experimento G concluído/rejeitado: caches cross-batch reduziram pouco CPU/tempo e apenas 0,4% TotalAlloc; revertidos. Perfil aponta IDs externos como principal alocação restante. Próximo: stress de endpoints dispersos antes de consolidar e reexecutar race/fuzz.
+
+Checkpoint B2 concluído: stress disperso revelou expansão +8,2% do dicionário incondicional. Política bounded de custo/ocorrência mantém refs úteis e singletons inline. Main encoding +5% justificado; disperso payload −7,6%, tempo igual. Testes ggpb/E2E/vet passaram. Próximo: requalificar campanha final/residente/concorrência/perfis e gates.
+
+Consolidação medida no HEAD funcional 9a7447a: 300 samples finais, 300 residentes, 192 ondas concorrentes finais e perfis CPU/mem. Encoding grande 510,982→186,220 ms; CPU 607,138→217,594; TotalAlloc 352,13→12,26 MiB; payload 29.914.323→22.067.479. Normal/race completos, vet/build sem cgo, cinco fuzz targets reais, benchmark gate, determinismo/JSON/Python/memória passaram. Próximo: qualificação offline do commit consolidado e atualização final do PR #4, sem merge.
+
+Otimização concluída: cópia limpa de `git archive f6845ce` passou offline em `go test -count=1 ./...`, `go vet ./...` e `CGO_ENABLED=0 go build ./cmd/gophergraph`, sem binários anteriores. Checkpoints e evidências publicados na mesma branch; fechamento destinado ao PR #4, sem merge. Próximo: revisão do codec/bounds/ownership e PoC gRPC residente; o codec padrão não herda automaticamente os ganhos de EmitEncoded.
+
+Fechamento documental concluído após aprovação do usuário do HEAD 5f6e196 e autorização explícita de merge no PR #4. Contrato, limitações, todos os experimentos e evidências finais estão em docs/GGPB.md e docs/GGPB_BENCHMARKS.md; gates completos e qualificação limpa acima permanecem válidos, sem alteração de código neste fechamento. Integração autorizada por merge commit para preservar os checkpoints revisáveis. Escopo GGPB encerrado; PoC gRPC residente é trabalho futuro separado, sem implementação nesta entrega.

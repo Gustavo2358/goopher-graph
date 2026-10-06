@@ -62,6 +62,13 @@ func TestWasmCLIAndExternalSDK(t *testing.T) {
 		if actual != again {
 			t.Fatal("nondeterministic output")
 		}
+		wire := filepath.Join(dir, "wasm.ggpb")
+		invoke(t, bin, 0, append(args, "--format", "ggpb", "--output", wire)...)
+		decoded, _ := invoke(t, bin, 0, "decode", "--input", wire, "--format", "json")
+		if decoded != actual {
+			t.Fatal("WASM GGPB parity", decoded, actual)
+		}
+		invoke(t, bin, 2, append(args, "--format", "invalid")...)
 		output := filepath.Join(dir, "result.json")
 		invoke(t, bin, 0, append(args, "--output", output)...)
 		data, err := os.ReadFile(output)

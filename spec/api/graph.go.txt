@@ -41,6 +41,7 @@ type NodeIterator struct{}
 type EdgeIDIterator struct{}
 type EdgeIterator struct{}
 type PropertyIterator struct{}
+type LabelIterator struct{}
 
 type Metadata struct {
 	Nodes       uint64
@@ -87,6 +88,7 @@ func (g *Graph) String(id StringID) (string, error)
 func (g *Graph) NodeExternalID(id NodeID) (string, error)
 func (g *Graph) EdgeExternalID(id EdgeID) (string, error)
 func (g *Graph) NodeLabels(id NodeID) ([]StringID, error) // cópia
+func (g *Graph) IterateNodeLabels(id NodeID) (LabelIterator, error)
 func (g *Graph) Edge(id EdgeID) (Edge, error)
 func (g *Graph) Adjacent(node NodeID, direction Direction) (EdgeIterator, error)
 func (g *Graph) NodeProperties(id NodeID) (PropertyIterator, error)
@@ -99,6 +101,9 @@ func (g *Graph) EdgesWithProperty(ctx context.Context, key string, value Value) 
 func (it *EdgeIterator) Next() bool
 func (it *EdgeIterator) Edge() Edge
 func (it *EdgeIterator) Err() error
+func (it *LabelIterator) Next() bool
+func (it *LabelIterator) ID() StringID
+func (it *LabelIterator) Err() error
 func (it *PropertyIterator) Next() bool
 func (it *PropertyIterator) Property() Property
 func (it *PropertyIterator) Err() error

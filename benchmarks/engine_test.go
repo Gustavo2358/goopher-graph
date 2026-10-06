@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"gophergraph/dot"
+	"gophergraph/ggpb"
 	"gophergraph/graph"
+	"gophergraph/graphjson"
 	"gophergraph/ingest"
 	"gophergraph/ingest/adapters/filesystem"
 	"gophergraph/ingest/adapters/neptune"
@@ -178,6 +180,22 @@ func BenchmarkEngine(b *testing.B) {
 				b.ReportAllocs()
 				for i := 0; i < b.N; i++ {
 					if _, e := query.Territory(ctx, g, start, query.Options{}); e != nil {
+						b.Fatal(e)
+					}
+				}
+			})
+			b.Run("JSON", func(b *testing.B) {
+				b.ReportAllocs()
+				for i := 0; i < b.N; i++ {
+					if e := graphjson.Write(ctx, io.Discard, g, sub, graphjson.Query{Name: "territory", Node: new("n000000000")}); e != nil {
+						b.Fatal(e)
+					}
+				}
+			})
+			b.Run("GGPB", func(b *testing.B) {
+				b.ReportAllocs()
+				for i := 0; i < b.N; i++ {
+					if e := ggpb.Write(ctx, io.Discard, g, sub, ggpb.Query{Name: "territory", Node: new("n000000000")}); e != nil {
 						b.Fatal(e)
 					}
 				}

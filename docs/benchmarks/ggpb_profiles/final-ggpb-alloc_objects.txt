@@ -1,0 +1,22 @@
+File: encodingmeasure
+Build ID: 016fe191a28a0f81ea2ee9f9ec8da1e4abe19f7c
+Type: alloc_objects
+Time: 2026-10-06 16:53:38 -03
+Showing nodes accounting for 11944570, 99.50% of 12004401 total
+Dropped 32 nodes (cum <= 60022)
+      flat  flat%   sum%        cum   cum%
+  11829425 98.54% 98.54%   11829425 98.54%  gophergraph/internal/graphdata.(*Data).String (inline)
+    114690  0.96% 99.50%     114893  0.96%  gophergraph/ggpb.(*batcher).flush
+       455 0.0038% 99.50%     115348  0.96%  gophergraph/ggpb.(*batcher).addSlot (inline)
+         0     0% 99.50%     114893  0.96%  gophergraph/ggpb.(*batcher).add
+         0     0% 99.50%    1703960 14.19%  gophergraph/ggpb.(*batcher).endpointText
+         0     0% 99.50%   11994707 99.92%  gophergraph/ggpb.Emit
+         0     0% 99.50%     106498  0.89%  gophergraph/ggpb.Emit.func3
+         0     0% 99.50%   11994707 99.92%  gophergraph/ggpb.EmitEncoded
+         0     0% 99.50%   11994707 99.92%  gophergraph/ggpb.WriteOptions
+         0     0% 99.50%    8650884 72.06%  gophergraph/graph.(*Graph).EdgeExternalID
+         0     0% 99.50%    3113005 25.93%  gophergraph/graph.(*Graph).NodeExternalID
+         0     0% 99.50%   11994782 99.92%  main.main
+         0     0% 99.50%   11994782 99.92%  main.run
+         0     0% 99.50%   11994707 99.92%  main.run.func2 (inline)
+         0     0% 99.50%   11994782 99.92%  runtime.main

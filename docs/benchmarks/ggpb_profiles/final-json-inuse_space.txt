@@ -1,0 +1,27 @@
+File: encodingmeasure
+Build ID: 016fe191a28a0f81ea2ee9f9ec8da1e4abe19f7c
+Type: inuse_space
+Time: 2026-10-06 16:53:35 -03
+Showing nodes accounting for 3.16MB, 100% of 3.16MB total
+      flat  flat%   sum%        cum   cum%
+       2MB 63.38% 63.38%        2MB 63.38%  runtime.mallocgc
+    1.16MB 36.62%   100%     1.16MB 36.62%  runtime/pprof.StartCPUProfile
+         0     0%   100%     1.16MB 36.62%  main.main
+         0     0%   100%     1.16MB 36.62%  main.run
+         0     0%   100%        1MB 31.66%  runtime.(*scavengerState).sleep
+         0     0%   100%        1MB 31.66%  runtime.(*timer).maybeAdd
+         0     0%   100%        1MB 31.66%  runtime.(*timer).modify
+         0     0%   100%        1MB 31.66%  runtime.(*timer).reset (inline)
+         0     0%   100%        1MB 31.66%  runtime.(*timers).addHeap
+         0     0%   100%        1MB 31.72%  runtime.allocm
+         0     0%   100%        1MB 31.66%  runtime.bgscavenge
+         0     0%   100%        1MB 31.66%  runtime.growslice
+         0     0%   100%     1.16MB 36.62%  runtime.main
+         0     0%   100%        1MB 31.72%  runtime.mcall
+         0     0%   100%        1MB 31.72%  runtime.newm
+         0     0%   100%        1MB 31.72%  runtime.newobject
+         0     0%   100%        1MB 31.72%  runtime.park_m
+         0     0%   100%        1MB 31.72%  runtime.resetspinning
+         0     0%   100%        1MB 31.72%  runtime.schedule
+         0     0%   100%        1MB 31.72%  runtime.startm
+         0     0%   100%        1MB 31.72%  runtime.wakep

@@ -1,0 +1,28 @@
+File: encodingmeasure
+Build ID: 0d95136b3c01582f9188c9a9112b0037f9d17817
+Type: inuse_space
+Time: 2026-10-06 16:02:07 -03
+Showing nodes accounting for 2722.33kB, 100% of 2722.33kB total
+      flat  flat%   sum%        cum   cum%
+ 1538.05kB 56.50% 56.50%  1538.05kB 56.50%  runtime.mallocgc
+ 1184.27kB 43.50%   100%  1184.27kB 43.50%  runtime/pprof.StartCPUProfile
+         0     0%   100%  1184.27kB 43.50%  main.main
+         0     0%   100%  1184.27kB 43.50%  main.run
+         0     0%   100%   512.05kB 18.81%  runtime.acquireSudog
+         0     0%   100%     1026kB 37.69%  runtime.allocm
+         0     0%   100%   512.05kB 18.81%  runtime.gcBgMarkWorker
+         0     0%   100%   512.05kB 18.81%  runtime.gcMarkDone
+         0     0%   100%  1184.27kB 43.50%  runtime.main
+         0     0%   100%      513kB 18.84%  runtime.mcall
+         0     0%   100%      513kB 18.84%  runtime.mstart
+         0     0%   100%      513kB 18.84%  runtime.mstart0
+         0     0%   100%      513kB 18.84%  runtime.mstart1
+         0     0%   100%     1026kB 37.69%  runtime.newm
+         0     0%   100%  1538.05kB 56.50%  runtime.newobject
+         0     0%   100%      513kB 18.84%  runtime.park_m
+         0     0%   100%     1026kB 37.69%  runtime.resetspinning
+         0     0%   100%     1026kB 37.69%  runtime.schedule
+         0     0%   100%   512.05kB 18.81%  runtime.semacquire (inline)
+         0     0%   100%   512.05kB 18.81%  runtime.semacquire1
+         0     0%   100%     1026kB 37.69%  runtime.startm
+         0     0%   100%     1026kB 37.69%  runtime.wakep

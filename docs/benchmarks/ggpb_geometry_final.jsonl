@@ -1,0 +1,4 @@
+{"Case":"100","Frames":5,"MaxFrameBytes":10787,"MaxParts":256,"PayloadBytes":21999,"RecordsBatches":3,"SampledLiveAuxBytes":274856,"TargetBytes":262144}
+{"Case":"10000","Frames":213,"MaxFrameBytes":12829,"MaxParts":256,"PayloadBytes":2199355,"RecordsBatches":211,"SampledLiveAuxBytes":358376,"TargetBytes":262144}
+{"Case":"100000","Frames":2112,"MaxFrameBytes":12829,"MaxParts":256,"PayloadBytes":22067456,"RecordsBatches":2110,"SampledLiveAuxBytes":358344,"TargetBytes":262144}
+{"Case":"empty","Frames":2,"MaxFrameBytes":8,"MaxParts":256,"PayloadBytes":34,"RecordsBatches":0,"SampledLiveAuxBytes":0,"TargetBytes":262144}

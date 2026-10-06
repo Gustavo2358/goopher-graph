@@ -1,0 +1,34 @@
+File: encodingmeasure
+Build ID: 0d95136b3c01582f9188c9a9112b0037f9d17817
+Type: cpu
+Time: 2026-10-06 16:02:04 -03
+Duration: 3.08s, Total samples = 3810ms (123.70%)
+Showing nodes accounting for 2050ms, 53.81% of 3810ms total
+Dropped 77 nodes (cum <= 19.05ms)
+Showing top 25 nodes out of 185
+      flat  flat%   sum%        cum   cum%
+     210ms  5.51%  5.51%      210ms  5.51%  runtime.nextFreeFast (inline)
+     170ms  4.46%  9.97%     3140ms 82.41%  gophergraph/ggpb.Emit
+     160ms  4.20% 14.17%      700ms 18.37%  runtime.mallocgcSmallScanNoHeader
+     150ms  3.94% 18.11%      810ms 21.26%  google.golang.org/protobuf/internal/impl.(*MessageInfo).marshalAppendPointer
+     130ms  3.41% 21.52%      490ms 12.86%  google.golang.org/protobuf/internal/impl.(*MessageInfo).sizePointerSlow
+     120ms  3.15% 24.67%      120ms  3.15%  google.golang.org/protobuf/encoding/protowire.AppendVarint
+     120ms  3.15% 27.82%      120ms  3.15%  runtime.memclrNoHeapPointers
+     100ms  2.62% 30.45%      100ms  2.62%  runtime.futex
+      90ms  2.36% 32.81%      110ms  2.89%  runtime.tryDeferToSpanScan
+      70ms  1.84% 34.65%      910ms 23.88%  runtime.mallocgc
+      60ms  1.57% 36.22%      550ms 14.44%  google.golang.org/protobuf/internal/impl.(*MessageInfo).sizePointer
+      60ms  1.57% 37.80%       60ms  1.57%  gophergraph/internal/graphdata.U64.At (inline)
+      60ms  1.57% 39.37%      140ms  3.67%  runtime.mallocgcTiny
+      60ms  1.57% 40.94%       60ms  1.57%  runtime.memmove
+      50ms  1.31% 42.26%      510ms 13.39%  google.golang.org/protobuf/internal/impl.(*MessageInfo).initOneofFieldCoders.func2
+      50ms  1.31% 43.57%       50ms  1.31%  gophergraph/internal/graphdata.U64.Len (inline)
+      50ms  1.31% 44.88%       50ms  1.31%  reflect.Value.Pointer
+      50ms  1.31% 46.19%       50ms  1.31%  runtime.getMCache (inline)
+      50ms  1.31% 47.51%       60ms  1.57%  runtime.typePointers.next
+      40ms  1.05% 48.56%       40ms  1.05%  aeshashbody
+      40ms  1.05% 49.61%      490ms 12.86%  google.golang.org/protobuf/internal/impl.sizeMessageSliceInfo
+      40ms  1.05% 50.66%       50ms  1.31%  gophergraph/graph.(*Graph).Edge
+      40ms  1.05% 51.71%       90ms  2.36%  gophergraph/internal/graphdata.(*Data).StringCount (inline)
+      40ms  1.05% 52.76%       50ms  1.31%  runtime.(*mspan).writeHeapBitsSmall
+      40ms  1.05% 53.81%       40ms  1.05%  runtime.madvise

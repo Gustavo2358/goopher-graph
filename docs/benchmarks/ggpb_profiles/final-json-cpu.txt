@@ -1,0 +1,34 @@
+File: encodingmeasure
+Build ID: 016fe191a28a0f81ea2ee9f9ec8da1e4abe19f7c
+Type: cpu
+Time: 2026-10-06 16:53:32 -03
+Duration: 3.04s, Total samples = 3170ms (104.13%)
+Showing nodes accounting for 2010ms, 63.41% of 3170ms total
+Dropped 93 nodes (cum <= 15.85ms)
+Showing top 25 nodes out of 98
+      flat  flat%   sum%        cum   cum%
+     220ms  6.94%  6.94%      220ms  6.94%  runtime.memmove
+     210ms  6.62% 13.56%      310ms  9.78%  encoding/json.appendString[go.shape.string]
+     150ms  4.73% 18.30%      150ms  4.73%  runtime.nextFreeFast (inline)
+     130ms  4.10% 22.40%      300ms  9.46%  internal/sync.(*HashTrieMap[go.shape.interface {},go.shape.interface {}]).Load
+     110ms  3.47% 25.87%      200ms  6.31%  bufio.(*Writer).WriteString
+     100ms  3.15% 29.02%      320ms 10.09%  gophergraph/graphjson.(*writer).raw
+     100ms  3.15% 32.18%      340ms 10.73%  runtime.mallocgcSmallScanNoHeader
+      80ms  2.52% 34.70%     1500ms 47.32%  encoding/json.Marshal
+      70ms  2.21% 36.91%      140ms  4.42%  runtime.mallocgcTiny
+      70ms  2.21% 39.12%       90ms  2.84%  runtime.nilinterhash
+      60ms  1.89% 41.01%       90ms  2.84%  bufio.(*Writer).Write
+      60ms  1.89% 42.90%     2330ms 73.50%  gophergraph/graphjson.(*writer).edge
+      60ms  1.89% 44.79%       60ms  1.89%  runtime.(*mspan).writeHeapBitsSmall
+      60ms  1.89% 46.69%      260ms  8.20%  runtime.growslice
+      60ms  1.89% 48.58%       60ms  1.89%  runtime.procPin (inline)
+      60ms  1.89% 50.47%      160ms  5.05%  sync.(*Pool).Put
+      50ms  1.58% 52.05%       50ms  1.58%  bufio.(*Writer).Available (inline)
+      50ms  1.58% 53.63%       90ms  2.84%  bytes.(*Buffer).Write
+      50ms  1.58% 55.21%      170ms  5.36%  gophergraph/graph.(*Graph).NodeExternalID
+      50ms  1.58% 56.78%       80ms  2.52%  gophergraph/graph.(*PropertyIterator).Next
+      50ms  1.58% 58.36%       50ms  1.58%  gophergraph/internal/graphdata.U64.At (inline)
+      40ms  1.26% 59.62%       40ms  1.26%  bytes.(*Buffer).tryGrowByReslice (inline)
+      40ms  1.26% 60.88%      350ms 11.04%  encoding/json.typeEncoder
+      40ms  1.26% 62.15%      390ms 12.30%  encoding/json.valueEncoder
+      40ms  1.26% 63.41%     1630ms 51.42%  gophergraph/graphjson.(*writer).json

@@ -186,3 +186,11 @@ resultados retidos pelo chamador têm custos separados. Go OOM fatal não é
 recuperado. O chamador limita resultados retidos e dimensiona o processo para
 seu corpus. Não há fuel/instruction metering, execução distribuída, linguagem
 própria, registry, HTTP, S3, autenticação ou compilação Go no servidor.
+
+## Output GGPB
+
+`wasm --format ggpb --output result.ggpb` exporta o Subgraph materializado pelo
+mesmo adapter Protobuf das queries nativas. `--format json` permanece padrão.
+`gophergraph decode --input result.ggpb --format json` recupera o JSON existente,
+incluindo `query.name=wasm:<SHA256>`. O runtime/Host API/SDK não mudam; apenas o
+driver seleciona o serializer após concluir a query. [Contrato GGPB](GGPB.md).

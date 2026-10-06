@@ -9,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	"gophergraph/ggpb"
 	"gophergraph/graphjson"
 	"gophergraph/ingest/adapters/filesystem"
 	"gophergraph/snapshot"
@@ -21,15 +22,16 @@ func wasmCommand(ctx context.Context, args []string, stdout, stderr io.Writer) (
 	fs.SetOutput(stderr)
 	path := fs.String("snapshot", "", "snapshot path (required)")
 	module := fs.String("module", "", "compiled .wasm path (required)")
-	output := fs.String("output", "", "graphjson output file (default stdout)")
+	output := fs.String("output", "", "output file (default stdout)")
+	format := fs.String("format", "json", "json or ggpb")
 	timeout := fs.Duration("timeout", 5*time.Second, "maximum query execution time")
 	var argv repeated
 	fs.Var(&argv, "arg", "query argument, in order (repeatable)")
 	if code := parse(fs, args); code >= 0 {
 		return code
 	}
-	if *path == "" || *module == "" || *timeout <= 0 || (hasFlag(fs, "output") && *output == "") {
-		return failure(stderr, errors.New("snapshot, module and positive timeout required"), 2)
+	if *path == "" || *module == "" || *timeout <= 0 || (*format != "json" && *format != "ggpb") || (hasFlag(fs, "output") && *output == "") {
+		return failure(stderr, errors.New("snapshot, module, positive timeout and json/ggpb format required"), 2)
 	}
 	if err := filesystem.ValidateOutput(*path, *output); err != nil {
 		return failure(stderr, err, 2)
@@ -96,7 +98,11 @@ func wasmCommand(ctx context.Context, args []string, stdout, stderr io.Writer) (
 		}
 		out = file
 	}
-	err = graphjson.Write(ctx, out, g, sub, graphjson.Query{Name: "wasm:" + compiled.SHA256()})
+	if *format == "ggpb" {
+		err = ggpb.Write(ctx, out, g, sub, ggpb.Query{Name: "wasm:" + compiled.SHA256()})
+	} else {
+		err = graphjson.Write(ctx, out, g, sub, graphjson.Query{Name: "wasm:" + compiled.SHA256()})
+	}
 	if file != nil {
 		err = errors.Join(err, file.Close())
 	}

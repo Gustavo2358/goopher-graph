@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"gophergraph/dot"
+	"gophergraph/ggpb"
 	"gophergraph/graph"
 	"gophergraph/graphjson"
 	"gophergraph/ingest/adapters/filesystem"
@@ -22,7 +23,7 @@ func queryCommand(ctx context.Context, command string, args []string, stdout, st
 	fs.SetOutput(stderr)
 	path := fs.String("snapshot", "", "snapshot path (required)")
 	output := fs.String("output", "", "output file (default stdout)")
-	format := fs.String("format", "ids", "ids, dot or json")
+	format := fs.String("format", "ids", "ids, dot, json or ggpb")
 	include := fs.Bool("include-origin", false, "include start in ID output")
 	var node, from, to string
 	if command == "between" {
@@ -36,7 +37,7 @@ func queryCommand(ctx context.Context, command string, args []string, stdout, st
 	if code := parse(fs, args); code >= 0 {
 		return code
 	}
-	if *path == "" || (*format != "ids" && *format != "dot" && *format != "json") || (command == "between" && (!hasFlag(fs, "from") || !hasFlag(fs, "to"))) || (command != "between" && !hasFlag(fs, "node")) {
+	if *path == "" || (*format != "ids" && *format != "dot" && *format != "json" && *format != "ggpb") || (command == "between" && (!hasFlag(fs, "from") || !hasFlag(fs, "to"))) || (command != "between" && !hasFlag(fs, "node")) {
 		return failure(stderr, errors.New("missing required flags or invalid format"), 2)
 	}
 	if hasFlag(fs, "output") && *output == "" {
@@ -112,14 +113,18 @@ func queryCommand(ctx context.Context, command string, args []string, stdout, st
 	}
 	if *format == "dot" {
 		e = dot.Write(out, g, sub)
-	} else if *format == "json" {
+	} else if *format == "json" || *format == "ggpb" {
 		metadata := graphjson.Query{Name: command, EdgeLabels: labels}
 		if command == "between" {
 			metadata.From, metadata.To = &from, &to
 		} else {
 			metadata.Node = &node
 		}
-		e = graphjson.Write(ctx, out, g, sub, metadata)
+		if *format == "ggpb" {
+			e = ggpb.Write(ctx, out, g, sub, ggpb.Query{Name: metadata.Name, Node: metadata.Node, From: metadata.From, To: metadata.To, EdgeLabels: metadata.EdgeLabels})
+		} else {
+			e = graphjson.Write(ctx, out, g, sub, metadata)
+		}
 	} else {
 		omit := graph.InvalidNodeID
 		if command != "between" && !*include {

@@ -1,0 +1,32 @@
+File: encodingmeasure
+Build ID: 0d95136b3c01582f9188c9a9112b0037f9d17817
+Type: inuse_space
+Time: 2026-10-06 16:02:11 -03
+Showing nodes accounting for 3746.34kB, 100% of 3746.34kB total
+Showing top 25 nodes out of 29
+      flat  flat%   sum%        cum   cum%
+ 2562.07kB 68.39% 68.39%  2562.07kB 68.39%  runtime.mallocgc
+ 1184.27kB 31.61%   100%  1184.27kB 31.61%  runtime/pprof.StartCPUProfile
+         0     0%   100%  1184.27kB 31.61%  main.main
+         0     0%   100%  1184.27kB 31.61%  main.run
+         0     0%   100%  1024.02kB 27.33%  runtime.(*scavengerState).sleep
+         0     0%   100%  1024.02kB 27.33%  runtime.(*timer).maybeAdd
+         0     0%   100%  1024.02kB 27.33%  runtime.(*timer).modify
+         0     0%   100%  1024.02kB 27.33%  runtime.(*timer).reset (inline)
+         0     0%   100%  1024.02kB 27.33%  runtime.(*timers).addHeap
+         0     0%   100%   512.05kB 13.67%  runtime.acquireSudog
+         0     0%   100%     1026kB 27.39%  runtime.allocm
+         0     0%   100%  1024.02kB 27.33%  runtime.bgscavenge
+         0     0%   100%   512.05kB 13.67%  runtime.gcBgMarkWorker
+         0     0%   100%   512.05kB 13.67%  runtime.gcMarkDone
+         0     0%   100%  1024.02kB 27.33%  runtime.growslice
+         0     0%   100%  1184.27kB 31.61%  runtime.main
+         0     0%   100%      513kB 13.69%  runtime.mcall
+         0     0%   100%      513kB 13.69%  runtime.mstart
+         0     0%   100%      513kB 13.69%  runtime.mstart0
+         0     0%   100%      513kB 13.69%  runtime.mstart1
+         0     0%   100%     1026kB 27.39%  runtime.newm
+         0     0%   100%  1538.05kB 41.05%  runtime.newobject
+         0     0%   100%      513kB 13.69%  runtime.park_m
+         0     0%   100%     1026kB 27.39%  runtime.resetspinning
+         0     0%   100%     1026kB 27.39%  runtime.schedule

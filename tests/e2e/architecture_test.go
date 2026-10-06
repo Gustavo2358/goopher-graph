@@ -43,7 +43,7 @@ func TestCapabilityImports(t *testing.T) {
 				t.Errorf("unix outside mmap: %s", rel)
 			}
 			if strings.HasPrefix(rel, "graph/") || strings.HasPrefix(rel, "internal/graphdata/") || strings.HasPrefix(rel, "query/") {
-				if imp == "os" || imp == "io" || strings.Contains(imp, "/adapters/") || strings.HasPrefix(imp, "net") || strings.HasPrefix(imp, "path") || strings.Contains(imp, "ingest") || strings.Contains(imp, "snapshot") {
+				if imp == "os" || imp == "io" || strings.Contains(imp, "/adapters/") || strings.HasPrefix(imp, "net") || strings.HasPrefix(imp, "path") || strings.Contains(imp, "ingest") || strings.Contains(imp, "snapshot") || strings.HasPrefix(imp, "gophergraph/ggpb") || strings.HasPrefix(imp, "google.golang.org/protobuf") || imp == "gophergraph/graphjson" || imp == "gophergraph/dot" {
 					t.Errorf("core dependency %s imports %s", rel, imp)
 				}
 			}
@@ -57,6 +57,14 @@ func TestCapabilityImports(t *testing.T) {
 				if imp == "os" || strings.HasPrefix(imp, "net") || strings.HasPrefix(imp, "path") || (strings.HasPrefix(imp, "gophergraph/") && imp != "gophergraph/graph" && imp != "gophergraph/query") {
 					t.Errorf("JSON export dependency %s imports %s", rel, imp)
 				}
+			}
+			if strings.HasPrefix(rel, "ggpb/") {
+				if imp == "os" || strings.HasPrefix(imp, "net") || strings.HasPrefix(imp, "path") || strings.Contains(imp, "/adapters/") || strings.HasPrefix(imp, "gophergraph/snapshot") || strings.HasPrefix(imp, "gophergraph/ingest") || strings.Contains(imp, "internal/graphdata") {
+					t.Errorf("GGPB imports storage/core internals: %s %s", rel, imp)
+				}
+			}
+			if strings.HasPrefix(imp, "google.golang.org/protobuf") && !strings.HasPrefix(rel, "ggpb/") {
+				t.Errorf("Protobuf outside result adapter: %s", rel)
 			}
 			if strings.HasPrefix(rel, "wasmquery/") && !strings.Contains(rel, "/testdata/") {
 				if imp == "os" || strings.HasPrefix(imp, "net") || strings.HasPrefix(imp, "path") || strings.HasPrefix(imp, "gophergraph/snapshot") || strings.HasPrefix(imp, "gophergraph/ingest") || strings.Contains(imp, "internal/graphdata") {
