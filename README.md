@@ -172,7 +172,7 @@ Veja [Host API, SDK, exemplos, lifecycle e limites](docs/WASM.md).
 
 ## Resultados Protobuf GGPB
 
-As três queries nativas aceitam `--format ggpb`. O resultado é autocontido,
+As três queries nativas e `wasm` aceitam `--format ggpb`; WASM mantém JSON como padrão. O resultado é autocontido,
 versionado e escrito como batches Protobuf limitados, com framing/checksum.
 **GGPB é um protocolo lógico compacto, não um snapshot e não um dump das
 estruturas internas do engine.**

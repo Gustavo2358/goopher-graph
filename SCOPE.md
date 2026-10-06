@@ -51,7 +51,7 @@ continuam excluídos.
 ## Extensão solicitada: resultados GGPB
 
 Adapter Protobuf lógico e versionado, externo ao core; query completa → Subgraph
-→ batches limitados → framing de arquivo. CLI das três queries nativas e decoder
+→ batches limitados → framing de arquivo. CLI das três queries nativas, WASM e decoder
 incremental para o contrato JSON. [Contrato](docs/GGPB.md) e
 [medições](docs/GGPB_BENCHMARKS.md). Runtime oficial Protobuf autorizado por essa
 extensão. Dicionários locais não alteram layout de snapshot nem execução da query.

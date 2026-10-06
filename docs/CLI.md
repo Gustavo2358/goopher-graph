@@ -92,3 +92,6 @@ gophergraph decode --input result.ggpb --format json --output result.json
 Decode não recebe snapshot. Erros de framing, versão, tipos, contagens, End e I/O
 retornam código 1; flags inválidas retornam 2. Destinos que identificam o mesmo
 arquivo de entrada são rejeitados antes de criar/truncar o output.
+
+O comando `wasm` também aceita `--format ggpb`; `json` permanece seu padrão.
+A metadata conserva o digest do módulo, conforme o contrato WASM existente.

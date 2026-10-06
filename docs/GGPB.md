@@ -37,7 +37,8 @@ snapshot / graph → query → Subgraph → iteradores públicos → ggpb.Emit
 nos sets, no snapshot ou nos algoritmos das queries. O core ganhou apenas
 IterateNodeLabels, alternativa sem cópia ao NodeLabels existente. A query termina e
 materializa seu Subgraph antes de qualquer serialização. O código atual também
-tem WASM; seu caminho de saída JSON permanece preservado.
+tem WASM: `wasm --format ggpb` usa o mesmo encoder e `--format json` permanece
+padrão. Metadata conserva `name=wasm:<SHA256>`, como o JSON existente.
 
 O contrato público é [result.proto](../ggpb/pb/result.proto); o Go gerado usa o
 runtime oficial `google.golang.org/protobuf`, isolado em `ggpb`. A biblioteca

@@ -6,7 +6,8 @@ A fixture existente `internal/benchfixture` gera dois componentes desconectados,
 chains, diamantes, ciclos, hubs, loops e propriedades String/Int. Snapshots têm
 100/500, 10.000/50.000 e 100.000/500.000 nodes/edges; as queries abaixo retornam
 90% do componente principal. Between entre componentes produz o caso vazio.
-Não houve seleção de queries favoráveis. Os três comandos nativos foram medidos.
+Não houve seleção de queries favoráveis. Os três comandos nativos foram medidos. WASM também aceita GGPB e tem paridade
+E2E completa/parcial; sua execução não foi incluída na campanha de performance.
 
 Fixture generation, ingestão, build do binário e abertura/validação do mmap ficam
 fora de query/encoding. Cada processo abre exatamente o mesmo snapshot e executa

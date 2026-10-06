@@ -172,7 +172,8 @@ fast-forward. Campanha encerrada.
 Campanha concluída; [PR #4](https://github.com/Gustavo2358/goopher-graph/pull/4)
 aberto para revisão, sem merge. Branch `feat/ggpb-streaming-results` publicada.
 Adapter externo `ggpb`/`ggpb/pb`, batches Protobuf limitados, framing CRC32,
-reader incremental e CLI `--format ggpb` / `decode --format json`. Única extensão
+reader incremental e CLI `--format ggpb` / `decode --format json`, incluindo
+WASM (JSON continua padrão, sem mudar runtime/SDK). Única extensão
 mínima do core: IterateNodeLabels sem cópia, para limitar memória mesmo em um node
 com muitos labels. Queries, sets, snapshot e formatos anteriores preservados.
 
@@ -185,6 +186,7 @@ Evidência executada com dependências locais, GOPROXY=off e Go 1.26.0:
   vazios, tipos/extremos, labels e 30 mil properties em partes passaram.
 - Paridade JSON byte a byte nos seis goldens e casos adicionais; CLI nas três
   queries, partial, filtros, IDs vazios, stdout/arquivo e proteção de input.
+  WASM completo/parcial também passou em GGPB → JSON com metadata idêntica.
 - Memória: 214.422.538 bytes descartados em 100 mil nodes/edges, heap auxiliar
   vivo amostrado 365.752 bytes; mesma tolerância fixa nas duas escalas. Não foi
   usado buffer de resultado nem dictionary global. Iterador de labels não aloca.

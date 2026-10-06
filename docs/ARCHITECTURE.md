@@ -144,7 +144,7 @@ Um único processo pode executar consultas simultâneas sobre o mesmo Graph aber
 ## Queries WebAssembly
 
 `cmd/gophergraph -> wasmquery -> graph/query`; o resultado segue para
-`graphjson.Write`. `wasmquery` recebe Graph, bytes WASM, argumentos e contexto.
+`graphjson.Write` (padrão) ou `ggpb.Write` quando solicitado. `wasmquery` recebe Graph, bytes WASM, argumentos e contexto.
 Não importa filesystem, snapshot ou transporte. Wazero fica isolado nessa
 capacidade. `wasmquery/sdk` depende apenas de stdlib e da definição privada da
 ABI, sem importar engine/runtime. Os exemplos externos usam somente o SDK.
