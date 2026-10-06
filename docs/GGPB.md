@@ -66,12 +66,12 @@ err = ggpb.JSON(ctx, output, input) // contrato graphjson, sem snapshot
 
 A sequência obrigatória é `ResultHeader`, zero ou mais `Records`, `ResultEnd`.
 Cada `Batch` contém exatamente uma dessas variantes. Todos os nodes precedem
-as edges. IDs são strings externas; não há IDs de CSR, offsets, bitmaps ou views
+as edges. Identidades são IDs externos e refs lógicos locais de endpoints; não há IDs de CSR, offsets, bitmaps ou views
 mmap no protocolo. Os nodes/edges seguem a ordem crescente de ID externo.
 
 `NodePart`/`EdgePart` permitem uma entidade atravessar batches: a primeira parte
 tem `id` **presente**, mesmo quando `""`; continuations omitem `id`. Na primeira
-parte de edge, os endpoints e `label` são obrigatórios. Cada endpoint usa exatamente uma forma: `source_ref`/`target_ref` não zero, apontando para `Records.endpoint_ids` (1-based), ou `source`/`target` inline presente. A tabela de endpoints é local ao batch, limitada a 512 entradas/64 KiB; refs não possuem semântica de NodeID/CSR/bitmap. Ela carrega IDs externos e torna cada batch independente para resolução de endpoints. Continuations não
+parte de edge, os endpoints e `label` são obrigatórios. Cada endpoint usa exatamente uma forma: `source_ref`/`target_ref` não zero, apontando para `Records.endpoint_ids` (1-based), ou `source`/`target` inline presente. A tabela de endpoints é local ao batch, limitada a 512 entradas/64 KiB; refs não possuem semântica de NodeID/CSR/bitmap. Ela carrega IDs externos e torna cada batch independente para resolução de endpoints. O encoder conta ocorrências dentro do batch e só interna endpoints quando o custo codificado de tabela + refs é menor que inline; singletons permanecem inline. Essa política evita expandir resultados dispersos. O consumidor não depende dessa heurística. Continuations não
 repetem esses campos. Partes são contíguas, sem intercalar entidades. `last=true`
 encerra a entidade. Labels precedem properties; cada lista concatena suas partes.
 Um node isolado e um resultado vazio são válidos. Paralelas e loops mantêm IDs
@@ -135,7 +135,7 @@ compressão geral, indexação, seek obrigatório ou necessidade de ler o arquiv
 
 ## Limites, memória e erros
 
-Encoder limita batches por um orçamento conservador de 256 KiB ou 256 partes.
+Encoder limita batches por um orçamento conservador de 256 KiB ou 256 partes. Maps, Records e pequenos slots Protobuf são reutilizados somente dentro da query após o callback. O cache de slots limita-se a 256, com no máximo 16 properties/labels de capacidade em cada slot; partes grandes são liberadas. O wire encoder mantém buffers de part/records/output reutilizados e limitados pelo envelope máximo, sem buffer do resultado completo.
 Partes normalmente usam um orçamento conservador de 32 KiB. O escalar corrente
 pode ultrapassar esses alvos e é emitido sem reparticionar a string; cada string
 UTF-8 é limitada a 1 MiB, e cada Batch codificado a 4 MiB. Metadata também deve
@@ -212,3 +212,5 @@ operacional da engine nem um validador completo de entradas hostis.
 Labels/keys usam cache privado por StringID no encoder, limitado ao batch. Endpoints usam cache privado por NodeID. Nenhum desses IDs internos aparece no protocolo; apenas referências lógicas locais e os textos correspondentes.
 
 `EmitEncoded` entrega o payload Protobuf canônico de cada Batch, sem magic/length/CRC. Os bytes são emprestados somente durante o callback. Um adapter assíncrono deve copiá-los; `Emit` continua disponível para mensagens geradas. Framing usa EmitEncoded. O codec hot path usa primitivas oficiais protowire e tem testes diferenciais byte a byte contra o marshaler gerado; não é outro protocolo. Futuro gRPC pode usar Emit com codec padrão ou adapter de codec compatível com os payloads de EmitEncoded, sem escrever/ler arquivo. Não se assume que qualquer transport retenha ou copie mensagens após Send.
+
+O v1 deste PR ainda é um contrato não lançado: a campanha alterou o schema de endpoints dentro do mesmo v1, conforme autorizado. Não se promete leitura de arquivos de commits intermediários do PR com um reader antigo. O HEAD final e seu .proto definem o v1 a revisar; mudanças incompatíveis após estabilização exigirão outra versão.

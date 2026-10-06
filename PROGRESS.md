@@ -234,3 +234,5 @@ Experimento F concluído: inline e três heurísticas de frequência medidos nas
 Experimento H concluído/rejeitado: 192 amostras nas quatro escalas. Cópias de ownership elevaram encoding grande ~166→559+ ms e TotalAlloc ~12→286 MiB/query; 1 worker/8 queries alcançou ~26 queries/s vs ~6 paralelo. Testes de ordem/cancelamento/erro e ggpb/vet passaram. Próximo: residente baseline/final, profiling final e gates completos.
 
 Experimento G concluído/rejeitado: caches cross-batch reduziram pouco CPU/tempo e apenas 0,4% TotalAlloc; revertidos. Perfil aponta IDs externos como principal alocação restante. Próximo: stress de endpoints dispersos antes de consolidar e reexecutar race/fuzz.
+
+Checkpoint B2 concluído: stress disperso revelou expansão +8,2% do dicionário incondicional. Política bounded de custo/ocorrência mantém refs úteis e singletons inline. Main encoding +5% justificado; disperso payload −7,6%, tempo igual. Testes ggpb/E2E/vet passaram. Próximo: requalificar campanha final/residente/concorrência/perfis e gates.

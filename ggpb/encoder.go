@@ -10,6 +10,7 @@ import (
 	"gophergraph/query"
 	"slices"
 
+	"google.golang.org/protobuf/encoding/protowire"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -278,6 +279,8 @@ type batcher struct {
 	endpointCacheBytes int
 	endpoints          map[graph.NodeID]uint32
 	endpointBytes      int
+	endpointCounts     [maxEndpoints]uint16
+	endpointRefs       [maxEndpoints]uint32
 	free, used         []*recordSlot
 	size, textBytes    int
 	inline             bool
@@ -286,6 +289,12 @@ type batcher struct {
 func (b *batcher) flush() error {
 	if b.records == nil || len(b.records.Parts) == 0 {
 		return nil
+	}
+	for _, p := range b.records.Parts {
+		if n := p.GetEdge(); n != nil {
+			b.endpoint(&n.Source, &n.SourceRef)
+			b.endpoint(&n.Target, &n.TargetRef)
+		}
 	}
 	batch := &pb.Batch{Payload: &pb.Batch_Records{Records: b.records}}
 	// Conservative uninterned bound dominates every field including table entries.
@@ -313,6 +322,8 @@ func (b *batcher) flush() error {
 	clear(b.endpointCache)
 	b.endpointCacheBytes = 0
 	clear(b.endpoints)
+	clear(b.endpointCounts[:])
+	clear(b.endpointRefs[:])
 	b.endpointBytes = 0
 	b.size = 0
 	b.textBytes = 0
@@ -364,8 +375,8 @@ func (b *batcher) add(p *pb.Part, size int) error {
 		}
 	}
 	if n := p.GetEdge(); n != nil {
-		b.endpoint(&n.Source, &n.SourceRef)
-		b.endpoint(&n.Target, &n.TargetRef)
+		b.noteEndpoint(n.Source, n.SourceRef)
+		b.noteEndpoint(n.Target, n.TargetRef)
 		b.symbol(n.Label)
 		for _, p := range n.Properties {
 			b.symbol(p.Key)
@@ -474,27 +485,54 @@ func (b *batcher) endpointText(id graph.NodeID) (string, error) {
 	}
 	return s, nil
 }
+
+// Count endpoints only within this bounded batch. A singleton stays inline:
+// a dictionary entry plus its reference would expand the wire instead of shrink it.
+func (b *batcher) noteEndpoint(inline *string, ref uint32) {
+	if inline == nil {
+		return
+	}
+	id := graph.NodeID(ref - 1)
+	index, ok := b.endpoints[id]
+	if !ok {
+		if len(b.endpoints) >= maxEndpoints {
+			return
+		}
+		if b.endpoints == nil {
+			b.endpoints = make(map[graph.NodeID]uint32)
+		}
+		index = uint32(len(b.endpoints))
+		b.endpoints[id] = index
+	}
+	b.endpointCounts[index]++
+}
 func (b *batcher) endpoint(inline **string, ref *uint32) {
 	if *inline == nil {
 		return
 	}
 	id := graph.NodeID(*ref - 1)
-	if v, ok := b.endpoints[id]; ok {
+	index, ok := b.endpoints[id]
+	if !ok {
+		*ref = 0
+		return
+	}
+	if v := b.endpointRefs[index]; v != 0 {
 		*ref = v
 		*inline = nil
 		return
 	}
 	s := **inline
-	if len(b.endpoints) >= maxEndpoints || b.endpointBytes+len(s) > endpointBytes {
+	count := int(b.endpointCounts[index])
+	next := uint32(len(b.records.EndpointIds) + 1)
+	inlineCost := 1 + protowire.SizeBytes(len(s))
+	refCost := 1 + protowire.SizeVarint(uint64(next))
+	if count < 2 || inlineCost+count*refCost >= count*inlineCost || len(b.records.EndpointIds) >= maxEndpoints || b.endpointBytes+len(s) > endpointBytes {
 		*ref = 0
 		return
 	}
-	if b.endpoints == nil {
-		b.endpoints = make(map[graph.NodeID]uint32)
-	}
 	b.records.EndpointIds = append(b.records.EndpointIds, s)
 	b.endpointBytes += len(s)
-	*ref = uint32(len(b.records.EndpointIds))
-	b.endpoints[id] = *ref
+	*ref = next
+	b.endpointRefs[index] = next
 	*inline = nil
 }

@@ -454,3 +454,16 @@ Cache bounded de StringID persistiu entre batches; endpoint cache bounded teve l
 | 10000 | 17.874 | 20.911 | 1.58 | 75139 | 2199660 | 39.558 | 18.082 |
 | 100000 | 172.318 | 204.119 | 12.21 | 729336 | 22070295 | 379.407 | 179.426 |
 | empty | 0.034 | 0.121 | 0.01 | 49 | 67 | 0.177 | 0.014 |
+
+### B2 — endpoints somente quando economizam bytes (KEEP)
+
+Caso adicional determinístico sem hubs/localidade: mesmos 90k/450k retornados, ring garante conectividade, targets pseudoaleatórios e IDs de edges permutados. B incondicional expandiu 29.914.323→32.370.181 bytes (+8,2%) versus v1 textual. Protótipo conta endpoints no batch (arrays/map bounded 512) antes da emissão e compara custo wire da tabela/ref contra inline. Disperso voltou a 29.900.969 bytes, encode 252,993→252,440 ms; sem ganhos artificiais. No corpus original encode 178,254→187,253 ms (+5,0%), CPU 210,229→218,334 (+3,9%); payload 22.070.295→22.067.479. Mantido apesar do custo adicional para evitar expansão sistemática em workloads dispersos. Não altera .proto nem framing; refs continuam locais/opacos, schema permite fallback inline. Teste de expectativa de todos os endpoints numéricos atualizado para a política legítima e fortalecido com comparação ao Graph; novos testes independentes exigem singleton inline/repetido referenciado.
+
+[Dados brutos](benchmarks/ggpb_b-adaptive.jsonl). Medianas de três execuções; CPU/alloc cold incluem query. Resident abaixo mede somente encode, após warmup.
+
+| Caso | Encode cold ms | CPU cold ms | TotalAlloc MiB | Allocs | Payload bytes | Consumer ms | Encode residente ms |
+|---|---|---|---|---|---|---|---|
+| 100 | 0.523 | 0.642 | 0.32 | 2507 | 22022 | 0.896 | 0.389 |
+| 10000 | 19.313 | 22.370 | 1.54 | 76025 | 2199378 | 39.469 | 19.519 |
+| 100000 | 187.253 | 218.334 | 12.27 | 738297 | 22067479 | 370.349 | 187.661 |
+| empty | 0.034 | 0.097 | 0.01 | 49 | 67 | 0.188 | 0.014 |
