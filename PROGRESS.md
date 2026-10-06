@@ -220,3 +220,5 @@ Checkpoint B concluído: endpoints locais bounded, schema/reader/JSON/Python atu
 Checkpoint C1 concluído: reuso local de slots e slices, ggpb/E2E/vet passaram; quatro escalas medidas. Encoding grande −29,9%, bytes alocados −90,2%, wire idêntico. Próximo: C2 e proto.Size isolados.
 
 Checkpoint C2 concluído: maps/Records/slices reutilizados, testes ggpb e matriz cold/resident passaram. Grande encoding −5,2%, TotalAlloc −63,8%. Próximo: medir eliminação do Size externo.
+
+Experimento D1 concluído/rejeitado: remover Size externo não ganhou no marshaler gerado (331,5→333,0 ms); revertido. Testes ggpb passaram. Próximo: protowire sobre slots reutilizados.

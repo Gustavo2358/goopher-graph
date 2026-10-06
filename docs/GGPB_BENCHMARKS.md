@@ -296,3 +296,16 @@ Reuso por query dos maps locais (clear após callback), Records e slices de dict
 | 10000 | 33.905 | 36.980 | 1.62 | 77092 | 2199660 | 39.700 | 32.949 |
 | 100000 | 331.488 | 363.687 | 12.34 | 739358 | 22070295 | 375.942 | 328.838 |
 | empty | 0.153 | 0.220 | 0.07 | 530 | 67 | 0.163 | 0.016 |
+
+### D1 — eliminar Size externo com marshal gerado (REJECT)
+
+Protótipo usou limite conservador do batch, Size somente no oversize e len(encoded) antes de framing, desligando UseCachedSize. Grande 331,488→333,030 ms, CPU 363,687→365,917; sem redução de allocations/payload. O marshaler gerado ainda faz seu próprio Size para prealocar: não elimina uma passagem real comparado ao cache do baseline. Revertido no caminho gerado; será reavaliado separadamente com protowire direto.
+
+[Dados brutos](benchmarks/ggpb_c4-size.jsonl). Medianas de três execuções; CPU/alloc cold incluem query. Resident abaixo mede somente encode, após warmup.
+
+| Caso | Encode cold ms | CPU cold ms | TotalAlloc MiB | Allocs | Payload bytes | Consumer ms | Encode residente ms |
+|---|---|---|---|---|---|---|---|
+| 100 | 0.885 | 1.014 | 0.40 | 3574 | 22026 | 0.896 | 0.485 |
+| 10000 | 33.855 | 37.103 | 1.62 | 77091 | 2199660 | 39.904 | 32.763 |
+| 100000 | 333.030 | 365.917 | 12.34 | 739357 | 22070295 | 376.398 | 324.551 |
+| empty | 0.175 | 0.266 | 0.07 | 530 | 67 | 0.171 | 0.015 |
