@@ -322,3 +322,16 @@ Codec específico para batches produzidos pelo encoder, sobre slots reutilizados
 | 10000 | 27.517 | 30.511 | 1.67 | 77112 | 2199660 | 42.983 | 27.451 |
 | 100000 | 260.279 | 294.540 | 12.39 | 739384 | 22070295 | 376.970 | 255.849 |
 | empty | 0.191 | 0.260 | 0.07 | 539 | 67 | 0.166 | 0.019 |
+
+### D2 — sem Size no hot path direto (KEEP)
+
+Batches usam o limite conservador pré-interning já existente; somente um envelope excepcional cujo bound ultrapassa 4 MiB exige Size exato antes do callback. Header validado/limitado antes de alocar e End escalar. EmitEncoded verifica len(payload) antes de enviar/framing. Grande C3→D2: 260,279→178,254 ms (−31,5%); CPU 294,540→210,229. Payload idêntico. Ao contrário de D1, aqui foi eliminada uma passagem real de reflection/Size. Retenção segue bounded; hard limit é independente do target.
+
+[Dados brutos](benchmarks/ggpb_c4-wire-size.jsonl). Medianas de três execuções; CPU/alloc cold incluem query. Resident abaixo mede somente encode, após warmup.
+
+| Caso | Encode cold ms | CPU cold ms | TotalAlloc MiB | Allocs | Payload bytes | Consumer ms | Encode residente ms |
+|---|---|---|---|---|---|---|---|
+| 100 | 0.541 | 0.667 | 0.32 | 2507 | 22026 | 0.877 | 0.362 |
+| 10000 | 18.032 | 21.499 | 1.54 | 76025 | 2199660 | 39.337 | 17.901 |
+| 100000 | 178.254 | 210.229 | 12.26 | 738292 | 22070295 | 372.788 | 179.830 |
+| empty | 0.036 | 0.099 | 0.01 | 49 | 67 | 0.185 | 0.017 |

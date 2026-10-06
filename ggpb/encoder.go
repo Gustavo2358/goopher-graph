@@ -70,6 +70,9 @@ func Emit(ctx context.Context, g *graph.Graph, s *query.Subgraph, q Query, optio
 		}
 		size += len(v) + 8
 	}
+	if size > MaxFrame {
+		return ErrLimit
+	}
 	labels := slices.Clone(q.EdgeLabels)
 	slices.Sort(labels)
 	labels = slices.Compact(labels)
@@ -81,9 +84,7 @@ func Emit(ctx context.Context, g *graph.Graph, s *query.Subgraph, q Query, optio
 		if e := ctx.Err(); e != nil {
 			return e
 		}
-		if proto.Size(b) > MaxFrame {
-			return ErrLimit
-		}
+
 		return send(b)
 	}
 	if e := emit(&pb.Batch{Payload: &pb.Batch_Header{Header: h}}); e != nil {
@@ -286,7 +287,12 @@ func (b *batcher) flush() error {
 	if b.records == nil || len(b.records.Parts) == 0 {
 		return nil
 	}
-	e := b.emit(&pb.Batch{Payload: &pb.Batch_Records{Records: b.records}})
+	batch := &pb.Batch{Payload: &pb.Batch_Records{Records: b.records}}
+	// Conservative uninterned bound dominates every field including table entries.
+	if b.size > MaxFrame && proto.Size(batch) > MaxFrame {
+		return ErrLimit
+	}
+	e := b.emit(batch)
 	for _, s := range b.used {
 		if cap(s.props) <= 16 && cap(s.labels) <= 16 && len(b.free) < maxParts {
 			s.reset()

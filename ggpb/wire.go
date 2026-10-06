@@ -21,6 +21,9 @@ func EmitEncoded(ctx context.Context, g *graph.Graph, s *query.Subgraph, q Query
 		if len(payload) > MaxFrame {
 			return ErrLimit
 		}
+		if e := ctx.Err(); e != nil {
+			return e
+		}
 		return send(payload)
 	})
 }

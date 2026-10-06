@@ -224,3 +224,5 @@ Checkpoint C2 concluído: maps/Records/slices reutilizados, testes ggpb e matriz
 Experimento D1 concluído/rejeitado: remover Size externo não ganhou no marshaler gerado (331,5→333,0 ms); revertido. Testes ggpb passaram. Próximo: protowire sobre slots reutilizados.
 
 Checkpoint C3 concluído: protowire específico, EmitEncoded transport-neutral, mesmo wire; ggpb/E2E e diferenciais oficiais passaram. Encoding −21,5%. Próximo: reavaliar Size e batch sizing.
+
+Checkpoint D2 concluído: orçamento conservador + check final de wire, sem Size normal; ggpb passou e quatro casos medidos. Grande 260,3→178,3 ms, CPU 294,5→210,2. Próximo: matriz de batches.
