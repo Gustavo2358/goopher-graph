@@ -395,3 +395,49 @@ Protótipo bounded promove símbolos após repetição (2 ou 4 ocorrências); mi
 | 10000 | 18.443 | 21.772 | 1.54 | 76027 | 2244604 | 40.532 | 18.688 |
 | 100000 | 179.387 | 211.107 | 12.26 | 738293 | 22519595 | 378.650 | 183.053 |
 | empty | 0.029 | 0.089 | 0.01 | 49 | 67 | 0.170 | 0.022 |
+
+### E — geometria e heap vivo
+
+Amostras com GC dentro do callback, fora dos tempos, nas quatro escalas. Metadata vazia nesta prova: bytes diferem levemente da campanha territory. [Dados](benchmarks/ggpb_batch_geometry.jsonl). Retenção medida com graph/subgraph vivos; pico amostrado não cobre todos os transientes.
+
+| Cap partes | Target KiB | Batches grande | Frame máximo B | Auxiliar vivo amostrado KiB |
+|---|---|---|---|---|
+| 256 | 64 | 2110 | 12829 | 349.9 |
+| 256 | 128 | 2110 | 12829 | 349.9 |
+| 256 | 256 | 2110 | 12829 | 349.9 |
+| 256 | 512 | 2110 | 12829 | 355.2 |
+| 256 | 1024 | 2110 | 12829 | 349.9 |
+| 256 | 2048 | 2110 | 12829 | 349.9 |
+| 4096 | 64 | 1289 | 20730 | 562.0 |
+| 4096 | 128 | 645 | 41480 | 1119.5 |
+| 4096 | 256 | 323 | 82980 | 2262.2 |
+| 4096 | 512 | 162 | 165930 | 4495.2 |
+| 4096 | 1024 | 132 | 204830 | 5570.3 |
+| 4096 | 2048 | 132 | 204830 | 5570.3 |
+
+### H — parallel encoding (REJECT), queries concorrentes (KEEP capacidade existente)
+
+Protótipo com 1/2/4/8 workers e 1/2/4/8 queries independentes sobre o mesmo snapshot aberto. Janela de jobs/completions de 2×workers, emissão ordenada, mesma saída. Para respeitar ownership, workers recebem proto.Clone do batch e retornam cópia do wire; cada worker usa o mesmo codec protowire otimizado. Cópias e GC contam no tempo/CPU. Não é uma comparação com marshal antigo nem zero-copy inseguro.
+
+Três ondas por combinação, nas quatro escalas; [192 amostras](benchmarks/ggpb_concurrency.jsonl). Cada query tem scratch próprio e é executada novamente dentro da onda. Wall de uma onda não é a soma das latências individuais; CPU é user+system agregado do processo. Consumer/payload não mudam com workers, pois o wire é idêntico. Testes com determinismo/typed/error/cancellation passaram. Harness opt-in permanece somente em testes, nenhum worker/flag/pool entra no produto.
+
+| Workers/query | Queries simultâneas | Onda grande ms | Queries/s | Encode latência mediana ms | CPU/query ms | TotalAlloc/query MiB | Allocs/query |
+|---|---|---|---|---|---|---|---|
+| 1 | 1 | 193.537 | 5.17 | 166.294 | 198.597 | 12.24 | 738279 |
+| 1 | 2 | 199.125 | 10.04 | 170.003 | 204.253 | 12.24 | 738278 |
+| 1 | 4 | 232.480 | 17.21 | 200.267 | 234.031 | 12.24 | 738277 |
+| 1 | 8 | 306.505 | 26.10 | 257.846 | 300.342 | 12.24 | 738276 |
+| 2 | 1 | 591.966 | 1.69 | 565.138 | 820.395 | 286.05 | 6259624 |
+| 2 | 2 | 725.857 | 2.76 | 698.025 | 985.321 | 286.06 | 6259635 |
+| 2 | 4 | 987.863 | 4.05 | 953.469 | 1220.265 | 286.06 | 6259666 |
+| 2 | 8 | 1349.207 | 5.93 | 1301.311 | 1452.974 | 286.06 | 6259646 |
+| 4 | 1 | 585.319 | 1.71 | 558.471 | 808.826 | 286.20 | 6259674 |
+| 4 | 2 | 722.411 | 2.77 | 694.437 | 988.198 | 286.21 | 6259693 |
+| 4 | 4 | 961.227 | 4.16 | 920.059 | 1186.422 | 286.21 | 6259707 |
+| 4 | 8 | 1320.201 | 6.06 | 1266.057 | 1424.971 | 286.21 | 6259694 |
+| 8 | 1 | 592.149 | 1.69 | 564.263 | 824.479 | 286.50 | 6259774 |
+| 8 | 2 | 733.218 | 2.73 | 704.338 | 997.762 | 286.50 | 6259786 |
+| 8 | 4 | 927.587 | 4.31 | 888.969 | 1135.514 | 286.50 | 6259812 |
+| 8 | 8 | 1257.648 | 6.36 | 1211.468 | 1376.669 | 286.50 | 6259787 |
+
+O clone domina o pipeline paralelo: uma query passa de ~166 ms encoding/12 MiB alocados para ~559–565 ms/286 MiB. Nem 8 workers recuperam esse custo; com 8 queries o caminho sequencial entrega ~26 queries/s, contra ~6 no paralelo. Rejeitado. Distribuir diretamente a materialização exigiria mudar a montagem/particionamento de batches para preservar exatamente os bytes e lidar com continuations; sem benefício deste protótipo, não foi introduzido outro scheduler/segundo traversal. A capacidade existente de queries concorrentes escala melhor neste workload. Não se extrapola throughput do sintético para produção.
