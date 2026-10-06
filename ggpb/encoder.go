@@ -295,13 +295,18 @@ func (b *batcher) flush() error {
 	}
 	clear(b.used)
 	b.used = b.used[:0]
-	b.records = nil
-	b.dict = nil
-	b.cache = nil
+	clear(b.records.Parts)
+	b.records.Parts = b.records.Parts[:0]
+	clear(b.records.Dictionary)
+	b.records.Dictionary = b.records.Dictionary[:0]
+	clear(b.records.EndpointIds)
+	b.records.EndpointIds = b.records.EndpointIds[:0]
+	clear(b.dict)
+	clear(b.cache)
 	b.cacheBytes = 0
-	b.endpointCache = nil
+	clear(b.endpointCache)
 	b.endpointCacheBytes = 0
-	b.endpoints = nil
+	clear(b.endpoints)
 	b.endpointBytes = 0
 	b.size = 0
 	b.textBytes = 0

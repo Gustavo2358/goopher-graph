@@ -283,3 +283,16 @@ Slots locais concretos reutilizam Part/NodePart/EdgePart, Symbol/Property e wrap
 | 10000 | 36.834 | 40.966 | 3.79 | 85044 | 2199660 | 41.943 | 36.594 |
 | 100000 | 349.586 | 387.062 | 34.06 | 819162 | 22070295 | 374.213 | 357.199 |
 | empty | 0.173 | 0.242 | 0.07 | 531 | 67 | 0.143 | 0.018 |
+
+### C2 — maps, Records e buffers (KEEP)
+
+Reuso por query dos maps locais (clear após callback), Records e slices de dictionary/parts/endpoints. MarshalAppend já reutilizava o buffer, portanto não se atribui novo ganho a esse baseline existente. Grande: 349,586→331,488 ms (−5,2%), CPU 387,062→363,687; TotalAlloc 34,06→12,34 MiB (−63,8%), Allocs 819.162→739.358. Payload idêntico; teste bounded-memory passou.
+
+[Dados brutos](benchmarks/ggpb_c3-buffers.jsonl). Medianas de três execuções; CPU/alloc cold incluem query. Resident abaixo mede somente encode, após warmup.
+
+| Caso | Encode cold ms | CPU cold ms | TotalAlloc MiB | Allocs | Payload bytes | Consumer ms | Encode residente ms |
+|---|---|---|---|---|---|---|---|
+| 100 | 0.905 | 1.029 | 0.40 | 3573 | 22026 | 0.911 | 0.492 |
+| 10000 | 33.905 | 36.980 | 1.62 | 77092 | 2199660 | 39.700 | 32.949 |
+| 100000 | 331.488 | 363.687 | 12.34 | 739358 | 22070295 | 375.942 | 328.838 |
+| empty | 0.153 | 0.220 | 0.07 | 530 | 67 | 0.163 | 0.016 |

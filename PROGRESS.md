@@ -218,3 +218,5 @@ Checkpoint A concluído: StringID dictionary/cache bounded, sem mudar wire; test
 Checkpoint B concluído: endpoints locais bounded, schema/reader/JSON/Python atualizados; teste falhou antes, ggpb/E2E e consumidor Python grande passaram. Payload adicional −26,2%, encoding +2,9% justificado pela redução. Próximo: reuso de objetos.
 
 Checkpoint C1 concluído: reuso local de slots e slices, ggpb/E2E/vet passaram; quatro escalas medidas. Encoding grande −29,9%, bytes alocados −90,2%, wire idêntico. Próximo: C2 e proto.Size isolados.
+
+Checkpoint C2 concluído: maps/Records/slices reutilizados, testes ggpb e matriz cold/resident passaram. Grande encoding −5,2%, TotalAlloc −63,8%. Próximo: medir eliminação do Size externo.
