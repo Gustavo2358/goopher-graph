@@ -244,3 +244,16 @@ No GGPB, mallocgc soma 23,9% CPU cumulativa, marshalAppendPointer 21,3%, sizePoi
 | empty | json | 0.058 | 0.129 | 0.01 | 114 | 178 | 0.052 |
 | empty | ggpb | 0.185 | 0.270 | 0.07 | 529 | 67 | 0.165 |
 | empty | ggpb-inline | 0.168 | 0.240 | 0.07 | 529 | 67 | 0.182 |
+
+### A — StringID-aware symbols (KEEP)
+
+Dicionário e cache bounded indexados por StringID somente dentro do adapter. Resolve labels/keys uma vez por batch, com fallback fora do limite. Os refs transitórios são traduzidos antes do callback e nunca saem no wire. Nenhuma extensão do core. Grande c0→c1: 510,982→484,577 ms (−5,2%), CPU 607,138→585,396 ms; allocations 9.309.134→8.506.529 (−8,6%). Payload byte a byte inalterado. Mantido por ganho de tempo e eliminação de resoluções repetidas; cache extra continua limitado a 1.024 entradas/64 KiB.
+
+[Dados brutos](benchmarks/ggpb_c1.jsonl). Medianas de três execuções; CPU/alloc cold incluem query. Resident abaixo mede somente encode, após warmup.
+
+| Caso | Encode cold ms | CPU cold ms | TotalAlloc MiB | Allocs | Payload bytes | Consumer ms | Encode residente ms |
+|---|---|---|---|---|---|---|---|
+| 100 | 0.857 | 0.985 | 0.51 | 9618 | 29850 | 0.847 | 0.580 |
+| 10000 | 53.364 | 62.906 | 34.86 | 851673 | 2984088 | 46.141 | 55.408 |
+| 100000 | 484.577 | 585.396 | 347.59 | 8506529 | 29914323 | 417.655 | 491.571 |
+| empty | 0.175 | 0.251 | 0.07 | 528 | 67 | 0.166 | 0.017 |

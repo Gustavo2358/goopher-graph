@@ -323,9 +323,9 @@ func TestDictionaryPolicy(t *testing.T) {
 	enc := batcher{emit: func(b *pb.Batch) error { outputs = append(outputs, proto.Clone(b).(*pb.Batch)); return nil }}
 	n := &pb.NodePart{Id: new("n"), Last: true}
 	for i := 0; i < 1100; i++ {
-		n.Labels = append(n.Labels, &pb.Symbol{Text: fmt.Sprintf("l%04d", i)})
+		n.Labels = append(n.Labels, &pb.Symbol{Text: fmt.Sprintf("l%04d", i), Ref: uint32(i) + 1})
 	}
-	n.Labels = append(n.Labels, &pb.Symbol{Text: "l0000"}, &pb.Symbol{Text: strings.Repeat("x", dictionaryBytes+1)})
+	n.Labels = append(n.Labels, &pb.Symbol{Text: "l0000", Ref: 1}, &pb.Symbol{Text: strings.Repeat("x", dictionaryBytes+1), Ref: 1102})
 	if e := enc.add(&pb.Part{Entity: &pb.Part_Node{Node: n}}, 200000); e != nil {
 		t.Fatal(e)
 	}
@@ -336,7 +336,7 @@ func TestDictionaryPolicy(t *testing.T) {
 	if len(r.Dictionary) != maxDictionary || r.Parts[0].GetNode().Labels[1100].Ref != 1 || r.Parts[0].GetNode().Labels[1024].Ref != 0 || r.Parts[0].GetNode().Labels[1101].Ref != 0 {
 		t.Fatal("dictionary limit/fallback")
 	}
-	if e := enc.add(&pb.Part{Entity: &pb.Part_Node{Node: &pb.NodePart{Id: new("z"), Labels: []*pb.Symbol{{Text: "l0001"}}, Last: true}}}, 32); e != nil {
+	if e := enc.add(&pb.Part{Entity: &pb.Part_Node{Node: &pb.NodePart{Id: new("z"), Labels: []*pb.Symbol{{Text: "l0001", Ref: 2}}, Last: true}}}, 32); e != nil {
 		t.Fatal(e)
 	}
 	if e := enc.flush(); e != nil {

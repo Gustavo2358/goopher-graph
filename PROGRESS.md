@@ -212,3 +212,5 @@ Próximo: revisão do PR; nenhum merge autorizado nesta entrega.
 ## Otimização GGPB — 2026-10-06
 
 Em andamento no PR #4, branch existente. Checkpoint 0: capturar CPU/alloc_space/alloc_objects de JSON, GGPB e inline no mesmo snapshot grande antes de alterar o hot path. Próximo: medir cada hipótese isoladamente.
+
+Checkpoint A concluído: StringID dictionary/cache bounded, sem mudar wire; testes ggpb/graph/E2E passaram. Quatro casos cold/resident medidos; grande encode −5,2%, allocations −8,6%. Próximo: endpoints lógicos locais.

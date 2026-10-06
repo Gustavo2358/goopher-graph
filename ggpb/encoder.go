@@ -89,7 +89,7 @@ func Emit(ctx context.Context, g *graph.Graph, s *query.Subgraph, q Query, optio
 	if e := emit(&pb.Batch{Payload: &pb.Batch_Header{Header: h}}); e != nil {
 		return e
 	}
-	enc := batcher{emit: emit, inline: options.InlineSymbols}
+	enc := batcher{emit: emit, inline: options.InlineSymbols, g: g}
 	ni := s.Nodes()
 	for ni.Next() {
 		if e := ctx.Err(); e != nil {
@@ -119,7 +119,7 @@ func Emit(ctx context.Context, g *graph.Graph, s *query.Subgraph, q Query, optio
 			if e := ctx.Err(); e != nil {
 				return e
 			}
-			text, e := g.String(ls.ID())
+			text, e := enc.string(ls.ID())
 			if e != nil {
 				return e
 			}
@@ -131,7 +131,7 @@ func Emit(ctx context.Context, g *graph.Graph, s *query.Subgraph, q Query, optio
 					return e
 				}
 			}
-			n.Labels = append(n.Labels, &pb.Symbol{Text: text})
+			n.Labels = append(n.Labels, &pb.Symbol{Text: text, Ref: uint32(ls.ID()) + 1})
 			size += len(text) + 12
 		}
 		if e := ls.Err(); e != nil {
@@ -145,7 +145,7 @@ func Emit(ctx context.Context, g *graph.Graph, s *query.Subgraph, q Query, optio
 			if e := ctx.Err(); e != nil {
 				return e
 			}
-			p, e := property(g, props.Property())
+			p, e := enc.property(props.Property())
 			if e != nil {
 				return e
 			}
@@ -185,7 +185,7 @@ func Emit(ctx context.Context, g *graph.Graph, s *query.Subgraph, q Query, optio
 		if e != nil {
 			return e
 		}
-		label, e := g.String(edge.Label)
+		label, e := enc.string(edge.Label)
 		if e != nil {
 			return e
 		}
@@ -194,7 +194,7 @@ func Emit(ctx context.Context, g *graph.Graph, s *query.Subgraph, q Query, optio
 				return ErrLimit
 			}
 		}
-		n := &pb.EdgePart{Id: &id, Source: &source, Target: &target, Label: &pb.Symbol{Text: label}}
+		n := &pb.EdgePart{Id: &id, Source: &source, Target: &target, Label: &pb.Symbol{Text: label, Ref: uint32(edge.Label) + 1}}
 		size := len(id) + len(source) + len(target) + len(label) + 64
 		flush := func(last bool) error {
 			n.Last = last
@@ -211,7 +211,7 @@ func Emit(ctx context.Context, g *graph.Graph, s *query.Subgraph, q Query, optio
 			if e := ctx.Err(); e != nil {
 				return e
 			}
-			p, e := property(g, props.Property())
+			p, e := enc.property(props.Property())
 			if e != nil {
 				return e
 			}
@@ -239,7 +239,10 @@ func Emit(ctx context.Context, g *graph.Graph, s *query.Subgraph, q Query, optio
 type batcher struct {
 	emit            func(*pb.Batch) error
 	records         *pb.Records
-	dict            map[string]uint32
+	dict            map[graph.StringID]uint32
+	g               *graph.Graph
+	cache           map[graph.StringID]string
+	cacheBytes      int
 	size, textBytes int
 	inline          bool
 }
@@ -251,26 +254,34 @@ func (b *batcher) flush() error {
 	e := b.emit(&pb.Batch{Payload: &pb.Batch_Records{Records: b.records}})
 	b.records = nil
 	b.dict = nil
+	b.cache = nil
+	b.cacheBytes = 0
 	b.size = 0
 	b.textBytes = 0
 	return e
 }
 func (b *batcher) symbol(s *pb.Symbol) {
-	if s == nil || b.inline {
+	if s == nil {
 		return
 	}
-	if id, ok := b.dict[s.Text]; ok {
+	idKey := graph.StringID(s.Ref - 1)
+	if b.inline {
+		s.Ref = 0
+		return
+	}
+	if id, ok := b.dict[idKey]; ok {
 		s.Ref = id
 		s.Text = ""
 		return
 	}
 	if len(b.dict) >= maxDictionary || len(s.Text)+b.textBytes > dictionaryBytes {
+		s.Ref = 0
 		return
 	}
 	b.textBytes += len(s.Text)
 	b.records.Dictionary = append(b.records.Dictionary, s.Text)
 	id := uint32(len(b.records.Dictionary))
-	b.dict[s.Text] = id
+	b.dict[idKey] = id
 	s.Ref = id
 	s.Text = ""
 }
@@ -284,7 +295,7 @@ func (b *batcher) add(p *pb.Part, size int) error {
 	}
 	if b.records == nil {
 		b.records = &pb.Records{}
-		b.dict = make(map[string]uint32)
+		b.dict = make(map[graph.StringID]uint32)
 	}
 	if n := p.GetNode(); n != nil {
 		for _, s := range n.Labels {
@@ -304,15 +315,15 @@ func (b *batcher) add(p *pb.Part, size int) error {
 	b.size += size
 	return nil
 }
-func property(g *graph.Graph, p graph.Property) (*pb.Property, error) {
-	key, e := g.String(p.Key)
+func (b *batcher) property(p graph.Property) (*pb.Property, error) {
+	key, e := b.string(p.Key)
 	if e != nil {
 		return nil, e
 	}
 	if len(key) > MaxScalar {
 		return nil, ErrLimit
 	}
-	out := &pb.Property{Key: &pb.Symbol{Text: key}, Kind: pb.Kind(p.Value.Kind())}
+	out := &pb.Property{Key: &pb.Symbol{Text: key, Ref: uint32(p.Key) + 1}, Kind: pb.Kind(p.Value.Kind())}
 	switch p.Value.Kind() {
 	case graph.BoolKind:
 		v, _ := p.Value.Bool()
@@ -345,4 +356,26 @@ func propertyBound(p *pb.Property) int {
 		n += len(x.Text)
 	}
 	return n
+}
+
+// Cache only a bounded batch's labels/keys. StringIDs never reach the callback.
+func (b *batcher) string(id graph.StringID) (string, error) {
+	if s, ok := b.cache[id]; ok {
+		return s, nil
+	}
+	s, e := b.g.String(id)
+	if e != nil {
+		return "", e
+	}
+	if len(s) > MaxScalar {
+		return "", ErrLimit
+	}
+	if !b.inline && len(b.cache) < maxDictionary && b.cacheBytes+len(s) <= dictionaryBytes {
+		if b.cache == nil {
+			b.cache = make(map[graph.StringID]string)
+		}
+		b.cache[id] = s
+		b.cacheBytes += len(s)
+	}
+	return s, nil
 }
