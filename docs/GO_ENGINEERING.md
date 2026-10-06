@@ -6,7 +6,7 @@ O módulo local inicial pode chamar-se `gophergraph`, sem afirmar que existe um 
 
 B00 usa a toolchain Go aprovada e disponível. A diretiva `go` registra o requisito técnico mínimo necessário; não adicionar uma diretiva `toolchain` de patch por ritual. Não exigir uma versão do sistema mais nova só porque ela existe. Nenhuma API proposta depende de uma novidade recente. [G4](REFERENCES.md)
 
-Dependência de produto prevista: `golang.org/x/sys/unix`, somente no adapter Linux. Usar a versão compatível disponibilizada no ambiente. Não adicionar petgraph equivalente, framework CLI, DI, logging ou suíte de testes. `go.mod`/`go.sum` e, quando a operação exigir, `go mod vendor`, são práticas normais; a proibição de burocracia não significa apagar a integridade normal do gerenciador.
+Dependências de produto: `golang.org/x/sys/unix` no adapter Linux, wazero em wasmquery e runtime oficial Protobuf em ggpb, conforme as extensões autorizadas. Usar a versão compatível disponibilizada no ambiente. Não adicionar petgraph equivalente, framework CLI, DI, logging ou suíte de testes. `go.mod`/`go.sum` e, quando a operação exigir, `go mod vendor`, são práticas normais; a proibição de burocracia não significa apagar a integridade normal do gerenciador.
 
 Não gerar chamadas de rede no build/teste. Dependências devem estar disponíveis pelo mecanismo autorizado; indisponibilidade é uma limitação concreta do ambiente, não autorização para bypass. O pacote documental não inclui fontes de dependências.
 

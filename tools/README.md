@@ -23,3 +23,15 @@ para medir retenção; não altera o algoritmo ou os tempos de build/publicaçã
 `--profile PATH` captura perfis de heap quando o pico aumenta 128 MiB; tem custo
 adicional e o perfil reflete o último ciclo de GC. RSS é medido separadamente com
 GNU time. Ver [reprodução](../docs/BOUNDED_INGEST.md).
+
+## Medir resultados e consumidor
+
+`tools/resultmeasure` separa open/validate, query e encoding, ou mede um consumidor
+incremental JSON/GGPB em outro processo. `tools/ggpb_campaign.py` alterna formatos
+em cinco repetições nas fixtures determinísticas de benchdata. Tempos, CPU,
+allocations, bytes e peak RSS por executable são emitidos em JSONL.
+[Reprodução e resultados](../docs/GGPB_BENCHMARKS.md).
+
+`tools/ggpb_python.py` é um consumidor opcional com o runtime oficial Protobuf,
+sem acumular o resultado. Requer result_pb2.py gerado do schema, fora do build Go.
+[Comandos](../docs/GGPB.md#regenerar-e-validar-interoperabilidade).

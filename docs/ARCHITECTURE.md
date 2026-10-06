@@ -8,7 +8,7 @@ GopherGraph tem um núcleo de grafo imutável, uma capacidade de ingestão, uma 
 cmd/gophergraph (argv, sinais, composição, códigos de saída)
      |                 |                    |
      v                 v                    v
-ingest.Build      snapshot.Open         query.* + dot.Write / graphjson.Write
+ingest.Build      snapshot.Open         query.* + dot.Write / graphjson.Write / ggpb.Write
      |                 |                    |
      +-----------------+--------------------+
                        v
@@ -87,6 +87,8 @@ gophergraph/
 │   ├── anti_territory.go
 │   └── between.go
 ├── graphjson/writer.go            # JSON tipado por streaming
+├── ggpb/                         # batches Protobuf, framing e reader incremental
+│   └── pb/result.proto           # contrato lógico público, independente do snapshot
 ├── dot/writer.go
 ├── internal/graphdata/             # somente colunas/layout lógico compartilhado
 │   ├── columns.go
@@ -108,7 +110,7 @@ gophergraph/
 | ingest | graph/graphdata e seus ports | filesystem concreto, Neptune concreto, SDK |
 | ingest/ports | tipos de contribuição e tipos simples | implementação do builder ou adapters |
 | snapshot | graph/graphdata, seus ports, binário LE | mmap/file concretos, CLI |
-| dot, graphjson | graph, query, io.Writer | Graphviz, os.Create, stdout global, HTTP |
+| dot, graphjson, ggpb | graph, query, io.Writer | Graphviz, os.Create, stdout global, HTTP |
 | adapters | port e APIs concretas necessárias | regras de negócio de consultas |
 | cmd | capacidades públicas e adapters locais | layout privado, algoritmos |
 
@@ -152,3 +154,13 @@ As operações usam APIs públicas do grafo e mantêm trabalho intensivo no host
 Módulos compilados imutáveis são cacheados por conteúdo no runtime; instâncias
 WASI, conjuntos e contexto de execução são novos por chamada. A Host API não
 expõe memória interna nem permite mutar o Graph. [Contrato e lifecycle](WASM.md).
+
+## Resultados GGPB
+
+`ggpb → graph/query`, com mensagens geradas em `ggpb/pb`. Protobuf fica isolado
+nessa capacidade. `ggpb.Emit` entrega batches lógicos sincrônicos; `ggpb.Write`
+adiciona framing para io.Writer. Reader/JSON decodificam sem Graph/snapshot.
+Dictionaries são locais ao batch e partes permitem dividir uma entidade com
+muitas propriedades. A única extensão do core foi IterateNodeLabels, sem cópia, para limitar memória
+mesmo em nodes com muitos labels. NodeLabels e o layout permanecem intactos.
+[Contrato, memória, versionamento e futuro gRPC](GGPB.md).

@@ -50,7 +50,7 @@ gophergraph territory --snapshot ./graph.snapshot --node PROGRAM:A \
 
 Sem `--edge-label`, todas as relações. Com uma ou mais, união dos labels solicitados. Se nenhum existir, filtro vazio e somente alcance reflexivo; não usar nil por engano. `--edge-label=""` é erro de uso porque label vazio não é válido.
 
-`--format ids` é padrão. Para território/antiterritório, listagem omite origem; `--include-origin` a inclui. Between lista todos os membros. DOT e JSON incluem todos os membros do subgrafo. `--output` omitido escreve em stdout; quando presente escreve no arquivo local. Biblioteca só recebe io.Writer.
+`--format ids` é padrão. Para território/antiterritório, listagem omite origem; `--include-origin` a inclui. Between lista todos os membros. DOT, JSON e GGPB incluem todos os membros do subgrafo. `--output` omitido escreve em stdout; quando presente escreve no arquivo local. Biblioteca só recebe io.Writer.
 
 ## JSON
 
@@ -78,3 +78,17 @@ Snapshot com carga parcial emite aviso em stderr antes de consultar. A API infor
 `PublishedUncertain` sai 1 e informa que o nome novo já está visível; não alegar rollback. Erro escrevendo relatório depois de publicar também sai 1 com publicação preservada. `--help` sai 0 sem abrir dados. SIGINT cancela contexto e limpa staging quando ainda não publicado.
 
 Somente main chama os.Exit, depois de a função run retornar e seus defers encerrarem recursos. Não usar log.Fatal no meio do fluxo. Uma CLI pequena pode usar `flag.FlagSet`; framework externo não é necessário.
+
+## GGPB e decode
+
+`territory`, `anti-territory` e `between` aceitam `--format ggpb` para resultados
+Protobuf autocontidos, versionados e limitados por batch. [Contrato GGPB](GGPB.md).
+
+```sh
+gophergraph territory --snapshot graph.snapshot --node A --format ggpb --output result.ggpb
+gophergraph decode --input result.ggpb --format json --output result.json
+```
+
+Decode não recebe snapshot. Erros de framing, versão, tipos, contagens, End e I/O
+retornam código 1; flags inválidas retornam 2. Destinos que identificam o mesmo
+arquivo de entrada são rejeitados antes de criar/truncar o output.

@@ -166,3 +166,41 @@ três merges é idêntico à árvore validada no fechamento WASM acima. As evid�
 de regressão, race, vet, build e fuzz continuam aplicáveis; esta atualização
 altera somente o registro de progresso. Branch local `main` atualizada por
 fast-forward. Campanha encerrada.
+
+## Campanha GGPB — 2026-10-06
+
+Implementação e qualificação concluídas; publicação da branch/PR em andamento.
+Adapter externo `ggpb`/`ggpb/pb`, batches Protobuf limitados, framing CRC32,
+reader incremental e CLI `--format ggpb` / `decode --format json`. Única extensão
+mínima do core: IterateNodeLabels sem cópia, para limitar memória mesmo em um node
+com muitos labels. Queries, sets, snapshot e formatos anteriores preservados.
+
+Evidência executada com dependências locais, GOPROXY=off e Go 1.26.0:
+
+- `go test -count=1 ./...`, `CGO_ENABLED=1 go test -race -count=1 ./...`,
+  `go vet ./...`, gofmt, `CGO_ENABLED=0 go build`: passaram.
+- Framing/golden, truncamento de todos os prefixos, corrupção, Protobuf inválido,
+  versão, ordering/continuidade/counts, erro de I/O, short writes, cancelamento,
+  vazios, tipos/extremos, labels e 30 mil properties em partes passaram.
+- Paridade JSON byte a byte nos seis goldens e casos adicionais; CLI nas três
+  queries, partial, filtros, IDs vazios, stdout/arquivo e proteção de input.
+- Memória: 214.422.538 bytes descartados em 100 mil nodes/edges, heap auxiliar
+  vivo amostrado 365.752 bytes; mesma tolerância fixa nas duas escalas. Não foi
+  usado buffer de resultado nem dictionary global. Iterador de labels não aloca.
+- Fuzz: GGPB 10.000, Neptune 10.000, snapshot 10.000 e WASM 10.008 execuções;
+  sem falhas. `go test -run '^$' -bench . -benchmem -benchtime=1x ./...` passou.
+- Campanha real: 300 amostras, três escalas/três queries e caso vazio, producer
+  e consumer em processos separados; cinco repetições/format com hashes iguais.
+  Territory grande: payload −58,58%, encoding 1,08x mais rápido, decode 2,69x;
+  CPU producer +0,6%, RSS 57,30 → 57,94 MiB, TotalAlloc ~120 → ~352 MiB.
+  Casos pequenos/vazios e io.Discard grande foram mais lentos em GGPB.
+- Conversão real do payload grande comparada por cmp ao JSON direto; três
+  emissões de 29.914.323 bytes tiveram mesmo SHA-256. Python oficial Protobuf
+  validou arquivo grande e fixtures typed/numeric/presence com os dez tipos.
+- `python3 tools/check_package.py` e `git diff --check`: passaram. Nenhuma
+  fixture/golden original alterada. GOCACHE em /tmp e TMPDIR em .measure/tmp
+  contornam somente as restrições/broken /tmp/.git do ambiente de teste.
+
+[Contrato](docs/GGPB.md), [resultados completos](docs/GGPB_BENCHMARKS.md) e
+[amostras brutas](docs/benchmarks/ggpb_samples.jsonl). Próximo: conferir árvore
+versionada em cópia limpa e publicar PR para revisão; não fazer merge.
