@@ -1,0 +1,33 @@
+File: encodingmeasure
+Build ID: 016fe191a28a0f81ea2ee9f9ec8da1e4abe19f7c
+Type: alloc_space
+Time: 2026-10-06 16:53:38 -03
+Showing nodes accounting for 196.23MB, 100% of 196.23MB total
+Dropped 11 nodes (cum <= 0.98MB)
+Showing top 25 nodes out of 36
+      flat  flat%   sum%        cum   cum%
+  180.50MB 91.99% 91.99%   180.50MB 91.99%  gophergraph/internal/graphdata.(*Data).String (inline)
+    3.50MB  1.78% 93.77%     5.02MB  2.56%  gophergraph/ggpb.(*batcher).flush
+    3.05MB  1.55% 95.32%     3.05MB  1.55%  gophergraph/query.reachable
+    1.52MB  0.77% 96.10%     1.52MB  0.77%  google.golang.org/protobuf/encoding/protowire.AppendBytes (inline)
+    1.50MB  0.76% 96.86%     1.50MB  0.76%  runtime.mallocgc
+    1.50MB  0.76% 97.63%     1.50MB  0.76%  gophergraph/ggpb.(*batcher).slot (inline)
+    1.50MB  0.76% 98.39%     1.50MB  0.76%  gophergraph/ggpb.(*batcher).property
+    1.50MB  0.76% 99.16%     1.50MB  0.76%  gophergraph/ggpb.(*recordSlot).label (inline)
+    1.16MB  0.59% 99.74%     1.16MB  0.59%  runtime/pprof.StartCPUProfile
+    0.50MB  0.26%   100%     5.52MB  2.81%  gophergraph/ggpb.(*batcher).addSlot (inline)
+         0     0%   100%     5.02MB  2.56%  gophergraph/ggpb.(*batcher).add
+         0     0%   100%       26MB 13.25%  gophergraph/ggpb.(*batcher).endpointText
+         0     0%   100%     1.52MB  0.77%  gophergraph/ggpb.(*wireEncoder).batch
+         0     0%   100%   190.52MB 97.09%  gophergraph/ggpb.Emit
+         0     0%   100%     1.52MB  0.77%  gophergraph/ggpb.Emit.func1
+         0     0%   100%     2.52MB  1.28%  gophergraph/ggpb.Emit.func2
+         0     0%   100%        3MB  1.53%  gophergraph/ggpb.Emit.func3
+         0     0%   100%   190.52MB 97.09%  gophergraph/ggpb.EmitEncoded
+         0     0%   100%     1.52MB  0.77%  gophergraph/ggpb.EmitEncoded.func1
+         0     0%   100%   190.52MB 97.09%  gophergraph/ggpb.WriteOptions
+         0     0%   100%     1.52MB  0.77%  gophergraph/ggpb.msg
+         0     0%   100%      132MB 67.27%  gophergraph/graph.(*Graph).EdgeExternalID
+         0     0%   100%    47.50MB 24.21%  gophergraph/graph.(*Graph).NodeExternalID
+         0     0%   100%     3.05MB  1.55%  gophergraph/query.Reachable (inline)
+         0     0%   100%     3.05MB  1.55%  gophergraph/query.Territory

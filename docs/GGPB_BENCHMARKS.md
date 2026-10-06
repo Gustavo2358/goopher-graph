@@ -1,5 +1,221 @@
 # Campanha JSON vs GGPB — 2026-10-06
 
+## Consolidação da otimização — 2026-10-06
+
+O formato lógico e a separação do core foram preservados. No mesmo caso de 90k/450k, encoding caiu **510,982→186,220 ms (2,74×)**, CPU do produtor **607,138→217,594 ms (−64,2%)**, TotalAlloc **352,13→12,26 MiB (−96,5%)**, allocations **9.309.134→738.293 (−92,1%)**. Payload **29.914.323→22.067.479 bytes**, −26,2% adicional e **−69,4% versus JSON**. Query permaneceu ~26 ms. Encoding ainda custa ~7,2× a query; não se declara limite inevitável nem custo equivalente à traversal.
+
+Baseline c0 é o profiling/checkpoint feito antes de alterar o hot path (HEAD inicial a6e3d32). A referência da campanha original era JSON 556,872 / GGPB 517,118 ms; a requalificação final JSON ficou 575,186 ms. Variação de coleta/temperatura/GC existe: compare medianas e todos os dados, não um número selecionado. Cinco processos por combinação, mesmos snapshots/queries, ordem rotativa, page cache quente, sem fsync, sem outros gates concorrentes na coleta. CPU cold inclui query+encode; allocs cold também. RSS inclui mmap/open, não é heap exclusivo do encoder.
+
+[300 amostras finais](benchmarks/ggpb_optimized_samples.jsonl), [300 residentes](benchmarks/ggpb_resident.jsonl), [192 ondas concorrentes finais](benchmarks/ggpb_concurrency_final.jsonl), [geometria/heap final](benchmarks/ggpb_geometry_final.jsonl). Os resultados iniciais abaixo foram preservados como histórico, inclusive hipóteses não confirmadas e experimentos rejeitados.
+
+### Campanha final: todos os comandos/casos
+
+| Caso | Nodes | Edges | JSON bytes | GGPB bytes | Redução | JSON encode ms | GGPB encode ms | Speedup | RSS J/G MiB |
+|---|---|---|---|---|---|---|---|---|---|
+| 100/territory | 90 | 450 | 72103 | 22022 | 69.46% | 0.775 | 0.459 | 1.69× | 5.02 / 5.34 |
+| 100/anti-territory | 90 | 450 | 72108 | 22027 | 69.45% | 0.671 | 0.529 | 1.27× | 5.08 / 5.28 |
+| 100/between | 90 | 450 | 72119 | 22032 | 69.45% | 0.660 | 0.555 | 1.19× | 5.13 / 5.29 |
+| 100/between vazio | 0 | 0 | 178 | 67 | 62.36% | 0.050 | 0.035 | 1.40× | 5.01 / 4.79 |
+| 10000/territory | 9000 | 45000 | 7212557 | 2199378 | 69.51% | 58.405 | 19.446 | 3.00× | 14.33 / 11.16 |
+| 10000/anti-territory | 9000 | 45000 | 7212562 | 2199383 | 69.51% | 58.960 | 19.033 | 3.10× | 14.37 / 11.16 |
+| 10000/between | 9000 | 45000 | 7212573 | 2199388 | 69.51% | 58.224 | 19.089 | 3.05× | 14.55 / 11.30 |
+| 100000/territory | 90000 | 450000 | 72214059 | 22067479 | 69.44% | 575.186 | 186.220 | 3.09× | 57.32 / 56.54 |
+| 100000/anti-territory | 90000 | 450000 | 72214064 | 22067484 | 69.44% | 574.236 | 185.808 | 3.09× | 57.46 / 56.69 |
+| 100000/between | 90000 | 450000 | 72214075 | 22067489 | 69.44% | 574.929 | 185.264 | 3.10× | 57.41 / 56.91 |
+
+### Query, serialization, total e consumidor finais
+
+| Caso | Query J/G ms | Serialization J/G ms | Total J/G ms | CPU J/G ms | Consumer J/G ms | Consumer RSS J/G MiB |
+|---|---|---|---|---|---|---|
+| 100/territory | 0.041 / 0.039 | 0.775 / 0.459 | 0.815 / 0.492 | 0.912 / 0.561 | 1.299 / 0.859 | 5.16 / 5.47 |
+| 100/anti-territory | 0.042 / 0.042 | 0.671 / 0.529 | 0.714 / 0.571 | 0.785 / 0.637 | 1.394 / 0.828 | 5.15 / 5.51 |
+| 100/between | 0.049 / 0.059 | 0.660 / 0.555 | 0.709 / 0.614 | 0.787 / 0.680 | 1.350 / 0.836 | 5.16 / 5.48 |
+| 100/between vazio | 0.029 / 0.029 | 0.050 / 0.035 | 0.082 / 0.064 | 0.120 / 0.106 | 0.050 / 0.161 | 4.85 / 5.13 |
+| 10000/territory | 2.670 / 2.678 | 58.405 / 19.446 | 61.213 / 22.206 | 64.066 / 22.689 | 117.574 / 39.679 | 9.83 / 10.67 |
+| 10000/anti-territory | 2.779 / 2.776 | 58.960 / 19.033 | 61.740 / 21.846 | 64.363 / 22.184 | 116.657 / 39.481 | 9.65 / 10.57 |
+| 10000/between | 4.120 / 4.200 | 58.224 / 19.089 | 62.337 / 23.327 | 65.006 / 23.666 | 117.028 / 39.674 | 9.80 / 10.84 |
+| 100000/territory | 25.973 / 25.703 | 575.186 / 186.220 | 601.663 / 212.207 | 628.780 / 217.594 | 1155.944 / 371.718 | 10.08 / 11.11 |
+| 100000/anti-territory | 27.020 / 26.707 | 574.236 / 185.808 | 601.154 / 212.426 | 628.664 / 217.939 | 1160.170 / 368.876 | 10.07 / 10.84 |
+| 100000/between | 40.502 / 40.500 | 574.929 / 185.264 | 615.337 / 225.783 | 643.327 / 231.593 | 1161.117 / 373.175 | 10.05 / 10.99 |
+
+### Baseline c0 versus final, quatro escalas
+
+| Caso | Encode c0/final ms | CPU c0/final ms | TotalAlloc c0/final MiB | Allocs c0/final | Payload c0/final | Consumer c0/final ms |
+|---|---|---|---|---|---|---|
+| 100 | 0.891 / 0.459 | 1.021 / 0.561 | 0.51 / 0.32 | 10414 / 2507 | 29850 / 22022 | 0.957 / 0.859 |
+| 10000 | 59.022 / 19.446 | 70.807 / 22.689 | 35.32 / 1.54 | 931932 / 76025 | 2984088 / 2199378 | 49.045 / 39.679 |
+| 100000 | 510.982 / 186.220 | 607.138 / 217.594 | 352.13 / 12.26 | 9309134 / 738293 | 29914323 / 22067479 | 422.519 / 371.718 |
+| empty | 0.185 / 0.035 | 0.270 / 0.106 | 0.07 / 0.01 | 529 / 49 | 67 / 67 | 0.165 / 0.161 |
+
+### Engine residente
+
+Snapshot aberto uma vez, warmup, cinco novas queries+encodings por formato/HEAD no mesmo processo. Runtime e descritores aquecidos; mapas/buffers são privados e reutilizados dentro de cada encoding, sem pool global entre queries. Query e CPU dela são separadas. TotalAlloc abaixo é somente encode. Os três comandos foram medidos nas três escalas e o vazio. Não há promise de cold cache ou SLA.
+
+| Caso | Query final ms | Encode c0/final ms | CPU encode c0/final ms | Total query+encode c0/final ms | Alloc encode c0/final MiB |
+|---|---|---|---|---|---|
+| 100/territory | 0.027 | 0.656 / 0.384 | 0.696 / 0.414 | 0.687 / 0.411 | 0.38 / 0.31 |
+| 100/anti-territory | 0.027 | 0.643 / 0.370 | 0.685 / 0.401 | 0.677 / 0.397 | 0.38 / 0.31 |
+| 100/between | 0.040 | 0.634 / 0.385 | 0.676 / 0.411 | 0.675 / 0.425 | 0.38 / 0.31 |
+| 100/empty | 0.019 | 0.017 / 0.013 | 0.026 / 0.020 | 0.037 / 0.032 | 0.00 / 0.00 |
+| 10000/territory | 2.534 | 51.174 / 18.816 | 58.399 / 18.867 | 53.667 / 21.365 | 35.03 / 1.39 |
+| 10000/anti-territory | 2.639 | 50.989 / 18.860 | 58.104 / 18.893 | 53.603 / 21.479 | 35.03 / 1.39 |
+| 10000/between | 3.908 | 51.151 / 19.831 | 58.665 / 19.856 | 55.018 / 23.813 | 35.03 / 1.39 |
+| 100000/territory | 25.553 | 509.167 / 188.709 | 573.395 / 191.193 | 534.541 / 214.104 | 349.99 / 10.26 |
+| 100000/anti-territory | 26.208 | 508.142 / 186.533 | 575.150 / 188.957 | 534.214 / 212.925 | 350.00 / 10.26 |
+| 100000/between | 39.358 | 509.821 / 187.892 | 577.125 / 191.099 | 550.500 / 226.725 | 350.00 / 10.26 |
+
+### Concorrência requalificada após B2
+
+| Workers/query | Queries | Onda grande ms | Queries/s | Encode latência mediana ms | CPU/query ms | TotalAlloc/query MiB |
+|---|---|---|---|---|---|---|
+| 1 | 1 | 199.454 | 5.01 | 172.870 | 204.364 | 12.24 |
+| 1 | 2 | 207.006 | 9.66 | 178.570 | 212.085 | 12.24 |
+| 1 | 4 | 242.850 | 16.47 | 205.578 | 241.291 | 12.24 |
+| 1 | 8 | 320.523 | 24.96 | 259.080 | 301.493 | 12.24 |
+| 2 | 1 | 576.161 | 1.74 | 549.101 | 786.616 | 286.08 |
+| 2 | 2 | 704.330 | 2.84 | 676.457 | 952.771 | 286.08 |
+| 2 | 4 | 982.269 | 4.07 | 943.835 | 1213.098 | 286.08 |
+| 2 | 8 | 1340.893 | 5.97 | 1290.039 | 1451.453 | 286.08 |
+| 4 | 1 | 590.958 | 1.69 | 563.253 | 819.326 | 286.22 |
+| 4 | 2 | 724.092 | 2.76 | 693.789 | 989.538 | 286.23 |
+| 4 | 4 | 955.438 | 4.19 | 915.057 | 1176.917 | 286.23 |
+| 4 | 8 | 1320.592 | 6.06 | 1267.435 | 1436.149 | 286.23 |
+| 8 | 1 | 590.119 | 1.69 | 562.192 | 814.238 | 286.52 |
+| 8 | 2 | 722.635 | 2.77 | 693.587 | 994.102 | 286.52 |
+| 8 | 4 | 921.117 | 4.34 | 887.322 | 1136.594 | 286.53 |
+| 8 | 8 | 1258.711 | 6.36 | 1207.482 | 1375.335 | 286.52 |
+
+### Caso adverso: endpoints dispersos
+
+Fixture adicional com a mesma forma/count/properties, sem hubs e IDs de edges permutados; ring por componente garante que territory retorna 90k/450k. Generator reproduzível `tools/ggpb_scatter.py`. Não substitui fixtures existentes. Cinco processos por variante; ordem dos checkpoints sequencial, portanto pequenas diferenças de tempo não são tratadas como significativas. [Dados](benchmarks/ggpb_scatter.jsonl).
+
+| Variante | Encode ms | CPU query+encode ms | TotalAlloc MiB | Allocs | Payload B | Consumer ms |
+|---|---|---|---|---|---|---|
+| json | 573.692 | 649.896 | 120.18 | 9360206 | 72214059 | 1149.882 |
+| c0 | 549.268 | 674.864 | 352.13 | 9309136 | 29914323 | 419.721 |
+| c4 | 252.993 | 318.725 | 24.60 | 1540321 | 32370181 | 403.724 |
+| adaptive | 252.440 | 316.008 | 24.59 | 1540320 | 29900969 | 419.155 |
+
+C4 mostra o resultado negativo: endpoint dictionary incondicional +8,2% bytes.
+B2/adaptive evita a expansão e mantém o wire autossuficiente. No corpus original,
+contar endpoints acrescentou ~5% encode/4% CPU, explicitamente aceito por essa
+robustez. O disperso não ganhou mais tamanho contra o GGPB original, embora
+encoding/CPU/allocs tenham caído substancialmente. Não afirmar que refs sempre
+compactam qualquer distribuição.
+
+### Perfis antes/depois e interpretação
+
+Perfis CPU/mem reais (gzip pprof) e summaries estão em
+[ggpb_profiles](benchmarks/ggpb_profiles/baseline-ggpb.cpu.pprof).
+[CPU final completo](benchmarks/ggpb_profiles/final-ggpb-cpu-full.txt),
+[alloc_space final](benchmarks/ggpb_profiles/final-ggpb-alloc_space.txt),
+[alloc_objects final](benchmarks/ggpb_profiles/final-ggpb-alloc_objects.txt),
+[heap após GC](benchmarks/ggpb_profiles/final-ggpb-inuse_space.txt).
+JSON e inline também têm os dois perfis/summaries.
+
+| Hotspot | Baseline CPU cumulativa | Final CPU cumulativa | Interpretação |
+|---|---|---|---|
+| mallocgc | 23,9% | 4,42% (predomina tiny allocator) | Slots/reuso eliminam milhões de objetos |
+| MessageInfo.marshalAppendPointer | 21,3% | não aparece | Codec protowire sobre slots |
+| MessageInfo.sizePointer | 14,4% | não aparece | Limite conservador e check final |
+| wireEncoder.batch | inexistente | 26,8% | Append tags/scalars/cópias agora explícitos |
+| mapaccess2_fast32 | parcela menor | 18,6% | Caches/símbolos/count/ref endpoints |
+| Data.String | 5,85% alloc_space; 15,7% alloc_objects | 92,0% alloc_space; ~99% alloc_objects | Restaram sobretudo IDs externos obrigatórios |
+| CRC32 | não dominante | 1,26% CPU | Não explica centenas de ms |
+| writeAll | sink Discard | 0,32% CPU | Perfil exclui syscalls de arquivo |
+
+Cumulativas têm sobreposição. CPU baseline: seis encodings após warmup; final:
+18 encodings para obter duração semelhante (~3 s). Memprofile inclui warmup,
+open/query: sete versus 19 encodings, com sampling padrão. Compare shares e os
+counters medidos, não totais brutos dos profiles. Data.String caiu de ~20,7 para
+~9,5 MiB amostrados por encoding; tornou-se dominante nas alocações porque a
+árvore temporária foi removida, não por ter crescido. Heap/profile após GC contém
+principalmente runtime/profiler, não representa pico. Geometria/live retention
+foi medida separadamente no callback com graph/subgraph mantidos vivos.
+
+A hipótese central foi parcialmente corrigida: **a maior parte dos ~500 ms não
+era cópia de strings isoladamente; objetos/slices Protobuf e reflection/Size
+consumiam muito mais**. StringID/ref caches ajudam, mas o ganho grande veio de
+reuso e wire append. Value.Text apenas retorna a string já formada pelo iterator.
+Nenhum unsafe, nova API de bytes ou acesso a colunas privadas foi introduzido.
+Não se demonstrou que 186 ms seja um piso inevitável. Ainda há trabalho por
+campo/ID, maps, append de varints e cópias para 22 MB de dados semânticos.
+
+### Decisões finais e limites
+
+| Experimento | Decisão | Motivo |
+|---|---|---|
+| A StringID cache/dictionary | KEEP | ~5% encode e menos resoluções/alocações |
+| B endpoints locais | KEEP com B2 | Compacta localidade, não exige índice global |
+| B2 count + comparação de custo | KEEP | Evita +8,2% payload disperso, custa ~5% encode normal |
+| C1 objetos/slices por query | KEEP | ~90% menos bytes alocados nesse checkpoint |
+| C2 maps/Records/buffers | KEEP | ~64% menos alloc adicionais, ~5% encode |
+| C3 protowire sobre slots | KEEP | ~21% encode, wire idêntico, custo de manutenção explícito |
+| D1 sem Size externo no marshal gerado | REJECT | Marshal ainda faz Size, sem ganho |
+| D2 sem Size no codec direto | KEEP | ~31% encode adicional |
+| E 64 KiB..2 MiB | KEEP default | 256 partes domina; targets não mudam bytes |
+| E 4096 partes | REJECT | Piora CPU/alloc/payload; não escolher batches grandes |
+| F inline / repetição 2/4 / frequência | KEEP imediato | Heurísticas não melhoram; inline baseline perde bytes |
+| G caches cross-batch | REJECT | ~0,4% menos bytes alocados, efeito pequeno de tempo |
+| H 2/4/8 workers | REJECT | Clone de ownership domina; throughput pior |
+| Queries concorrentes | KEEP existente | Escala melhor sem workers internos |
+
+O codec direto acrescenta manutenção de tags e nested sizes; schema gerado é a
+fonte da verdade e testes diferenciais/fuzz exigem bytes idênticos ao marshal
+oficial. Não há uma segunda traversal/direct graph implementation divergente:
+slots usados por Emit e EmitEncoded são os mesmos. Nada de worker/pool global,
+cache proporcional ao resultado, mmap compartilhado com consumer ou dependência
+de arquivo/seek no modelo lógico.
+
+**Para o próximo passo gRPC:** protocolo/stream são bons candidatos a um PoC,
+com engine residente e consumidor real. Os 186 ms medem EmitEncoded + framing.
+Emit + codec Protobuf padrão também recebe o reuso e dictionaries, mas o
+checkpoint com marshal gerado ficou ~331–333 ms. Um gRPC padrão não herda
+automaticamente o ganho de protowire; deve-se medir codec padrão versus adapter
+que envie os payloads canônicos de EmitEncoded. Buffers/mensagens são borrowed
+até callback retornar; retenção assíncrona exige cópia. Não presumir ownership
+pós-Send. Não foi implementado gRPC ou medido transporte/Lambda.
+
+Cache de slots conserva apenas pequenas partes (até 16 properties/labels de
+capacidade); distribuições com entidades muito largas podem ter alocações maiores.
+Escalares/framing mantêm limites de 1/4 MiB. Reader valida estrutura/tipos/counts,
+mas não guarda índice global para validar membership de endpoints. RSS tem piso
+de mmap e caiu pouco mesmo com TotalAlloc 96,5% menor. Consumer vazio continua
+pagando inicialização Protobuf; ganhos no produtor não eliminam esse custo.
+Corpus público sintético/local, sem garantia para toda distribuição nem SLA.
+
+### Reproduzir otimização/profiling/residência
+
+```sh
+go build -o bin/encodingmeasure ./tools/encodingmeasure
+go build -o bin/resultmeasure ./tools/resultmeasure
+bin/encodingmeasure --snapshot /tmp/ggpb-campaign/100000/graph.snapshot \
+  --format ggpb --warmup 1 --repeats 18 \
+  --cpuprofile /tmp/ggpb.cpu --memprofile /tmp/ggpb.mem
+go tool pprof -top /tmp/ggpb.cpu
+go tool pprof -top -sample_index=alloc_space /tmp/ggpb.mem
+go tool pprof -top -sample_index=alloc_objects /tmp/ggpb.mem
+bin/encodingmeasure --snapshot /tmp/ggpb-campaign/100000/graph.snapshot \
+  --format ggpb --query-each --query territory --repeats 5 --output /tmp/resident.ggpb
+python3 tools/ggpb_checkpoints.py --bin "$PWD/bin" --fixtures /tmp/ggpb-campaign \
+  --work /tmp/ggpb-checkpoint --checkpoint final --repeats 5
+GGPB_EXPERIMENT_FIXTURES=/tmp/ggpb-campaign GGPB_EXPERIMENT_OUTPUT=/tmp/concurrency.jsonl \
+  go test ./ggpb -run '^TestConcurrencyExperiment$' -count=1 -timeout 20m
+GGPB_GEOMETRY_FIXTURES=/tmp/ggpb-campaign GGPB_GEOMETRY_OUTPUT=/tmp/geometry.jsonl \
+  go test ./ggpb -run '^TestBatchGeometryExperiment$' -count=1
+python3 tools/ggpb_scatter.py --nodes 100000 --output /tmp/ggpb-scatter
+bin/gophergraph build --nodes /tmp/ggpb-scatter/nodes --edges /tmp/ggpb-scatter/edges \
+  --output /tmp/ggpb-scatter/graph.snapshot
+```
+
+E/F/G são protótipos temporários revertidos; history/checkpoint notes explicam as
+alterações isoladas de constantes/policy. E variou batchTarget (64..2048 KiB) e
+maxParts (256/4096), mantendo cache de slots 256; F promoveu símbolo na 2ª/4ª
+ocorrência ou apenas com len>=4 usando mapa bounded; G reteve cache de símbolos
+entre batches e limpou cache de endpoints por capacidade. Todos os dados foram
+salvos antes de restaurar o produto, sem código morto no hot path final.
+
+
 Medições locais reais, cinco processos frescos por combinação; valores abaixo
 são medianas. Linux/amd64, Go 1.26.0, AMD Ryzen 5 5600GT (12 CPUs lógicas).
 A fixture existente `internal/benchfixture` gera dois componentes desconectados,
@@ -467,3 +683,17 @@ Caso adicional determinístico sem hubs/localidade: mesmos 90k/450k retornados, 
 | 10000 | 19.313 | 22.370 | 1.54 | 76025 | 2199378 | 39.469 | 19.519 |
 | 100000 | 187.253 | 218.334 | 12.27 | 738297 | 22067479 | 370.349 | 187.661 |
 | empty | 0.034 | 0.097 | 0.01 | 49 | 67 | 0.188 | 0.014 |
+
+### Gates finais executados
+
+- `go test -count=1 ./...`: passou, incluindo E2E/arquitetura/WASM e paridade JSON.
+- `CGO_ENABLED=1 go test -race -count=1 ./...`: passou, inclusive runtime WASM completo (~237 s).
+- `go vet ./...`, gofmt, `CGO_ENABLED=0 go build ./cmd/gophergraph`, `git diff --check`: passaram.
+- FuzzReader 10.000, FuzzWireScalar 10.000, FuzzNeptuneCSV 10.000, FuzzSnapshotDecode 10.000, FuzzModuleAdmission 10.028: passaram. O nome WASM foi conferido e o target real foi executado; uma tentativa anterior sem match não conta como gate.
+- `go test -run '^$' -bench . -benchmem -benchtime=1x ./...`: passou. Uma iteração não substitui a campanha de cinco processos.
+- TestBoundedMemory: 1k/100k nodes+edges, 2.137.046/213.710.194 bytes descartados, heap vivo auxiliar amostrado 5.944/724.688 bytes; tolerância existente 8 MiB e limite de 256 KiB antes da primeira escrita inalterados. Sem acumular o resultado.
+- Cinco hashes iguais por combinação em toda campanha final; testes concorrentes de determinismo e diferencial byte a byte com marshaler oficial passaram.
+- Schema Go/Python regenerado; Python oficial validou arquivos novos typed/numeric/presence, grande normal e disperso. `decode` dos dois grandes comparado por `cmp` ao JSON direto (~72 MB cada), idêntico.
+- Checker de documentos/spec passou; é complemento aos testes Go, não substituto da engine.
+
+Sem relaxar fixtures, goldens ou limites existentes. O golden vazio continua igual; política de endpoint ganhou testes explícitos singleton/repetido e paridade completa ao Graph. Apenas dados sintéticos públicos/locais foram usados.

@@ -35,3 +35,5 @@ allocations, bytes e peak RSS por executable são emitidos em JSONL.
 `tools/ggpb_python.py` é um consumidor opcional com o runtime oficial Protobuf,
 sem acumular o resultado. Requer result_pb2.py gerado do schema, fora do build Go.
 [Comandos](../docs/GGPB.md#regenerar-e-validar-interoperabilidade).
+
+`tools/encodingmeasure` mede encoding residente sobre snapshot aberto, com warmup e perfis pprof opcionais. `--query-each` executa queries novas antes de cada encoding e reporta query/encode/CPU separadamente. `tools/ggpb_checkpoints.py` mede quatro casos em processos cold e residentes usando fixtures já construídas; não baixa dependências. Experimentos de concorrência/geometria são opt-in nos testes ggpb e não introduzem workers no produto. [Campanha de otimização](../docs/GGPB_BENCHMARKS.md).

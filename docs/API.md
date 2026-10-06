@@ -67,6 +67,6 @@ FindString informa `(id, found, error)` para distinguir ausência de string de G
 
 ## GGPB
 
-`ggpb.Write`, `ggpb.Emit`, `ggpb.NewReader`/`Next` e `ggpb.JSON` formam a API de
+`ggpb.Write`, `ggpb.Emit`, `ggpb.EmitEncoded`, `ggpb.NewReader`/`Next` e `ggpb.JSON` formam a API de
 exportação/consumo incremental. O contrato lógico é `ggpb/pb/result.proto`.
 Ver [GGPB](GGPB.md) para ownership, limites, framing e compatibilidade.

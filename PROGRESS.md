@@ -236,3 +236,5 @@ Experimento H concluído/rejeitado: 192 amostras nas quatro escalas. Cópias de 
 Experimento G concluído/rejeitado: caches cross-batch reduziram pouco CPU/tempo e apenas 0,4% TotalAlloc; revertidos. Perfil aponta IDs externos como principal alocação restante. Próximo: stress de endpoints dispersos antes de consolidar e reexecutar race/fuzz.
 
 Checkpoint B2 concluído: stress disperso revelou expansão +8,2% do dicionário incondicional. Política bounded de custo/ocorrência mantém refs úteis e singletons inline. Main encoding +5% justificado; disperso payload −7,6%, tempo igual. Testes ggpb/E2E/vet passaram. Próximo: requalificar campanha final/residente/concorrência/perfis e gates.
+
+Consolidação medida no HEAD funcional 9a7447a: 300 samples finais, 300 residentes, 192 ondas concorrentes finais e perfis CPU/mem. Encoding grande 510,982→186,220 ms; CPU 607,138→217,594; TotalAlloc 352,13→12,26 MiB; payload 29.914.323→22.067.479. Normal/race completos, vet/build sem cgo, cinco fuzz targets reais, benchmark gate, determinismo/JSON/Python/memória passaram. Próximo: qualificação offline do commit consolidado e atualização final do PR #4, sem merge.

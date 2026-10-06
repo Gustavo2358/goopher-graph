@@ -5,6 +5,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"gophergraph/ggpb"
@@ -33,6 +34,8 @@ func run() error {
 	mp := flag.String("memprofile", "", "allocation/heap profile")
 	repeats := flag.Int("repeats", 5, "resident encodings")
 	warm := flag.Int("warmup", 1, "unmeasured encodings")
+	kind := flag.String("query", "territory", "territory, anti-territory or between")
+	queryEach := flag.Bool("query-each", false, "run a new query before each resident encoding")
 	empty := flag.Bool("empty", false, "between disconnected components")
 	flag.Parse()
 	ctx := context.Background()
@@ -45,23 +48,37 @@ func run() error {
 	if e != nil {
 		return e
 	}
-	sub, e := query.Territory(ctx, g, id, query.Options{})
+	origin := "n000000000"
+	target := "n000000010"
+	if *empty {
+		target = "n000000090"
+		*kind = "between"
+	}
+	end, e := g.FindNode(target)
 	if e != nil {
 		return e
 	}
-	origin := "n000000000"
-	meta := ggpb.Query{Name: "territory", Node: &origin}
-	if *empty {
-		end, err := g.FindNode("n000000090")
-		if err != nil {
-			return err
+	runQuery := func() (*query.Subgraph, error) {
+		switch *kind {
+		case "territory":
+			return query.Territory(ctx, g, id, query.Options{})
+		case "anti-territory":
+			return query.AntiTerritory(ctx, g, id, query.Options{})
+		case "between":
+			return query.Between(ctx, g, id, end, query.Options{})
+		default:
+			return nil, errors.New("unknown query")
 		}
-		sub, e = query.Between(ctx, g, id, end, query.Options{})
-		if e != nil {
-			return e
-		}
-		meta = ggpb.Query{Name: "between", From: &origin, To: new(string)}
-		*meta.To = "n000000090"
+	}
+	sub, e := runQuery()
+	if e != nil {
+		return e
+	}
+	meta := ggpb.Query{Name: *kind, Node: &origin}
+	if *kind == "between" {
+		meta.Node = nil
+		meta.From = &origin
+		meta.To = &target
 	}
 	encode := func(out io.Writer) error {
 		if *format == "json" {
@@ -88,6 +105,17 @@ func run() error {
 	}
 	var before, after runtime.MemStats
 	for i := 0; i < *repeats; i++ {
+		queryMS, queryCPU := float64(0), float64(0)
+		if *queryEach {
+			c := cpu()
+			t := time.Now()
+			sub, e = runQuery()
+			if e != nil {
+				return e
+			}
+			queryMS = float64(time.Since(t)) / float64(time.Millisecond)
+			queryCPU = cpu() - c
+		}
 		var out io.Writer = io.Discard
 		var f *os.File
 		if *output != "" {
@@ -121,7 +149,7 @@ func run() error {
 			}
 			bytes = st.Size()
 		}
-		r := map[string]any{"Format": *format, "Repeat": i, "Nodes": sub.NodeCount(), "Edges": sub.EdgeCount(), "EncodeMS": elapsed, "CPUTimeMS": used, "AllocBytes": after.TotalAlloc - before.TotalAlloc, "Allocs": after.Mallocs - before.Mallocs, "HeapAfter": after.HeapAlloc, "Bytes": bytes}
+		r := map[string]any{"Format": *format, "Repeat": i, "Nodes": sub.NodeCount(), "Edges": sub.EdgeCount(), "EncodeMS": elapsed, "QueryMS": queryMS, "QueryCPUTimeMS": queryCPU, "TotalMS": elapsed + queryMS, "TotalCPUTimeMS": used + queryCPU, "CPUTimeMS": used, "AllocBytes": after.TotalAlloc - before.TotalAlloc, "Allocs": after.Mallocs - before.Mallocs, "HeapAfter": after.HeapAlloc, "Bytes": bytes}
 		if e = json.NewEncoder(os.Stdout).Encode(r); e != nil {
 			return e
 		}
@@ -133,15 +161,9 @@ func run() error {
 			return err
 		}
 		e = pprof.WriteHeapProfile(f)
-		return errorsJoin(e, f.Close())
+		return errors.Join(e, f.Close())
 	}
 	return nil
-}
-func errorsJoin(a, b error) error {
-	if a != nil {
-		return a
-	}
-	return b
 }
 func main() {
 	if e := run(); e != nil {
