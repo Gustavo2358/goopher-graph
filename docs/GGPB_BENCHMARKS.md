@@ -356,3 +356,42 @@ Alvos 64/128/256/512/1024/2048 KiB, com cap de 256 partes e com cap experimental
 | 4096 | 2048 | 368.129 | 729.538 | 408.63 | 3828846 | 24581109 | 431.410 | 6.23 |
 
 HeapAfter é heap alocado no término, incluindo lixo ainda não coletado, não peak live. Amostragem de heap vivo/batches é qualificada separadamente fora dos tempos.
+
+### f-repeat2-min0 — dictionary heuristic (REJECT)
+
+Protótipo bounded promove símbolos após repetição (2 ou 4 ocorrências); min4 ignora símbolos curtos. Matriz nas quatro escalas. Nenhum ganho relevante de CPU/encode, payload cresce; custo de contagem adicional. Revertido; dictionary imediato e inline baseline permanecem.
+
+[Dados brutos](benchmarks/ggpb_f-repeat2-min0.jsonl). Medianas de três execuções; CPU/alloc cold incluem query. Resident abaixo mede somente encode, após warmup.
+
+| Caso | Encode cold ms | CPU cold ms | TotalAlloc MiB | Allocs | Payload bytes | Consumer ms | Encode residente ms |
+|---|---|---|---|---|---|---|---|
+| 100 | 0.462 | 0.565 | 0.32 | 2512 | 22068 | 0.778 | 0.381 |
+| 10000 | 18.481 | 21.514 | 1.54 | 76030 | 2201716 | 39.739 | 17.810 |
+| 100000 | 179.065 | 211.318 | 12.27 | 738302 | 22090703 | 375.381 | 179.579 |
+| empty | 0.030 | 0.105 | 0.01 | 49 | 67 | 0.181 | 0.020 |
+
+### f-repeat4-min0 — dictionary heuristic (REJECT)
+
+Protótipo bounded promove símbolos após repetição (2 ou 4 ocorrências); min4 ignora símbolos curtos. Matriz nas quatro escalas. Nenhum ganho relevante de CPU/encode, payload cresce; custo de contagem adicional. Revertido; dictionary imediato e inline baseline permanecem.
+
+[Dados brutos](benchmarks/ggpb_f-repeat4-min0.jsonl). Medianas de três execuções; CPU/alloc cold incluem query. Resident abaixo mede somente encode, após warmup.
+
+| Caso | Encode cold ms | CPU cold ms | TotalAlloc MiB | Allocs | Payload bytes | Consumer ms | Encode residente ms |
+|---|---|---|---|---|---|---|---|
+| 100 | 0.527 | 0.641 | 0.32 | 2512 | 22152 | 0.883 | 0.371 |
+| 10000 | 18.450 | 21.572 | 1.54 | 76030 | 2205828 | 39.779 | 18.334 |
+| 100000 | 181.322 | 213.086 | 12.27 | 738302 | 22131519 | 373.641 | 179.371 |
+| empty | 0.035 | 0.109 | 0.01 | 49 | 67 | 0.191 | 0.017 |
+
+### f-repeat2-min4 — dictionary heuristic (REJECT)
+
+Protótipo bounded promove símbolos após repetição (2 ou 4 ocorrências); min4 ignora símbolos curtos. Matriz nas quatro escalas. Nenhum ganho relevante de CPU/encode, payload cresce; custo de contagem adicional. Revertido; dictionary imediato e inline baseline permanecem.
+
+[Dados brutos](benchmarks/ggpb_f-repeat2-min4.jsonl). Medianas de três execuções; CPU/alloc cold incluem query. Resident abaixo mede somente encode, após warmup.
+
+| Caso | Encode cold ms | CPU cold ms | TotalAlloc MiB | Allocs | Payload bytes | Consumer ms | Encode residente ms |
+|---|---|---|---|---|---|---|---|
+| 100 | 0.562 | 0.672 | 0.32 | 2509 | 22482 | 0.800 | 0.377 |
+| 10000 | 18.443 | 21.772 | 1.54 | 76027 | 2244604 | 40.532 | 18.688 |
+| 100000 | 179.387 | 211.107 | 12.26 | 738293 | 22519595 | 378.650 | 183.053 |
+| empty | 0.029 | 0.089 | 0.01 | 49 | 67 | 0.170 | 0.022 |

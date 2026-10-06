@@ -228,3 +228,5 @@ Checkpoint C3 concluído: protowire específico, EmitEncoded transport-neutral, 
 Checkpoint D2 concluído: orçamento conservador + check final de wire, sem Size normal; ggpb passou e quatro casos medidos. Grande 260,3→178,3 ms, CPU 294,5→210,2. Próximo: matriz de batches.
 
 Experimento E concluído: 12 variantes (6 targets × 2 caps) nas quatro escalas. Default 256 partes limita os batches antes do target; 4096 partes piorou encode/alloc/payload. Default preservado. Próximo: dictionary policy e paralelo.
+
+Experimento F concluído: inline e três heurísticas de frequência medidos nas quatro escalas; thresholds 2/4 e símbolos curtos não ganharam e aumentaram payload. Default imediato mantido. Testes ggpb passaram após restauração. Próximo: geometria/live heap, paralelismo e perfis finais.
