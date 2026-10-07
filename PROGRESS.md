@@ -14,8 +14,8 @@ obrigatórios, listener operacional HTTP separado.
 | R02 | Concluído | Validação incremental de batches GGPB |
 | R03 | Concluído | Cancelamento de operações extensas de bitsets |
 | R04 | Concluído | Residency Linux, identity na passagem de warm, lock fail-closed |
-| R05 | Em andamento | Assets WASM instalados e build reproduzível |
-| R06 | Pendente | Validação de imports no startup e relatórios de execução |
+| R05 | Concluído | Assets WASM instalados e build reproduzível |
+| R06 | Em andamento | Validação de imports no startup e relatórios de execução |
 | R07 | Pendente | Admission sem fila e lifecycle próprio |
 | R08 | Pendente | Queries nativas, ownership e streaming síncrono |
 | R09 | Pendente | RunWasm, discovery e identidade reproduzível |
@@ -278,3 +278,5 @@ R02: `go test ./ggpb -count=1` passou; decoder bounded sem framing, testes de or
 R03: `go test ./graph ./query ./ggpb ./wasmquery -count=1` passou. Scans canceláveis, FromNodes evita alocação redundante; ABI e APIs anteriores preservadas.
 
 R04: `go test ./snapshot/adapters/mmap -count=1` passou com mlock real, RLIMIT_MEMLOCK=0 em subprocesso e falhas de prefault/lock. SHA integrado à preparação; /proc não participa de READY. Lazy também lê bytes para validar/identificar, sem garantia de cold cache.
+
+R05: três exemplos Go WASI compilados com trimpath/buildid vazio e empacotados via embed; arquivos presentes em build limpo. Compilação ocorre apenas no build, não por RPC.
