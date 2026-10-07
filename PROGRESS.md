@@ -24,8 +24,8 @@ obrigatórios, listener operacional HTTP separado.
 | R12 | Concluído | Shutdown, Health.Watch e quiescência |
 | R13 | Concluído | Métricas bounded e listener operacional |
 | R14 | Concluído | Clientes de referência Go/Python, interoperabilidade |
-| R15 | Em andamento | TCP real, slow consumer, overload e memória |
-| R16 | Pendente | Benchmarks, gates completos, documentação e PR |
+| R15 | Concluído | TCP real, slow consumer, overload e memória |
+| R16 | Em andamento | Benchmarks, gates completos, documentação e PR |
 
 
 Estado: **produto concluído — B00 a B12**.
@@ -298,3 +298,5 @@ R12: `go test ./remote -run Test\(HealthWatch\|UpstreamShutdown\) -count=1 -v` p
 R13: `go test ./remote ./remote/observability ./cmd/gophergraph-server -count=1` passou. Métricas de processo/snapshot/admission/fases/WASM com labels finitas, histogramas cumulativos; /proc opcional. HTTP scrapes são selados/joinados antes de unmap.
 
 R14: clientes oficiais gerados/compilados. `python tools/remote_smoke.py --java` no venv preparado passou contra processo real: Go/Python/Java, native/WASM, hash, ID vazio e SIGTERM. Maven smoke usa apenas dependências públicas pré-instaladas/offline; downloads não fazem parte dos testes Go.
+
+R15: `go test ./remote -run Test\(SlowConsumer\|BlockedSend\|ConcurrentQueries\) -count=1 -v` passou. Mesmos 4k nodes/4k edges, payload lógico 16,384→262,144 MB, heap live pausado 3,67→3,51 MB. Token permanece ocupado, overload RESOURCE_EXHAUSTED, cancel/deadline liberam, shutdown força Send e faz join. Oito native/WASM simultâneas no mesmo mmap locked, sem compilation tardia. Qualificação de RSS em processo separado segue em R16.
