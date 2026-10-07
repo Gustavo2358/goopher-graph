@@ -86,6 +86,13 @@ func (q *Query) Nodes(ids ...string) NodeSet {
 func (q *Query) NodesWithLabel(label string) NodeSet {
 	return NodeSet{q, q.invoke(abi.NodesLabel, 0, 0, &abi.Params{Label: label}, nil)}
 }
+
+// NodesWithAnyLabelAndProperty selects (label1 OR label2 ...) AND property.
+// Nil/empty labels select nothing; equality is typed and matches any set value.
+// Requires a host with opcode 27 support.
+func (q *Query) NodesWithAnyLabelAndProperty(labels []string, key string, value Value) NodeSet {
+	return NodeSet{q, q.invoke(abi.NodesAnyLabelProperty, 0, 0, &abi.Params{Labels: labels, Key: key, Value: value}, nil)}
+}
 func (s NodeSet) nodes(op uint32, p *abi.Params) NodeSet {
 	return NodeSet{s.q, s.q.invoke(op, s.handle, 0, p, nil)}
 }

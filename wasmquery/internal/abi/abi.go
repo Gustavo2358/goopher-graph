@@ -32,6 +32,7 @@ const (
 	ReadEdgeProperty
 	Release
 	Return
+	NodesAnyLabelProperty
 )
 
 // Value carries exact typed bits, including int64, signed zero and nonfinite floats.

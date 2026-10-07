@@ -182,10 +182,23 @@ func hostCall(ctx context.Context, mod api.Module, op uint32, a, b uint64, ptr, 
 
 func (s *execution) dispatch(ctx context.Context, op uint32, a, b uint64, p abi.Params) (uint64, error) {
 	nbytes, ebytes := s.sizes()
-	if op < abi.Nodes || op > abi.Return {
+	if op < abi.Nodes || op > abi.NodesAnyLabelProperty {
 		return 0, ErrABI
 	}
 	switch op {
+	case abi.NodesAnyLabelProperty:
+		value, err := decodeValue(p.Value)
+		if err != nil {
+			return 0, err
+		}
+		if err = s.budget(nbytes, nbytes); err != nil {
+			return 0, err
+		}
+		n, err := s.g.NodesWithAnyLabelAndProperty(ctx, p.Labels, p.Key, value)
+		if err != nil {
+			return 0, err
+		}
+		return s.put(object{nodes: n, bytes: nbytes})
 	case abi.Nodes, abi.NodesLabel:
 		if err := s.budget(nbytes, 0); err != nil {
 			return 0, err
@@ -579,15 +592,20 @@ func (s *execution) filter(ctx context.Context, op uint32, v object, p abi.Param
 		}
 	}
 	if v.nodes != nil {
+		if op == abi.Property {
+			if err = s.budget(nbytes, 0); err != nil {
+				return 0, err
+			}
+			n, err := v.nodes.Has(ctx, p.Key, value)
+			if err != nil {
+				return 0, err
+			}
+			return s.put(object{nodes: n, bytes: nbytes})
+		}
 		if err = s.budget(nbytes, nbytes); err != nil {
 			return 0, err
 		}
-		var n *graph.NodeSet
-		if op == abi.Label {
-			n, err = s.g.NodesWithLabel(ctx, p.Label)
-		} else {
-			n, err = s.g.NodesWithProperty(ctx, p.Key, value)
-		}
+		n, err := s.g.NodesWithLabel(ctx, p.Label)
 		if err != nil {
 			return 0, err
 		}

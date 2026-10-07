@@ -86,7 +86,7 @@ func Default(ctx context.Context, r *wasmquery.Runtime) (*Registry, error) {
 	definitions := []Installation{
 		{Name: "shared-targets", Version: "1", Description: "Common reachable nodes and induced edges", MinArgs: 2, MaxArgs: 2, Parameters: []string{"from", "other"}},
 		{Name: "between", Version: "1", Description: "Forward/reverse reachability intersection", MinArgs: 2, MaxArgs: 2, Parameters: []string{"from", "to"}},
-		{Name: "filtered", Version: "1", Description: "Typed labelled targets, callers and connecting edges", MinArgs: 4, MaxArgs: 4, Parameters: []string{"node", "label", "property", "value"}},
+		{Name: "filtered", Version: "2", Description: "Typed labelled targets, callers and connecting edges", MinArgs: 4, MaxArgs: 4, Parameters: []string{"node", "label", "property", "value"}},
 	}
 	files := []string{"shared_targets", "between", "filtered"}
 	for n := range definitions {
