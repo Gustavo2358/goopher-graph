@@ -1,5 +1,33 @@
 # Progresso
 
+## Servidor residente — campanha autorizada em 2026-10-06
+
+Branch `feat/resident-grpc-server`, fonte `main` 0178f3f. Implementação e PR
+autorizados; merge não autorizado. Ajustes: operações prefault/mlock definem
+readiness, /proc é diagnóstico; shutdown sem Stop/GracefulStop concorrentes;
+identidade calculada junto ao aquecimento. ABI WASM JSON preservada, deadlines
+obrigatórios, listener operacional HTTP separado.
+
+| Checkpoint | Estado | Componente / aceite |
+|---|---|---|
+| R01 | Concluído | Contrato tipado, Protobuf separado, dependências e arquitetura |
+| R02 | Em andamento | Validação incremental de batches GGPB |
+| R03 | Pendente | Cancelamento de operações extensas de bitsets |
+| R04 | Pendente | Residency Linux, identity na passagem de warm, lock fail-closed |
+| R05 | Pendente | Assets WASM instalados e build reproduzível |
+| R06 | Pendente | Validação de imports no startup e relatórios de execução |
+| R07 | Pendente | Admission sem fila e lifecycle próprio |
+| R08 | Pendente | Queries nativas, ownership e streaming síncrono |
+| R09 | Pendente | RunWasm, discovery e identidade reproduzível |
+| R10 | Pendente | Startup, ServerInfo e health |
+| R11 | Pendente | Transporte, limites, deadlines e cancelamento |
+| R12 | Pendente | Shutdown, Health.Watch e quiescência |
+| R13 | Pendente | Métricas bounded e listener operacional |
+| R14 | Pendente | Clientes de referência Go/Python, interoperabilidade |
+| R15 | Pendente | TCP real, slow consumer, overload e memória |
+| R16 | Pendente | Benchmarks, gates completos, documentação e PR |
+
+
 Estado: **produto concluído — B00 a B12**.
 
 Campanhas adicionais **concluídas e incorporadas à `main`**, após aprovação do
@@ -242,3 +270,5 @@ Consolidação medida no HEAD funcional 9a7447a: 300 samples finais, 300 residen
 Otimização concluída: cópia limpa de `git archive f6845ce` passou offline em `go test -count=1 ./...`, `go vet ./...` e `CGO_ENABLED=0 go build ./cmd/gophergraph`, sem binários anteriores. Checkpoints e evidências publicados na mesma branch; fechamento destinado ao PR #4, sem merge. Próximo: revisão do codec/bounds/ownership e PoC gRPC residente; o codec padrão não herda automaticamente os ganhos de EmitEncoded.
 
 Fechamento documental concluído após aprovação do usuário do HEAD 5f6e196 e autorização explícita de merge no PR #4. Contrato, limitações, todos os experimentos e evidências finais estão em docs/GGPB.md e docs/GGPB_BENCHMARKS.md; gates completos e qualificação limpa acima permanecem válidos, sem alteração de código neste fechamento. Integração autorizada por merge commit para preservar os checkpoints revisáveis. Escopo GGPB encerrado; PoC gRPC residente é trabalho futuro separado, sem implementação nesta entrega.
+
+R01: `go test ./remote/pb ./tests/e2e -run TestCapabilityImports -count=1` passou. grpc-go 1.84.0; protocolo remoto separado. Gerador oficial protoc-gen-go 1.34.2 evita unsafe próprio.

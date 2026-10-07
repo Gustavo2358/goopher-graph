@@ -63,7 +63,10 @@ func TestCapabilityImports(t *testing.T) {
 					t.Errorf("GGPB imports storage/core internals: %s %s", rel, imp)
 				}
 			}
-			if strings.HasPrefix(imp, "google.golang.org/protobuf") && !strings.HasPrefix(rel, "ggpb/") {
+			if (strings.HasPrefix(imp, "google.golang.org/grpc") || strings.HasPrefix(imp, "gophergraph/remote")) && (strings.HasPrefix(rel, "graph/") || strings.HasPrefix(rel, "query/") || strings.HasPrefix(rel, "ggpb/") || strings.HasPrefix(rel, "wasmquery/")) {
+				t.Errorf("transport dependency in reusable capability: %s %s", rel, imp)
+			}
+			if strings.HasPrefix(imp, "google.golang.org/protobuf") && !strings.HasPrefix(rel, "ggpb/") && !strings.HasPrefix(rel, "remote/") {
 				t.Errorf("Protobuf outside result adapter: %s", rel)
 			}
 			if strings.HasPrefix(rel, "wasmquery/") && !strings.Contains(rel, "/testdata/") {
