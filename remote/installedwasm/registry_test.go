@@ -37,6 +37,21 @@ func TestDefaultRegistryPreparedAndImmutable(t *testing.T) {
 		t.Fatal("lookup")
 	}
 	b, _ := assets.ReadFile("assets/between.wasm")
+	first, err := Load(context.Background(), r, []Installation{{Name: "identity", Wasm: b, Parameters: []string{"a\x00b"}, Description: "one"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := Load(context.Background(), r, []Installation{{Name: "identity", Wasm: b, Parameters: []string{"a", "b"}, Description: "one"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	third, err := Load(context.Background(), r, []Installation{{Name: "identity", Wasm: b, Parameters: []string{"a\x00b"}, Description: "other"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first.SHA256() == second.SHA256() || first.SHA256() == third.SHA256() {
+		t.Fatal("ambiguous metadata digest")
+	}
 	for _, installations := range [][]Installation{
 		{{Name: "bad name", MinArgs: 0, MaxArgs: 0, Wasm: b}},
 		{{Name: "bad", Wasm: []byte("invalid")}},

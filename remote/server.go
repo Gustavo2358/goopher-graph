@@ -56,7 +56,9 @@ func (o ServerOptions) defaults() (ServerOptions, error) {
 // through Shutdown. Serve is called once. Shutdown always joins readers before
 // returning, even when its grace deadline expires.
 type Server struct {
-	telemetry *telemetry
+	connections       atomic.Int64
+	connectionRejects atomic.Uint64
+	telemetry         *telemetry
 
 	grpc         *grpc.Server
 	health       *health.Server
@@ -123,7 +125,7 @@ func (s *Server) stream(server any, stream grpc.ServerStream, info *grpc.StreamS
 	var rec *queryRecord
 	admitted := false
 	if isQuery(info.FullMethod) {
-		name := "wasm:unknown"
+		name := "wasm:<unknown>"
 		switch info.FullMethod {
 		case pb.GraphService_Territory_FullMethodName:
 			name = "territory"
@@ -178,13 +180,14 @@ func (s *Server) Serve(listener net.Listener) error {
 	s.mu.Lock()
 	if s.draining {
 		s.mu.Unlock()
+		_ = listener.Close()
 		return ErrDraining
 	}
 	s.ready.Store(true)
 	s.health.SetServingStatus("", grpc_health_v1.HealthCheckResponse_SERVING)
 	s.health.SetServingStatus(ServiceName, grpc_health_v1.HealthCheckResponse_SERVING)
 	s.mu.Unlock()
-	err := s.grpc.Serve(&boundedListener{Listener: listener, slots: make(chan struct{}, s.options.MaxConnections)})
+	err := s.grpc.Serve(&boundedListener{Listener: listener, slots: make(chan struct{}, s.options.MaxConnections), active: &s.connections, rejected: &s.connectionRejects})
 	s.ready.Store(false)
 	return err
 }

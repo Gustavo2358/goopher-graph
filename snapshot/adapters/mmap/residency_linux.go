@@ -114,7 +114,11 @@ func (r *Resident) Prepare(ctx context.Context) (Residency, error) {
 		}
 		r.back.locked = true
 		report.Locked = true
-		report.LockedBytes = uint64(len(data))
+		page := uint64(os.Getpagesize())
+		report.LockedBytes = (uint64(len(data)) + page - 1) / page * page
+	}
+	if err := ctx.Err(); err != nil {
+		return report, err
 	}
 	report.PrepareTime = time.Since(started)
 	r.report = report

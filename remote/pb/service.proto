@@ -35,4 +35,6 @@ message ServerInfoResponse {
   uint32 ggpb_version = 12; uint32 max_batch_bytes = 13; uint32 max_request_bytes = 14;
   uint32 query_capacity = 15; uint32 wasm_capacity = 16; uint64 max_deadline_millis = 17;
   repeated string capabilities = 18; string registry_sha256 = 19;
+  uint32 wasm_args_bytes = 20; uint64 wasm_timeout_millis = 21;
+  uint32 wasm_memory_pages = 22; uint64 wasm_host_bytes = 23;
 }

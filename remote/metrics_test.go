@@ -33,7 +33,7 @@ func TestMetricsBoundedNamesAndPhases(t *testing.T) {
 		if q.Name == "territory" {
 			native = q
 		}
-		if q.Name == "wasm:unknown" {
+		if q.Name == "wasm:<unknown>" {
 			unknown = q
 		}
 		if strings.Contains(q.Name, "attacker") {

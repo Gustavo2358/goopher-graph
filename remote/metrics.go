@@ -31,7 +31,7 @@ type telemetry struct {
 
 func newTelemetry(s *Service) *telemetry {
 	t := &telemetry{series: make(map[string]*QueryStatistics)}
-	for _, name := range []string{"territory", "anti-territory", "between", "wasm:unknown"} {
+	for _, name := range []string{"territory", "anti-territory", "between", "wasm:<unknown>"} {
 		t.add(name)
 	}
 	for _, d := range s.registry.List() {
@@ -127,6 +127,10 @@ func (s *Server) QueryStatistics() []QueryStatistics {
 	return out
 }
 func DurationBounds() []float64 { return append([]float64(nil), durationBounds...) }
+
+func (s *Server) ConnectionStatistics() (int, int64, uint64) {
+	return s.options.MaxConnections, s.connections.Load(), s.connectionRejects.Load()
+}
 func (s *Server) Information() *pb.ServerInfoResponse {
 	return proto.Clone(s.service.info).(*pb.ServerInfoResponse)
 }

@@ -4,6 +4,7 @@ package installedwasm
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/binary"
 	"fmt"
 	"gophergraph/wasmquery"
 	"regexp"
@@ -63,10 +64,19 @@ func Load(ctx context.Context, r *wasmquery.Runtime, installations []Installatio
 		return 0
 	})
 	h := sha256.New()
+	var word [8]byte
+	number := func(n uint64) { binary.BigEndian.PutUint64(word[:], n); _, _ = h.Write(word[:]) }
+	text := func(v string) { number(uint64(len(v))); _, _ = h.Write([]byte(v)) }
+	number(uint64(len(reg.ordered)))
 	for _, d := range reg.ordered {
-		fmt.Fprintf(h, "%s\x00%s\x00%s\x00%s\x00%d\x00%d\x00", d.Name, d.SHA256, d.Version, d.ABI, d.MinArgs, d.MaxArgs)
+		for _, v := range []string{d.Name, d.SHA256, d.Version, d.Description, d.ABI} {
+			text(v)
+		}
+		number(uint64(d.MinArgs))
+		number(uint64(d.MaxArgs))
+		number(uint64(len(d.Parameters)))
 		for _, p := range d.Parameters {
-			fmt.Fprintf(h, "%s\x00", p)
+			text(p)
 		}
 	}
 	reg.digest = fmt.Sprintf("%x", h.Sum(nil))

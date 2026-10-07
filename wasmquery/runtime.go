@@ -131,6 +131,9 @@ type Stats struct {
 	ActiveHandles     int64
 }
 
+// Limits returns the effective immutable configuration, including defaults.
+func (r *Runtime) Limits() Limits { return r.limits }
+
 func (r *Runtime) Stats() Stats {
 	r.mu.Lock()
 	defer r.mu.Unlock()

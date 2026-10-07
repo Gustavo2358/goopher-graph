@@ -45,7 +45,7 @@ func serviceFixture(t testing.TB) (*Service, *graph.Graph) {
 	}
 	return s, g
 }
-func connectService(t testing.TB, s *Service, options ...grpc.ServerOption) pb.GraphServiceClient {
+func connectService(t testing.TB, s pb.GraphServiceServer, options ...grpc.ServerOption) pb.GraphServiceClient {
 	t.Helper()
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {

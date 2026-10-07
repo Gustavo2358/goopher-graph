@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"math"
 	"testing"
 )
 
@@ -22,5 +23,11 @@ func TestCapacityUsesCPUAndMemory(t *testing.T) {
 	}
 	if _, _, err = queryCapacity(1000, 512<<20, 100, 500, 1024, 64<<20); err == nil {
 		t.Fatal("unbounded override")
+	}
+	if _, _, err = queryCapacity(0, math.MaxUint64, 100, 500, 1024, math.MaxUint64); err == nil {
+		t.Fatal("host budget overflow")
+	}
+	if _, _, err = queryCapacity(0, math.MaxUint64, math.MaxUint64, 500, 1024, 64<<20); err == nil {
+		t.Fatal("unsupported graph counts")
 	}
 }

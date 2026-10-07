@@ -38,7 +38,14 @@ func NewService(g *graph.Graph, r *wasmquery.Runtime, registry *installedwasm.Re
 	if _, _, err := g.FindString(""); err != nil {
 		return nil, err
 	}
-	return &Service{g: g, runtime: r, registry: registry, info: proto.Clone(info).(*pb.ServerInfoResponse)}, nil
+	owned := proto.Clone(info).(*pb.ServerInfoResponse)
+	limits := r.Limits()
+	owned.WasmCapacity = uint32(limits.Concurrent)
+	owned.WasmArgsBytes = uint32(min(limits.ArgsBytes, 65536))
+	owned.WasmTimeoutMillis = uint64(limits.Timeout / time.Millisecond)
+	owned.WasmMemoryPages = limits.MemoryPages
+	owned.WasmHostBytes = limits.HostBytes
+	return &Service{g: g, runtime: r, registry: registry, info: owned}, nil
 }
 
 type queryRecord struct {
@@ -192,13 +199,13 @@ func (s *Service) emit(stream grpc.ServerStreamingServer[pb.EncodedBatch], resul
 	rec.Encode = time.Since(t) - rec.Send
 	return rpcError(err)
 }
-func validateArgs(args []string, minArgs, maxArgs int) error {
+func validateArgs(args []string, minArgs, maxArgs, byteLimit int) error {
 	if len(args) < minArgs || len(args) > maxArgs {
 		return status.Error(codes.InvalidArgument, "invalid argument count")
 	}
 	bytes := 0
 	for _, arg := range args {
-		if !utf8.ValidString(arg) || strings.IndexByte(arg, 0) >= 0 || len(arg) >= 65536-bytes {
+		if !utf8.ValidString(arg) || strings.IndexByte(arg, 0) >= 0 || len(arg) >= min(byteLimit, 65536)-bytes {
 			return status.Error(codes.InvalidArgument, "invalid or oversized arguments")
 		}
 		bytes += len(arg) + 1

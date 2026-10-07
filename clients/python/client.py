@@ -100,7 +100,7 @@ def query(stub, name, node, target, args, timeout):
     elif name == "between":
         stream = stub.Between(api.BetweenRequest(**{"from": node, "to": target}), timeout=timeout)
     else:
-        stream = stub.RunWasm(api.RunWasmRequest(query_name=name, args=args), timeout=timeout)
+        stream = stub.RunWasm(api.RunWasmRequest(query_name=name.removeprefix("wasm:"), args=args), timeout=timeout)
     consumer = Consumer()
     try:
         for batch in stream:

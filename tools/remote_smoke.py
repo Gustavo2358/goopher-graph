@@ -25,6 +25,9 @@ def server(binary, snapshot, mode="locked", capacity=3, extra=()):
     process = subprocess.Popen(command, stderr=subprocess.PIPE, text=True)
     try:
         line = process.stderr.readline()
+        if line.startswith("operational HTTP="):
+            process.metrics_address = line.split("=",1)[1].strip()
+            line = process.stderr.readline()
         if not line.startswith("serving gRPC="):
             raise RuntimeError("startup failure: " + line + process.stderr.read())
         address = line.split()[1].split("=", 1)[1]

@@ -38,8 +38,9 @@ usuário em 2026-09-30:
 - Queries WebAssembly: [PR #3](https://github.com/Gustavo2358/goopher-graph/pull/3).
 
 Fechamento concluído; nenhum próximo passo pendente nesta campanha.
-HTTP, registry, S3, autenticação e compilação de source no servidor seguem
-fora do escopo.
+Na campanha original, HTTP, registry, S3, autenticação e compilação de source
+no servidor ficaram fora do escopo. A extensão residente autorizada acima
+adiciona somente o adapter gRPC, registry instalado e HTTP operacional.
 
 | Fatia | Estado | Evidência / próximo passo |
 |---|---|---|
@@ -300,3 +301,5 @@ R13: `go test ./remote ./remote/observability ./cmd/gophergraph-server -count=1`
 R14: clientes oficiais gerados/compilados. `python tools/remote_smoke.py --java` no venv preparado passou contra processo real: Go/Python/Java, native/WASM, hash, ID vazio e SIGTERM. Maven smoke usa apenas dependências públicas pré-instaladas/offline; downloads não fazem parte dos testes Go.
 
 R15: `go test ./remote -run Test\(SlowConsumer\|BlockedSend\|ConcurrentQueries\) -count=1 -v` passou. Mesmos 4k nodes/4k edges, payload lógico 16,384→262,144 MB, heap live pausado 3,67→3,51 MB. Token permanece ocupado, overload RESOURCE_EXHAUSTED, cancel/deadline liberam, shutdown força Send e faz join. Oito native/WASM simultâneas no mesmo mmap locked, sem compilation tardia. Qualificação de RSS em processo separado segue em R16.
+
+R16a: `go test -count=1 ./...` e `CGO_ENABLED=1 go test -race -count=1 ./...` passaram na consolidação. Revisão final acrescentou teste TLS, métricas de conexões/startup, limites WASM efetivos no ServerInfo, hash do registry sem ambiguidades e bounds de admission; race focal de registry/driver passou. LockedBytes agora arredonda páginas e cancelamento após mlock libera o lock no cleanup. Assets sem metadata VCS tiveram duas gerações com SHA idêntico. Artefato final ainda em qualificação limpa antes do PR.

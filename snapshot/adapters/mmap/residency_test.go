@@ -48,7 +48,8 @@ func TestResidencyContracts(t *testing.T) {
 			if report.SnapshotID != fmt.Sprintf("sha256:%x", sha256.Sum256(data)) || report.WarmCompleted != (mode != Lazy) || report.Locked != (mode == Locked) {
 				t.Fatalf("%+v", report)
 			}
-			if mode == Locked && report.LockedBytes != uint64(len(data)) {
+			page := uint64(os.Getpagesize())
+			if mode == Locked && report.LockedBytes != (uint64(len(data))+page-1)/page*page {
 				t.Fatal(report)
 			}
 			if _, err := r.Inspect(); err != nil {
@@ -79,6 +80,16 @@ func TestPrefaultFailuresNeverDowngrade(t *testing.T) {
 	}
 	if _, err := NewResident("x", Mode("other")); err == nil {
 		t.Fatal("invalid mode")
+	}
+}
+
+func TestPrepareCancellationAfterLockStillCleansUp(t *testing.T) {
+	r, _ := residentFixture(t, Locked)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	r.lock = func(data []byte) error { err := unix.Mlock(data); cancel(); return err }
+	if _, err := r.Prepare(ctx); !errors.Is(err, context.Canceled) || r.prepared || !r.back.locked {
+		t.Fatal("late cancellation ignored", err)
 	}
 }
 func TestLockedMemlockLimit(t *testing.T) {

@@ -20,9 +20,10 @@ type SnapshotObservation struct {
 	RSSBytes, PSSBytes, LockedPSSBytes uint64
 }
 type Options struct {
-	Started     time.Time
-	PrepareTime time.Duration
-	Observe     func() (SnapshotObservation, error)
+	Started         time.Time
+	PrepareTime     time.Duration
+	WasmPrepareTime time.Duration
+	Observe         func() (SnapshotObservation, error)
 }
 
 type Endpoints struct {
@@ -91,6 +92,11 @@ func Handler(s *remote.Server, o Options) *Endpoints {
 		metric("gophergraph_snapshot_locked", boolean(info.Locked))
 		metric("gophergraph_snapshot_locked_bytes", info.LockedBytes)
 		metric("gophergraph_snapshot_prepare_seconds", o.PrepareTime.Seconds())
+		metric("gophergraph_wasm_startup_prepare_seconds", o.WasmPrepareTime.Seconds())
+		capacity, active, rejected := s.ConnectionStatistics()
+		metric("gophergraph_connection_capacity", capacity)
+		metric("gophergraph_connections_active", active)
+		metric("gophergraph_connections_rejected_total", rejected)
 		if o.Observe != nil {
 			observation, err := o.Observe()
 			metric("gophergraph_snapshot_inspection_available", boolean(err == nil))

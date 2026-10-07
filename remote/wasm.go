@@ -26,7 +26,7 @@ func (s *Service) RunWasm(req *pb.RunWasmRequest, stream grpc.ServerStreamingSer
 	if req.ExpectedSha256 != nil && *req.ExpectedSha256 != d.SHA256 {
 		return status.Error(codes.FailedPrecondition, "installed query hash mismatch")
 	}
-	if err := validateArgs(req.Args, d.MinArgs, d.MaxArgs); err != nil {
+	if err := validateArgs(req.Args, d.MinArgs, d.MaxArgs, s.runtime.Limits().ArgsBytes); err != nil {
 		return err
 	}
 	t := time.Now()

@@ -14,6 +14,7 @@ import (
 	"gophergraph/remote/pb"
 	"io"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -52,7 +53,7 @@ func run() error {
 	case "between":
 		stream, err = stub.Between(ctx, &pb.BetweenRequest{From: from, To: to})
 	default:
-		stream, err = stub.RunWasm(ctx, &pb.RunWasmRequest{QueryName: *name, Args: flag.Args()})
+		stream, err = stub.RunWasm(ctx, &pb.RunWasmRequest{QueryName: strings.TrimPrefix(*name, "wasm:"), Args: flag.Args()})
 	}
 	if err != nil {
 		return err

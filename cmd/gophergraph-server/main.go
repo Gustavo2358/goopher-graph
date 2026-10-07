@@ -9,6 +9,7 @@ import (
 	"flag"
 	"fmt"
 	"gophergraph/remote/observability"
+	"math"
 	"net"
 	"net/http"
 	"os"
@@ -38,6 +39,7 @@ func main() {
 	}
 }
 func run(ctx context.Context, args []string) (err error) {
+	processStarted := time.Now()
 	f := flag.NewFlagSet("gophergraph-server", flag.ContinueOnError)
 	path := f.String("snapshot", "", "immutable snapshot path (required)")
 	address := f.String("listen", "127.0.0.1:9090", "gRPC listen address")
@@ -94,6 +96,8 @@ func run(ctx context.Context, args []string) (err error) {
 		return err
 	}
 	defer func() { err = errors.Join(err, rt.Close()) }()
+	limits = rt.Limits()
+	wasmStarted := time.Now()
 	registry, err := installedwasm.Default(startup, rt)
 	if err != nil {
 		return err
@@ -137,12 +141,13 @@ func run(ctx context.Context, args []string) (err error) {
 			listener.Close()
 			return e
 		}
-		handler := observability.Handler(server, observability.Options{Started: time.Now(), PrepareTime: report.PrepareTime, Observe: func() (observability.SnapshotObservation, error) {
+		handler := observability.Handler(server, observability.Options{Started: processStarted, PrepareTime: report.PrepareTime, WasmPrepareTime: time.Since(wasmStarted), Observe: func() (observability.SnapshotObservation, error) {
 			v, e := source.Inspect()
 			return observability.SnapshotObservation{At: v.At, RSSBytes: v.RSSBytes, PSSBytes: v.PSSBytes, LockedPSSBytes: v.LockedPSSBytes}, e
 		}})
 		httpServer := &http.Server{Handler: handler, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 10 * time.Second, IdleTimeout: 30 * time.Second, MaxHeaderBytes: 8192}
 		go func() { httpErr <- httpServer.Serve(metricsListener) }()
+		fmt.Fprintf(os.Stderr, "operational HTTP=%s\n", metricsListener.Addr())
 		defer func() {
 			defer handler.Close()
 			shutdown, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -174,8 +179,13 @@ func run(ctx context.Context, args []string) (err error) {
 // Native BFS growth transients + multiple bitmaps; WASM bounded host+guest memory;
 // bounded encoder and transport copies. Compiled-code/base/connection RSS is extra.
 func queryCapacity(requested int, budget, nodes, edges uint64, pages uint32, hostBytes uint64) (int, uint64, error) {
-	native := nodes*32 + 3*((nodes+63)/64)*8 + ((edges+63)/64)*8 + (8 << 20)
-	wasm := uint64(pages)*65536 + hostBytes + (8 << 20)
+	transport := uint64(6 * ggpb.MaxFrame)
+	guest := uint64(pages) * 65536
+	if nodes > math.MaxUint32 || edges > math.MaxUint32 || requested > math.MaxUint32 || hostBytes > math.MaxUint64-guest-transport {
+		return 0, 0, errors.New("query capacity estimate exceeds supported bounds")
+	}
+	native := nodes*32 + 3*((nodes+63)/64)*8 + ((edges+63)/64)*8 + transport
+	wasm := guest + hostBytes + transport
 	envelope := max(native, wasm)
 	limit := min(uint64(runtime.GOMAXPROCS(0)), budget/envelope)
 	if requested < 0 || limit == 0 {
