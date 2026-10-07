@@ -25,7 +25,7 @@ obrigatórios, listener operacional HTTP separado.
 | R13 | Concluído | Métricas bounded e listener operacional |
 | R14 | Concluído | Clientes de referência Go/Python, interoperabilidade |
 | R15 | Concluído | TCP real, slow consumer, overload e memória |
-| R16 | Em andamento | Benchmarks, gates completos, documentação e PR |
+| R16 | Concluído | Benchmarks, gates completos, documentação e PR #5 para revisão |
 
 
 Estado: **produto concluído — B00 a B12**.
@@ -305,3 +305,37 @@ R15: `go test ./remote -run Test\(SlowConsumer\|BlockedSend\|ConcurrentQueries\)
 R16a: `go test -count=1 ./...` e `CGO_ENABLED=1 go test -race -count=1 ./...` passaram na consolidação. Revisão final acrescentou teste TLS, métricas de conexões/startup, limites WASM efetivos no ServerInfo, hash do registry sem ambiguidades e bounds de admission; race focal de registry/driver passou. LockedBytes agora arredonda páginas e cancelamento após mlock libera o lock no cleanup. Assets sem metadata VCS tiveram duas gerações com SHA idêntico. Artefato final ainda em qualificação limpa antes do PR.
 
 R16b: `BenchmarkCorpusTransport -benchtime=10x -count=3` no corpus 400k/2M warm mediu fast path TCP 1016,12 ms vs generated 1672,33 ms (−39,2%); não é SLA nem zero-copy. `remote_campaign.py` executou 180 combinações/18.000 RPCs; `remote_empty.py`, 60/6.000; todos OK. Go/Python, native/WASM, C1/2/4/8/16 e locked/warm/lazy; raws e limites em docs/REMOTE_BENCHMARKS.md. Probe RSS separado passou com payload lógico 16→262 MB, token ativo, overload e cancel cleanup.
+
+## Fechamento — servidor residente, 2026-10-07
+
+R01–R16 concluídos. [PR #5](https://github.com/Gustavo2358/goopher-graph/pull/5)
+publicado para revisão, sem merge. Contrato em docs/REMOTE.md; medições e
+reprodução em docs/REMOTE_BENCHMARKS.md. Próximo passo: revisão do PR.
+
+- `go clean -testcache`, `go test -count=1 ./...` e
+  `CGO_ENABLED=1 go test -race -count=1 ./...`: passaram. Após consolidações,
+  race focal em registry/driver e `go test -race -count=1 ./remote/... -run
+  'Wasm|ConcurrentQueries|TLS|HealthWatch|Registry|Immutable'` também passaram.
+- `go vet ./...`, gofmt de todas as fontes, `git diff --check` e
+  `GOCACHE=/tmp/gophergraph-gocache python3 tools/check_package.py`: passaram.
+- Seis campanhas com `-run '^$' -fuzztime=10000x -parallel=2`: FuzzNeptuneCSV,
+  FuzzSnapshotDecode, FuzzReader, FuzzWireScalar, FuzzBatchDecode e
+  FuzzModuleAdmission; ao menos 10.000 execuções cada, sem falhas.
+- `go test -run '^$' -bench . -benchmem -benchtime=1x ./...`: passou.
+  Campanha de codec e 24.000 RPCs descritos em R16b, com raws versionados.
+- Builds de CLI/servidor/clientes Go sem cgo e Maven offline passaram.
+  `python tools/remote_smoke.py --java` passou novamente com assets finais:
+  Go/Python/Java, nativas/WASM, ID vazio, identidade e SIGTERM.
+- Artefato default locked com snapshot de 206.405.120 bytes retornou erro
+  explícito de mlock sob RLIMIT_MEMLOCK de 8 MiB; sem listener/downgrade.
+  Fixtures compactas locked e testes de memlock zero/prefault falho passaram.
+- Cópia limpa de `git archive ca55741`, sem binários anteriores e com
+  `GOPROXY=off GOSUMDB=off GOTOOLCHAIN=local`: testes completos sem cache,
+  vet e builds `CGO_ENABLED=0` de CLI/servidor passaram. Sem downloads.
+  Este fechamento altera somente o registro de evidência, não o código qualificado.
+
+Limites: Linux/amd64, dados sintéticos e TCP loopback; snapshot grande medido
+warm por limite de memlock do host. Sem SLA, benchmark WAN/TLS, integração
+Lambda/Kubernetes ou prova de sobrevivência a cgroup OOM. Admission deriva de
+estimativa conservadora e precisa ser calibrado no deployment real. Implementação
+autorizada entregue; nenhum hot-swap, upload, mutation ou merge nesta campanha.
