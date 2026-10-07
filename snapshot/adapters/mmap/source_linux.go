@@ -20,6 +20,7 @@ type backing struct {
 	data   []byte
 	closed bool
 	err    error
+	locked bool
 }
 
 func (b *backing) Bytes() []byte { return b.data }
@@ -28,7 +29,10 @@ func (b *backing) Close() error {
 		return b.err
 	}
 	b.closed = true
-	b.err = unix.Munmap(b.data)
+	if b.locked {
+		b.err = unix.Munlock(b.data)
+	}
+	b.err = errors.Join(b.err, unix.Munmap(b.data))
 	b.data = nil
 	return b.err
 }

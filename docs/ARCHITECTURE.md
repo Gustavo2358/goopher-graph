@@ -164,3 +164,12 @@ Dictionaries são locais ao batch e partes permitem dividir uma entidade com
 muitas propriedades. A única extensão do core foi IterateNodeLabels, sem cópia, para limitar memória
 mesmo em nodes com muitos labels. NodeLabels e o layout permanecem intactos.
 [Contrato, memória, versionamento e futuro gRPC](GGPB.md).
+
+## Adapter remoto residente
+
+`cmd/gophergraph-server` compõe snapshot/mmap residency, Runtime/installedwasm
+registry e `remote.Server`. `remote` conhece graph/query/wasmquery/ggpb e protocolo
+próprio `remote/pb`; essas capacidades não importam remote/gRPC/Linux policy.
+`remote/observability` contém o listener operacional HTTP. GGPB permanece em
+`ggpb/pb`, independente do protocolo remoto. Um token protege toda query+stream,
+um mapping permanece aberto até readers/handlers/scrapes terminarem. [Operação](REMOTE.md).

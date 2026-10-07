@@ -1,5 +1,34 @@
 # Progresso
 
+## Servidor residente — campanha autorizada em 2026-10-06
+
+Branch `feat/resident-grpc-server`, fonte `main` 0178f3f. Implementação e PR
+autorizados; Discovery, implementação e medições aprovados, com fechamento
+documental e merge autorizados pelo usuário em 2026-10-07. Ajustes: operações
+prefault/mlock definem readiness, /proc é diagnóstico; shutdown sem Stop/GracefulStop concorrentes;
+identidade calculada junto ao aquecimento. ABI WASM JSON preservada, deadlines
+obrigatórios, listener operacional HTTP separado.
+
+| Checkpoint | Estado | Componente / aceite |
+|---|---|---|
+| R01 | Concluído | Contrato tipado, Protobuf separado, dependências e arquitetura |
+| R02 | Concluído | Validação incremental de batches GGPB |
+| R03 | Concluído | Cancelamento de operações extensas de bitsets |
+| R04 | Concluído | Residency Linux, identity na passagem de warm, lock fail-closed |
+| R05 | Concluído | Assets WASM instalados e build reproduzível |
+| R06 | Concluído | Validação de imports no startup e relatórios de execução |
+| R07 | Concluído | Admission sem fila e lifecycle próprio |
+| R08 | Concluído | Queries nativas, ownership e streaming síncrono |
+| R09 | Concluído | RunWasm, discovery e identidade reproduzível |
+| R10 | Concluído | Startup, ServerInfo e health |
+| R11 | Concluído | Transporte, limites, deadlines e cancelamento |
+| R12 | Concluído | Shutdown, Health.Watch e quiescência |
+| R13 | Concluído | Métricas bounded e listener operacional |
+| R14 | Concluído | Clientes de referência Go/Python, interoperabilidade |
+| R15 | Concluído | TCP real, slow consumer, overload e memória |
+| R16 | Concluído | Benchmarks, gates completos, documentação e PR #5 aprovado para integração |
+
+
 Estado: **produto concluído — B00 a B12**.
 
 Campanhas adicionais **concluídas e incorporadas à `main`**, após aprovação do
@@ -10,8 +39,9 @@ usuário em 2026-09-30:
 - Queries WebAssembly: [PR #3](https://github.com/Gustavo2358/goopher-graph/pull/3).
 
 Fechamento concluído; nenhum próximo passo pendente nesta campanha.
-HTTP, registry, S3, autenticação e compilação de source no servidor seguem
-fora do escopo.
+Na campanha original, HTTP, registry, S3, autenticação e compilação de source
+no servidor ficaram fora do escopo. A extensão residente autorizada acima
+adiciona somente o adapter gRPC, registry instalado e HTTP operacional.
 
 | Fatia | Estado | Evidência / próximo passo |
 |---|---|---|
@@ -242,3 +272,114 @@ Consolidação medida no HEAD funcional 9a7447a: 300 samples finais, 300 residen
 Otimização concluída: cópia limpa de `git archive f6845ce` passou offline em `go test -count=1 ./...`, `go vet ./...` e `CGO_ENABLED=0 go build ./cmd/gophergraph`, sem binários anteriores. Checkpoints e evidências publicados na mesma branch; fechamento destinado ao PR #4, sem merge. Próximo: revisão do codec/bounds/ownership e PoC gRPC residente; o codec padrão não herda automaticamente os ganhos de EmitEncoded.
 
 Fechamento documental concluído após aprovação do usuário do HEAD 5f6e196 e autorização explícita de merge no PR #4. Contrato, limitações, todos os experimentos e evidências finais estão em docs/GGPB.md e docs/GGPB_BENCHMARKS.md; gates completos e qualificação limpa acima permanecem válidos, sem alteração de código neste fechamento. Integração autorizada por merge commit para preservar os checkpoints revisáveis. Escopo GGPB encerrado; PoC gRPC residente é trabalho futuro separado, sem implementação nesta entrega.
+
+R01: `go test ./remote/pb ./tests/e2e -run TestCapabilityImports -count=1` passou. grpc-go 1.84.0; protocolo remoto separado. Gerador oficial protoc-gen-go 1.34.2 evita unsafe próprio.
+
+R02: `go test ./ggpb -count=1` passou; decoder bounded sem framing, testes de ordem, End, cancelamento e paridade com leitor de arquivo.
+
+R03: `go test ./graph ./query ./ggpb ./wasmquery -count=1` passou. Scans canceláveis, FromNodes evita alocação redundante; ABI e APIs anteriores preservadas.
+
+R04: `go test ./snapshot/adapters/mmap -count=1` passou com mlock real, RLIMIT_MEMLOCK=0 em subprocesso e falhas de prefault/lock. SHA integrado à preparação; /proc não participa de READY. Lazy também lê bytes para validar/identificar, sem garantia de cold cache.
+
+R05: três exemplos Go WASI compilados com trimpath/buildid vazio e empacotados via embed; arquivos presentes em build limpo. Compilação ocorre apenas no build, não por RPC.
+
+R06: registry default preparado e imutável; testes de imports WASI ausentes/signatura incorreta, cancelamento e instância sem _start passaram. Relatório WASM preserva métricas mesmo em erro. Teste revelou uso inválido de ExportedFunction em host module; corrigido para ExportedFunctionDefinitions.
+
+R07: `go test ./remote -count=1` passou. Admission não bloqueante, cleanup idempotente e drain sem corrida Add/Wait; token representa execução + resultado + envio.
+
+R08: implementação e testes de paridade byte a byte com EmitEncoded, filtro nil/vazio/desconhecido e erros tipados. Primeira execução TCP impedida pelo sandbox (socket operation not permitted); reexecução fora do sandbox em andamento. Clone de ownership seguido de Send síncrono, sem fila de produtor.
+
+R08/R09: `go test ./remote -count=1` fora do sandbox passou (TCP real). WASM discovery, nome+SHA no Header/metadata, expected hash, aridade/NUL/tamanho e zero compile em request verificados. Restrição de socket era ambiental.
+
+R10: build CGO_ENABLED=0 do servidor e `go test ./remote ./cmd/gophergraph-server -count=1` TCP passaram. Snapshot único validado/preparado antes de listener; health gRPC Check/Watch, ServerInfo e startup fail-closed. Limites base e lifecycle conectados ao adapter.
+
+R11: request oversized libera token, deadline ausente/excessivo é recusado, limite global de conexões preserva conexão aceita. TCP real passou. Janelas estáticas 64KiB stream / 1MiB conexão desabilitam crescimento BDP por payload.
+
+R12: `go test ./remote -run Test\(HealthWatch\|UpstreamShutdown\) -count=1 -v` passou. Subprocesso reproduziu `grpc-go=1.84.0 concurrent-stop=blocked`; nosso shutdown não sobrepõe as chamadas e Watch não impede encerramento. Cleanup do runtime e Graph só após join.
+
+R13: `go test ./remote ./remote/observability ./cmd/gophergraph-server -count=1` passou. Métricas de processo/snapshot/admission/fases/WASM com labels finitas, histogramas cumulativos; /proc opcional. HTTP scrapes são selados/joinados antes de unmap.
+
+R14: clientes oficiais gerados/compilados. `python tools/remote_smoke.py --java` no venv preparado passou contra processo real: Go/Python/Java, native/WASM, hash, ID vazio e SIGTERM. Maven smoke usa apenas dependências públicas pré-instaladas/offline; downloads não fazem parte dos testes Go.
+
+R15: `go test ./remote -run Test\(SlowConsumer\|BlockedSend\|ConcurrentQueries\) -count=1 -v` passou. Mesmos 4k nodes/4k edges, payload lógico 16,384→262,144 MB, heap live pausado 3,67→3,51 MB. Token permanece ocupado, overload RESOURCE_EXHAUSTED, cancel/deadline liberam, shutdown força Send e faz join. Oito native/WASM simultâneas no mesmo mmap locked, sem compilation tardia. Qualificação de RSS em processo separado segue em R16.
+
+R16a: `go test -count=1 ./...` e `CGO_ENABLED=1 go test -race -count=1 ./...` passaram na consolidação. Revisão final acrescentou teste TLS, métricas de conexões/startup, limites WASM efetivos no ServerInfo, hash do registry sem ambiguidades e bounds de admission; race focal de registry/driver passou. LockedBytes agora arredonda páginas e cancelamento após mlock libera o lock no cleanup. Assets sem metadata VCS tiveram duas gerações com SHA idêntico. Artefato final ainda em qualificação limpa antes do PR.
+
+R16b: `BenchmarkCorpusTransport -benchtime=10x -count=3` no corpus 400k/2M warm mediu fast path TCP 1016,12 ms vs generated 1672,33 ms (−39,2%); não é SLA nem zero-copy. `remote_campaign.py` executou 180 combinações/18.000 RPCs; `remote_empty.py`, 60/6.000; todos OK. Go/Python, native/WASM, C1/2/4/8/16 e locked/warm/lazy; raws e limites em docs/REMOTE_BENCHMARKS.md. Probe RSS separado passou com payload lógico 16→262 MB, token ativo, overload e cancel cleanup.
+
+## Fechamento — servidor residente, 2026-10-07
+
+R01–R16 concluídos. [PR #5](https://github.com/Gustavo2358/goopher-graph/pull/5)
+publicado inicialmente para revisão; entrega aprovada e merge autorizado pelo
+usuário. Contrato em docs/REMOTE.md; medições e reprodução em
+docs/REMOTE_BENCHMARKS.md.
+
+- `go clean -testcache`, `go test -count=1 ./...` e
+  `CGO_ENABLED=1 go test -race -count=1 ./...`: passaram. Após consolidações,
+  race focal em registry/driver e `go test -race -count=1 ./remote/... -run
+  'Wasm|ConcurrentQueries|TLS|HealthWatch|Registry|Immutable'` também passaram.
+- `go vet ./...`, gofmt de todas as fontes, `git diff --check` e
+  `GOCACHE=/tmp/gophergraph-gocache python3 tools/check_package.py`: passaram.
+- Seis campanhas com `-run '^$' -fuzztime=10000x -parallel=2`: FuzzNeptuneCSV,
+  FuzzSnapshotDecode, FuzzReader, FuzzWireScalar, FuzzBatchDecode e
+  FuzzModuleAdmission; ao menos 10.000 execuções cada, sem falhas.
+- `go test -run '^$' -bench . -benchmem -benchtime=1x ./...`: passou.
+  Campanha de codec e 24.000 RPCs descritos em R16b, com raws versionados.
+- Builds de CLI/servidor/clientes Go sem cgo e Maven offline passaram.
+  `python tools/remote_smoke.py --java` passou novamente com assets finais:
+  Go/Python/Java, nativas/WASM, ID vazio, identidade e SIGTERM.
+- Artefato default locked com snapshot de 206.405.120 bytes retornou erro
+  explícito de mlock sob RLIMIT_MEMLOCK de 8 MiB; sem listener/downgrade.
+  Fixtures compactas locked e testes de memlock zero/prefault falho passaram.
+- Cópia limpa de `git archive ca55741`, sem binários anteriores e com
+  `GOPROXY=off GOSUMDB=off GOTOOLCHAIN=local`: testes completos sem cache,
+  vet e builds `CGO_ENABLED=0` de CLI/servidor passaram. Sem downloads.
+  Este fechamento altera somente o registro de evidência, não o código qualificado.
+
+Limites: Linux/amd64, dados sintéticos e TCP loopback; snapshot grande medido
+warm por limite de memlock do host. Sem SLA, benchmark WAN/TLS, integração
+Lambda/Kubernetes ou prova de sobrevivência a cgroup OOM. Admission deriva de
+estimativa conservadora e precisa ser calibrado no deployment real. Implementação
+autorizada entregue; hot-swap, upload e mutations permanecem fora do escopo.
+
+## Medição adicional de residency — 2026-10-07
+
+Concluído, a pedido do usuário: comparação de traversal com page cache frio,
+cache quente/PTEs descartadas, mapping prefaulted e locked. Cópias privadas
+synced, sem drop global de caches; mincore antes de cada amostra confirmou 0%
+ou 100% de residency conforme o rótulo. Sem mudanças nos builds de produção:
+controle Linux isolado no adapter mmap com tag opt-in `residencybench`.
+
+`residencymeasure --repeats=36 --encode-repeats=6` executou 756 queries,
+ordem rotativa balanceada, três nativas: corpus 400k/2M (~197 MiB) e ciclo
+40k/40k (~5,95 MiB). No grande, cold→warm mediano: Territory
+202,88→105,00 ms, AntiTerritory 237,18→107,91 ms, Between 286,61→159,48 ms;
+1,8–2,2× de velocidade. Cold sempre teve major faults; warm/cache/locked zero.
+Locked disponível só no menor, sem ganho consistente sobre warm (variação
+aproximadamente ±6%). Mlock grande foi explicitamente registrado indisponível.
+Raw, resumo/reprodução e limites em docs/REMOTE_BENCHMARKS.md.
+
+Gates executados: `CGO_ENABLED=1 go test -race -tags=residencybench -count=1
+./tools/residencymeasure ./tests/e2e -run
+'TestPrivateCopyColdAndWarmPages|TestCapabilityImports'`, vet com tag, build
+CGO_ENABLED=0 do tool, piloto do binário final, reducer sobre todos os samples
+e rejeição de estado cold falso, py_compile, gofmt/diff check e check_package
+passaram. TMPDIR de disco foi usado; /tmp do ambiente é tmpfs, incompatível com
+essa prova de eviction. O gate de imports detectou Unix no primeiro harness:
+corrigido isolando as operações no adapter opt-in, sem relaxar a regra.
+Dados frios no page cache Linux não significam SSD/controlador fisicamente frio.
+
+## Fechamento documental após aprovação — 2026-10-07
+
+Servidor residente e medição adicional concluídos e aprovados. O usuário
+autorizou explicitamente o merge do PR #5. Integração por merge commit para
+preservar os checkpoints revisáveis; nenhum requisito de implementação pendente.
+
+Este fechamento atualiza somente documentação e descrição do PR. Os gates de
+implementação e do harness de residency permanecem os registrados acima; não
+foram repetidos testes de código para alterações exclusivamente documentais.
+Limites e reprodução continuam em docs/REMOTE_BENCHMARKS.md. Nenhum novo
+escopo é iniciado neste fechamento.
+
+Verificação documental: `git diff --check` e
+`GOCACHE=/tmp/gophergraph-gocache python3 tools/check_package.py` passaram.

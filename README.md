@@ -185,4 +185,12 @@ bin/gophergraph decode --input bin/territory.ggpb --format json
 
 O decoder funciona sem o snapshot e preserva o contrato JSON existente.
 [Formato, API e limites](docs/GGPB.md); [campanha JSON vs GGPB](docs/GGPB_BENCHMARKS.md).
-Batches lógicos podem alimentar um futuro stream gRPC, ainda fora do escopo.
+Batches lógicos também alimentam o adapter gRPC descrito abaixo.
+
+## Servidor remoto residente
+
+`CGO_ENABLED=0 go build -o bin/gophergraph-server ./cmd/gophergraph-server`.
+Servidor gRPC read-only: snapshot único locked por padrão, admission sem fila,
+queries nativas/WASM instalado, streaming GGPB encoded, deadlines e health.
+[Contrato e operação](docs/REMOTE.md), [clientes](clients/go/main.go) e
+[qualificação](docs/REMOTE_BENCHMARKS.md). CLI/library continuam disponíveis.

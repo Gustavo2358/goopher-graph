@@ -1,0 +1,4 @@
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0">
+  <!-- Public dependencies only; no ambient corporate settings/credentials. -->
+  <mirrors><mirror><id>public-central</id><mirrorOf>*</mirrorOf><url>https://repo.maven.apache.org/maven2</url></mirror></mirrors>
+</settings>

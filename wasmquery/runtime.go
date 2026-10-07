@@ -23,11 +23,13 @@ import (
 )
 
 var (
-	ErrClosed = errors.New("wasm query runtime or result closed")
-	ErrLimit  = errors.New("wasm query limit exceeded")
-	ErrABI    = errors.New("invalid wasm query ABI")
-	ErrHandle = errors.New("invalid wasm query handle")
-	ErrResult = errors.New("query must return exactly one subgraph")
+	ErrClosed    = errors.New("wasm query runtime or result closed")
+	ErrLimit     = errors.New("wasm query limit exceeded")
+	ErrABI       = errors.New("invalid wasm query ABI")
+	ErrHandle    = errors.New("invalid wasm query handle")
+	ErrResult    = errors.New("query must return exactly one subgraph")
+	ErrExecution = errors.New("wasm guest execution failed")
+	ErrBusy      = fmt.Errorf("%w: concurrent executions", ErrLimit)
 )
 
 // Limits are per Runtime except HostBytes, Handles, Calls, ArgsBytes and Timeout,
@@ -128,6 +130,9 @@ type Stats struct {
 	ActiveExecutions  int64
 	ActiveHandles     int64
 }
+
+// Limits returns the effective immutable configuration, including defaults.
+func (r *Runtime) Limits() Limits { return r.limits }
 
 func (r *Runtime) Stats() Stats {
 	r.mu.Lock()
@@ -291,6 +296,16 @@ func (r *Result) Close() error {
 // Execute creates a fresh WASI instance with no filesystem, environment,
 // network, stdio or wall-clock capabilities. args become os.Args[1:] in Go.
 func (r *Runtime) Execute(ctx context.Context, m *Module, g *graph.Graph, args []string) (*Result, error) {
+	result, _, err := r.ExecuteReport(ctx, m, g, args)
+	return result, err
+}
+
+// ExecuteReport preserves boundary metrics on failure as well as success.
+func (r *Runtime) ExecuteReport(ctx context.Context, m *Module, g *graph.Graph, args []string) (result *Result, metrics Metrics, err error) {
+	result, err = r.execute(ctx, m, g, args, &metrics)
+	return
+}
+func (r *Runtime) execute(ctx context.Context, m *Module, g *graph.Graph, args []string, report *Metrics) (*Result, error) {
 	ctx, done, err := r.begin(ctx, r.limits.Timeout)
 	if err != nil {
 		return nil, err
@@ -315,7 +330,7 @@ func (r *Runtime) Execute(ctx context.Context, m *Module, g *graph.Graph, args [
 	select {
 	case r.slots <- struct{}{}:
 	default:
-		return nil, fmt.Errorf("%w: concurrent executions", ErrLimit)
+		return nil, ErrBusy
 	}
 	defer func() { <-r.slots }()
 	r.activeRuns.Add(1)
@@ -323,6 +338,7 @@ func (r *Runtime) Execute(ctx context.Context, m *Module, g *graph.Graph, args [
 	r.executions.Add(1)
 	s := &execution{r: r, g: g, handles: make(map[uint64]object)}
 	defer s.clear()
+	defer func() { *report = s.metrics }()
 	ctx = context.WithValue(ctx, executionKey{}, s)
 	argv := append([]string{"query.wasm"}, args...)
 	instance, runErr := r.rt.InstantiateModule(ctx, m.compiled, wazero.NewModuleConfig().WithName("").WithArgs(argv...))
@@ -337,7 +353,7 @@ func (r *Runtime) Execute(ctx context.Context, m *Module, g *graph.Graph, args [
 	}
 	var exit *sys.ExitError
 	if runErr != nil && !(errors.As(runErr, &exit) && exit.ExitCode() == 0) {
-		return nil, runErr
+		return nil, fmt.Errorf("%w: %w", ErrExecution, runErr)
 	}
 	if s.result == nil {
 		return nil, ErrResult

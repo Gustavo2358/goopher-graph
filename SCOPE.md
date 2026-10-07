@@ -18,7 +18,10 @@ O produto inicial é uma biblioteca Go reutilizável e uma CLI local. Cloud é u
 
 **Engenharia:** vertical slices, interfaces mínimas nas fronteiras, testes unitários/E2E, fuzz direcionado, race detector, benchmarks locais e documentação de uso real. O produto compila sem cgo.
 
-## Excluído
+## Excluído do produto inicial
+
+As extensões explicitamente autorizadas abaixo ampliam apenas seus respectivos
+contratos; as demais exclusões continuam válidas.
 
 HTTP/REST, S3 implementado, SDK AWS, IAM, autenticação, execução distribuída, daemon, hot reload, plugins dinâmicos, DSL, Gremlin/Cypher, planner, optimizer, transações de graph, mutações online, ingestão incremental, compactação, WAL, storage remoto por página, GUI, Graphviz embarcado, cache de respostas, pool global, paralelismo interno de BFS, engine ponderada e enumeração de caminhos simples.
 
@@ -45,8 +48,8 @@ grafo por uma Host API pública de handles. `wasmquery` usa wazero pure Go, mant
 cache local de módulos compilados e isola cada execução. O CLI aceita snapshot,
 WASM e argumentos; retorna o contrato graphjson existente. O SDK e os limites
 estão em [WASM](docs/WASM.md). Essa extensão não altera o snapshot nem as queries
-nativas. HTTP, registry, S3, autenticação e compilação de source no servidor
-continuam excluídos.
+nativas. Nessa extensão isolada, HTTP, registry, S3, autenticação e compilação
+de source no servidor ficam excluídos.
 
 ## Extensão solicitada: resultados GGPB
 
@@ -55,4 +58,15 @@ Adapter Protobuf lógico e versionado, externo ao core; query completa → Subgr
 incremental para o contrato JSON. [Contrato](docs/GGPB.md) e
 [medições](docs/GGPB_BENCHMARKS.md). Runtime oficial Protobuf autorizado por essa
 extensão. Dicionários locais não alteram layout de snapshot nem execução da query.
-API gRPC, HTTP, Lambda e streaming durante traversal permanecem excluídos.
+Nessa extensão isolada, API gRPC, HTTP, Lambda e streaming durante traversal
+ficam excluídos.
+
+## Extensão autorizada: servidor residente gRPC
+
+Discovery aprovado e implementação autorizada em 2026-10-06. Adiciona adapter
+remoto read-only, snapshot locked por padrão, admission finito, queries nativas
++ WASM pré-instalado, server-streaming GGPB encoded, health/métricas e clientes.
+Dependências gRPC/Protobuf oficiais autorizadas. Core/CLI anteriores preservados.
+JSON da ABI WASM existente permanece; não é payload remoto. HTTP é apenas plano
+operacional. [Contrato e operação](docs/REMOTE.md). Sem mutations, registry
+remoto dinâmico, upload, hot-swap, cache, HA/replicação ou plataforma de auth.
