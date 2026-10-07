@@ -2,8 +2,9 @@
 
 ## Seleção composta genérica — 2026-10-07
 
-Estado: **concluído** (implementação e validação). Branch
-`feat/composed-node-selection`; entrega via PR para revisão, sem merge.
+Estado: **concluído**. Branch `feat/composed-node-selection` publicada;
+[PR #7](https://github.com/Gustavo2358/goopher-graph/pull/7) aberto para revisão,
+sem merge e sem auto-merge. Implementação, validação e documentação entregues.
 Core/host/SDK oferecem OR de labels e AND com igualdade tipada; `NodeSet.Has`
 filtra os candidatos pela mesma rotina. Índices opcionais continuam genéricos.
 Opcode 27 acrescentado, anteriores preservados, `filtered` versão 2 e assets
