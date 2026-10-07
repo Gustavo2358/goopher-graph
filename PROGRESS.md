@@ -1,5 +1,29 @@
 # Progresso
 
+## Custo da sequência no spill — 2026-10-07
+
+Estado: **concluído**, a pedido do usuário. Comparação isolada do spill atual
+com variante que grava sequência somente para `single` de nodes em first/last.
+22 builds grandes em ext4: três perfis, até 2,8M registros/3,2M contribuições,
+três repetições com 16 MiB e pares exploratórios com 1 MiB. Omissão reduziu
+I/O lógico total em 1,40–1,94% nos perfis aplicáveis, pico scratch em 1,32%,
+sem aceleração consistente nem redução relevante de RSS. Snapshots, reports
+sem tempos e diagnósticos iguais; nenhum scratch residual. Piloto também passou.
+
+Decisão aprovada pelo usuário: manter a implementação de produção; variante
+não aplicada. O patch fica somente como material de reprodução da medição.
+Resultados, raws e reprodução em
+[NODE_PROPERTY_CONFLICT_BENCHMARKS](docs/NODE_PROPERTY_CONFLICT_BENCHMARKS.md).
+
+Gates offline executados: `go test -count=1 ./ingest/... ./snapshot/...` na
+variante; `CGO_ENABLED=1 go test -race -count=1 ./tools/buildmeasure
+./ingest/... ./snapshot/...` no workspace e race ingest/snapshot na variante;
+vet do medidor, builds sem cgo, py_compile dos scripts, reducer com igualdade
+dos raws/resumo, gofmt, diff check e `python3 tools/check_package.py`: passaram.
+As cópias sem Git usam `-buildvcs=false`. Código de produção permaneceu intacto;
+não foi repetida a suíte completa já qualificada do PR para instrumentos locais.
+Medição aprovada e encerrada; nenhuma otimização de spill pendente.
+
 ## Política de conflito de propriedades de nós — 2026-10-07
 
 Estado: **concluído**. `LastWins` é o padrão em `ingest.Options` e na CLI;
@@ -22,8 +46,24 @@ Evidência executada offline (`GOPROXY=off GOTOOLCHAIN=local`, cache em `/tmp`):
 
 O E2E de SDK WASM desativa apenas VCS stamping do módulo temporário sem Git,
 após trace mostrar `git status` fora de repositório; a compilação é real.
-Branch: `feat/node-property-conflict-policy`. Próximo passo: revisão do PR;
-merge não faz parte desta entrega.
+Branch: `feat/node-property-conflict-policy`. Entrega aprovada pelo usuário,
+com fechamento documental e merge do [PR #6](https://github.com/Gustavo2358/goopher-graph/pull/6)
+autorizados em 2026-10-07. Nenhum requisito de implementação pendente.
+
+## Fechamento documental — conflitos de propriedades, 2026-10-07
+
+Estado: **concluído e aprovado**. Contratos API/CLI, default last-wins,
+precedência, warnings e comportamento dos demais conflitos documentados.
+Medição, dados brutos e instrumentos de reprodução incluídos; sequência
+continua em todas as contribuições do spill, conforme decisão aprovada.
+Integração autorizada via merge commit para preservar implementação e evidência.
+
+O fechamento altera documentação e incorpora os instrumentos já qualificados
+na medição; ingestão, CLI de produto e snapshot não receberam novas mudanças.
+Diff check, checker documental e reducer dos dados versionados passaram;
+os testes completos/race/fuzz da implementação e gates focais do medidor são
+os registrados acima. Não foram repetidas medições nem a suíte completa
+para alterações documentais. Nenhuma nova campanha ou otimização pendente.
 
 ## Servidor residente — campanha autorizada em 2026-10-06
 

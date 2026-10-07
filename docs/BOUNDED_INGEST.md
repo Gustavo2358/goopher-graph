@@ -166,3 +166,11 @@ Os testes de escala automatizados e seus limites de heap estão em
 [TESTING](TESTING.md#ingestão-externa). Esses resultados qualificam corpora
 sintéticos e o ambiente medido; não estabelecem SLA ou dimensionamento universal
 para comprimentos de strings, número de arquivos e propriedades diferentes.
+
+### Sequência de propriedades no spill
+
+A [medição de 2026-10-07](NODE_PROPERTY_CONFLICT_BENCHMARKS.md) compara o
+payload atual com sequência somente onde first/last-wins precisa dela.
+Em 22 builds grandes, omitir sequência nos demais casos reduziu I/O lógico
+total em 1,40–1,94%, sem aceleração consistente. A implementação atual foi
+mantida; dados brutos, patch experimental e reprodução estão na nota.
