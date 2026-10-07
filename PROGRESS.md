@@ -3,8 +3,9 @@
 ## Servidor residente — campanha autorizada em 2026-10-06
 
 Branch `feat/resident-grpc-server`, fonte `main` 0178f3f. Implementação e PR
-autorizados; merge não autorizado. Ajustes: operações prefault/mlock definem
-readiness, /proc é diagnóstico; shutdown sem Stop/GracefulStop concorrentes;
+autorizados; Discovery, implementação e medições aprovados, com fechamento
+documental e merge autorizados pelo usuário em 2026-10-07. Ajustes: operações
+prefault/mlock definem readiness, /proc é diagnóstico; shutdown sem Stop/GracefulStop concorrentes;
 identidade calculada junto ao aquecimento. ABI WASM JSON preservada, deadlines
 obrigatórios, listener operacional HTTP separado.
 
@@ -25,7 +26,7 @@ obrigatórios, listener operacional HTTP separado.
 | R13 | Concluído | Métricas bounded e listener operacional |
 | R14 | Concluído | Clientes de referência Go/Python, interoperabilidade |
 | R15 | Concluído | TCP real, slow consumer, overload e memória |
-| R16 | Concluído | Benchmarks, gates completos, documentação e PR #5 para revisão |
+| R16 | Concluído | Benchmarks, gates completos, documentação e PR #5 aprovado para integração |
 
 
 Estado: **produto concluído — B00 a B12**.
@@ -309,8 +310,9 @@ R16b: `BenchmarkCorpusTransport -benchtime=10x -count=3` no corpus 400k/2M warm 
 ## Fechamento — servidor residente, 2026-10-07
 
 R01–R16 concluídos. [PR #5](https://github.com/Gustavo2358/goopher-graph/pull/5)
-publicado para revisão, sem merge. Contrato em docs/REMOTE.md; medições e
-reprodução em docs/REMOTE_BENCHMARKS.md. Próximo passo: revisão do PR.
+publicado inicialmente para revisão; entrega aprovada e merge autorizado pelo
+usuário. Contrato em docs/REMOTE.md; medições e reprodução em
+docs/REMOTE_BENCHMARKS.md.
 
 - `go clean -testcache`, `go test -count=1 ./...` e
   `CGO_ENABLED=1 go test -race -count=1 ./...`: passaram. Após consolidações,
@@ -338,7 +340,7 @@ Limites: Linux/amd64, dados sintéticos e TCP loopback; snapshot grande medido
 warm por limite de memlock do host. Sem SLA, benchmark WAN/TLS, integração
 Lambda/Kubernetes ou prova de sobrevivência a cgroup OOM. Admission deriva de
 estimativa conservadora e precisa ser calibrado no deployment real. Implementação
-autorizada entregue; nenhum hot-swap, upload, mutation ou merge nesta campanha.
+autorizada entregue; hot-swap, upload e mutations permanecem fora do escopo.
 
 ## Medição adicional de residency — 2026-10-07
 
@@ -366,3 +368,18 @@ passaram. TMPDIR de disco foi usado; /tmp do ambiente é tmpfs, incompatível co
 essa prova de eviction. O gate de imports detectou Unix no primeiro harness:
 corrigido isolando as operações no adapter opt-in, sem relaxar a regra.
 Dados frios no page cache Linux não significam SSD/controlador fisicamente frio.
+
+## Fechamento documental após aprovação — 2026-10-07
+
+Servidor residente e medição adicional concluídos e aprovados. O usuário
+autorizou explicitamente o merge do PR #5. Integração por merge commit para
+preservar os checkpoints revisáveis; nenhum requisito de implementação pendente.
+
+Este fechamento atualiza somente documentação e descrição do PR. Os gates de
+implementação e do harness de residency permanecem os registrados acima; não
+foram repetidos testes de código para alterações exclusivamente documentais.
+Limites e reprodução continuam em docs/REMOTE_BENCHMARKS.md. Nenhum novo
+escopo é iniciado neste fechamento.
+
+Verificação documental: `git diff --check` e
+`GOCACHE=/tmp/gophergraph-gocache python3 tools/check_package.py` passaram.
