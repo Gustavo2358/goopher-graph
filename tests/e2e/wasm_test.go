@@ -31,7 +31,9 @@ func TestWasmCLIAndExternalSDK(t *testing.T) {
 		t.Fatal(err)
 	}
 	module := filepath.Join(dir, "external.wasm")
-	build := exec.Command("go", "build", "-o", module, ".")
+	// This temporary standalone module has no Git repository. Build its real
+	// WASM without asking Git to stamp metadata from a surrounding checkout.
+	build := exec.Command("go", "build", "-buildvcs=false", "-o", module, ".")
 	build.Dir = dir
 	build.Env = append(os.Environ(), "GOOS=wasip1", "GOARCH=wasm", "CGO_ENABLED=0", "GOPROXY=off", "GOTOOLCHAIN=local")
 	if out, err := build.CombinedOutput(); err != nil {

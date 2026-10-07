@@ -11,7 +11,7 @@ Este registro substitui uma coleção de ADRs repetitivos. Cada entrada fixa a e
 | D05 | Catálogos nodes/edges explícitos | Usuário declara papéis; o motor garante nodes primeiro. Arquivo no lugar errado não é movido por inferência. |
 | D06 | Neptune Gremlin CSV | Reuso dos mesmos arquivos. Sem serviço Neptune, Gremlin, S3 ou equivalência transacional. |
 | D07 | Resiliência por registro/fonte | Dados ruins não abortam lote. Rejeições são diagnosticadas; grafo parcial continua coerente. |
-| D08 | Merge independente da ordem | União de set; conflito single remove a propriedade; conflito estrutural de EdgeID quarentena o ID. Sem first/last-wins. |
+| D08 | Merge com precedência explícita de nodes | União de set; single de node usa last-wins por padrão, first-wins ou remoção configuráveis, por chave do arquivo em bytes e ordem dos registros. Remoção conserva independência da ordem das linhas. Conflitos de cardinalidade/valores single de edges removem a propriedade; conflito estrutural de EdgeID quarentena o ID. |
 | D09 | Canonicalização final e IDs uint32 | Snapshot determinístico. Offsets/contagens uint64. IDs internos só valem no Graph de origem. |
 | D10 | CSR forward e reverse | Território/antiterritório não precisam reconstruir índice. Duplicação de adjacência é custo explícito. |
 | D11 | Postings persistentes e bitsets de trabalho | Não há bitmap gigante para cada valor de propriedade. Índices de propriedades são opt-in. |

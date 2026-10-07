@@ -15,9 +15,14 @@ O pipeline externo faz estes passes:
    descritores com capacidade fixa; merges de dois runs mantêm uma pilha de até
    64 níveis. Não há lista de runs ou número de arquivos proporcional aos registros.
 3. Consolida cada ID em streams, mantendo contagem e as duas menores origens.
+   Cada contribuição de propriedade conserva uma sequência atribuída antes do
+   sort. First/last-wins de propriedades single de nodes escolhe a menor/maior
+   sequência, conservando só um candidato e sua origem; a ordem por valor dos
+   runs não determina o vencedor. Duplicatas mantêm suas sequências.
    Identidades de edge vêm antes das propriedades: quarentena elimina todo o ID
    e seus conflitos de propriedades. Para um grupo de propriedade, primeiro decide
-   conflitos; depois relê o intervalo aceito, deduplicando valores consecutivos.
+   conflitos; aceita só o vencedor quando configurado ou relê o intervalo
+   aceito, deduplicando valores consecutivos.
    Nem mesmo um único node, set, label ou hub enorme exige buffering do grupo.
 4. Depois de todos os nodes, cria um índice de IDs em arquivos mmap (offsets e
    bytes). Busca binária resolve endpoints; ausências rejeitam cada registro de
@@ -161,3 +166,11 @@ Os testes de escala automatizados e seus limites de heap estão em
 [TESTING](TESTING.md#ingestão-externa). Esses resultados qualificam corpora
 sintéticos e o ambiente medido; não estabelecem SLA ou dimensionamento universal
 para comprimentos de strings, número de arquivos e propriedades diferentes.
+
+### Sequência de propriedades no spill
+
+A [medição de 2026-10-07](NODE_PROPERTY_CONFLICT_BENCHMARKS.md) compara o
+payload atual com sequência somente onde first/last-wins precisa dela.
+Em 22 builds grandes, omitir sequência nos demais casos reduziu I/O lógico
+total em 1,40–1,94%, sem aceleração consistente. A implementação atual foi
+mantida; dados brutos, patch experimental e reprodução estão na nota.

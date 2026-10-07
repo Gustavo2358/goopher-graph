@@ -1,0 +1,38 @@
+{
+  "corpora": {
+    "sets-edges": {
+      "nodes": 400000,
+      "edges": 2000000,
+      "records": 2400000,
+      "property_contributions": 2800000,
+      "ordered_contributions_last_first": 0,
+      "input_bytes": 88488954
+    },
+    "mixed": {
+      "nodes": 400000,
+      "edges": 2000000,
+      "records": 2800000,
+      "property_contributions": 3200000,
+      "ordered_contributions_last_first": 800000,
+      "input_bytes": 100377857
+    },
+    "single": {
+      "nodes": 400000,
+      "edges": 0,
+      "records": 1200000,
+      "property_contributions": 2400000,
+      "ordered_contributions_last_first": 2400000,
+      "input_bytes": 38066755
+    }
+  },
+  "baseline_sha256": "f315f00aaa6180ff19751ad4ab41f321cc5989eb057cadffc4545dda70743b69",
+  "candidate_sha256": "ccbd0f281c6b77311e033df63ead93c0b2081212073b7a07e592cc5e29d3773f",
+  "nodes": 400000,
+  "repeats": 3,
+  "budgets": [
+    16777216
+  ],
+  "policies": [
+    "last-wins"
+  ]
+}

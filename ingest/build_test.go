@@ -65,7 +65,7 @@ func TestAllFixtures(t *testing.T) {
 		t.Run(filepath.Base(dir), func(t *testing.T) {
 			w := testutil.Read(t, dir)
 			diag := &diagnostics{}
-			g, r, e := ingest.Build(context.Background(), catalog(t, filepath.Join(dir, "nodes")), catalog(t, filepath.Join(dir, "edges")), neptune.Decoder{}, diag, ingest.Options{IndexProperties: w.IndexProperties})
+			g, r, e := ingest.Build(context.Background(), catalog(t, filepath.Join(dir, "nodes")), catalog(t, filepath.Join(dir, "edges")), neptune.Decoder{}, diag, ingest.Options{NodePropertyConflictPolicy: ingest.DropConflictingProperty, IndexProperties: w.IndexProperties})
 			if e != nil {
 				t.Fatal(e)
 			}

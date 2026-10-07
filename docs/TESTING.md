@@ -48,12 +48,12 @@ Benchmarks: `go test -run '^$' -bench . -benchmem ./...`. No fechamento: `go cle
 | C10 | Fragmentação 1/2/7/4096 bytes; n>0 com EOF/erro; record maior que 64 KiB não quebra por Scanner |
 | C11 | Limite de record antes de crescer sem controle; drain só com fronteira confiável |
 | I01–I03 | Nodes/edges separados, barreira real e endpoint ausente nunca vira placeholder |
-| I04–I06 | Merge idempotente, conflito single/remove propriedade, conflito de EdgeID/quarentena |
+| I04–I06 | Merge idempotente; single de node first/last-wins/drop; cardinalidade/edge single removem propriedade; conflito de EdgeID/quarentena |
 | I07 | Fonte I/O falha sem matar lote; catálogo raiz falho é fatal |
 | I08 | Empty completo, all-rejected parcial e header inválido isolado |
 | I09 | Contadores disjuntos, staged != entidades finais, warnings != perdas, logs uma vez |
 | I10 | Erro no DiagnosticSink é operacional; propriedades sensíveis não vazam no diagnóstico |
-| I11 | Permutações de records válidos/arquivos/opções conservam bytes e conflitos |
+| I11 | Enumeração de arquivos/opções conserva bytes; permutações de records conservam bytes em drop/dados coerentes; first/last-wins segue ordem dos registros |
 | I12 | Cancelamento de ingestão não publica prefixo como carga parcial bem sucedida |
 | X01 | Índice e scan concordam para nodes/edges, todos os tipos, chave ausente/índice vazio |
 | X02 | Postings crescentes/únicos e cobertura de todos os memberships |
@@ -85,7 +85,16 @@ Fixtures possuem modelo final, consultas e diagnósticos essenciais. O oráculo 
 
 Go pode ler `expected.json` diretamente com encoding/json nos testes. Tags especiais de floats ficam como strings no JSON de referência; isso não muda o tipo do valor no Graph. Não comparar JSON de dados com NaN sem tratamento definido.
 
-Metamórficos: transposição troca forward/reverse; renomear IDs conserva topologia; contribuição coerente duplicada não duplica entidade; permutar inputs não escolhe vencedor de conflito; índice não altera resultado; bytes e mmap concordam. Mover uma quebra lexical pode mudar o prefixo recuperável e não exige invariância impossível.
+Metamórficos: transposição troca forward/reverse; renomear IDs conserva topologia; contribuição coerente duplicada não duplica entidade; no modo drop, permutar inputs não escolhe vencedor de conflito; em first/last-wins, permutar registros conflitantes pode mudar o vencedor; índice não altera resultado; bytes e mmap concordam. Mover uma quebra lexical pode mudar o prefixo recuperável e não exige invariância impossível.
+
+Os oráculos e goldens originais são executados com
+`NodePropertyConflictPolicy: ingest.DropConflictingProperty`, preservando as
+fixtures. Testes próprios verificam o default last-wins, first-wins, repetição
+do valor após conflito, arquivos distintos, campos ausentes/vazios, rejeição
+atômica, tipos diferentes, warning/contadores e origem vencedora. Heap e spill
+devem produzir snapshots, reports sem tempos e diagnósticos idênticos em cada
+política, inclusive entre runs e com um valor maior que a arena. E2E verifica
+flags, snapshot consultável e configuração inválida sem alterar a publicação.
 
 Para alcance de grafos pequenos, usar matriz/Floyd–Warshall independente da BFS de produto. Para topologias grandes, invariantes de contagem e casos calculáveis evitam usar algoritmo cúbico como benchmark do motor.
 

@@ -106,7 +106,7 @@ func TestPermutationAndIdempotence(t *testing.T) {
 			fmt.Fprintln(&b, rows[j])
 			fmt.Fprintln(&b, rows[j])
 		}
-		g, r, e := ingest.Build(context.Background(), memory{"n": b.String()}, memory{"e": "~id,~from,~to,~label\nz,X,X,A\nz,X,X,B\nz,X,X,A\nkeep,X,X,A\nkeep,X,missing,A\n"}, neptune.Decoder{}, &diagnostics{}, ingest.Options{})
+		g, r, e := ingest.Build(context.Background(), memory{"n": b.String()}, memory{"e": "~id,~from,~to,~label\nz,X,X,A\nz,X,X,B\nz,X,X,A\nkeep,X,X,A\nkeep,X,missing,A\n"}, neptune.Decoder{}, &diagnostics{}, ingest.Options{NodePropertyConflictPolicy: ingest.DropConflictingProperty})
 		if e != nil || r.PropertyConflictGroups != 1 || r.QuarantinedEdgeIDs != 1 || r.EdgeSources.RecordsRejected != 1 {
 			t.Fatal(r, e)
 		}

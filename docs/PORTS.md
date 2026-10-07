@@ -34,6 +34,11 @@ O stream pertence à orquestração. Decoder e RecordReader apenas o emprestam: 
 
 Record é genérico: role, ID, endpoints quando edge, labels e propriedades (key, valor tipado, cardinalidade). Origem de diagnóstico é opaca. Nomes reservados `~id`/`~from`, estado de quotes e headers não entram no modelo de grafo.
 
+First/last-wins usa chave do catálogo em bytes, ordem de emissão de `Next` e,
+se um decoder fornecer várias contribuições da mesma chave em um evento,
+ordem em `Record.Properties`. `Location` serve apenas ao diagnóstico; sua
+numeração não define precedência. O builder atribui a sequência antes do sort.
+
 Event contém exatamente um Record ou uma Rejection; warnings podem acompanhar Record válido. `io.EOF` encerra fonte normalmente. Um registro inválido não vem como erro fatal genérico. Erros terminais do reader são classificados (source I/O, formato irrecuperável ou recurso/cancelamento) pela orquestração.
 
 Emitir rejeições uma vez no orquestrador. Warnings só acompanham contribuições validadas; um record rejeitado não dispara um segundo conjunto de warnings intermediários. Falha do DiagnosticSink encerra o build antes da publicação. Não imprimir propriedades inteiras nos logs.

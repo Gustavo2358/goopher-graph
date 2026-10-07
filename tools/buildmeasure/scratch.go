@@ -7,8 +7,8 @@ import (
 
 // Instrument the actual scratch port without changing the production builder.
 type scratchStats struct {
-	Written, Current, Peak, Mapped, PeakMapped uint64
-	Files, PeakFiles                           int
+	Read, Written, Current, Peak, Mapped, PeakMapped uint64
+	Files, PeakFiles                                 int
 }
 type measuredScratch struct {
 	ports.Scratch
@@ -70,6 +70,12 @@ func (f *measuredFile) Write(b []byte) (int, error) {
 	f.stats.Written += uint64(n)
 	f.stats.Current += uint64(n)
 	f.stats.Peak = max(f.stats.Peak, f.stats.Current)
+	return n, err
+}
+
+func (f *measuredFile) ReadAt(b []byte, off int64) (int, error) {
+	n, err := f.ScratchFile.ReadAt(b, off)
+	f.stats.Read += uint64(n)
 	return n, err
 }
 

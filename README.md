@@ -61,6 +61,15 @@ F
 - Sem `--edge-label`, todas as relações são permitidas. Um label inexistente produz filtro vazio e alcance reflexivo.
 - `between(A,B)` retorna a interseção do alcance forward de A com o alcance reverse de B, com todas as edges permitidas entre os membros. Em ciclos, essa região pode incluir passeios que não são caminhos simples.
 - `--index-property` pode repetir. Igualdade tipada produz o mesmo resultado com índice ou scan, preservando distinções entre tags, NaN canônico e zeros assinados.
+- Propriedades `single` de nós usam `last-wins`: para o mesmo ID e chave,
+  vence o último valor presente de um registro válido. Escolha
+  `--node-property-conflict first-wins` ou `--node-property-conflict drop`
+  na carga para conservar o primeiro ou remover a propriedade conflitante.
+  A ordem é chave do arquivo em bytes e, dentro dele, sequência dos registros.
+  Declare `sigla:String(single)` para uma única sigla; `sigla:String` é set
+  por padrão e une os valores. Na API Go, configure
+  `ingest.Options{NodePropertyConflictPolicy: ingest.FirstWins}`;
+  `ingest.Options{}` usa `ingest.LastWins`.
 
 JSON inclui nodes, edges, labels, propriedades tipadas, parâmetros da query,
 contagens e `partialSnapshot`. O writer reutilizável `graphjson.Write` recebe
@@ -77,7 +86,7 @@ inteiros de 64 bits, floats não finitos e propriedades multivaloradas.
 ./bin/gophergraph territory --snapshot bin/partial.snapshot --node A
 ```
 
-Registros inválidos, headers errados, fontes com falha e endpoints ausentes geram diagnósticos JSON em stderr. A carga continua sobre os dados aceitos e o resumo informa `PARTIAL`. Propriedades conflitantes são removidas; um EdgeID estruturalmente conflitante é quarentenado. Aspas abertas até EOF encerram apenas a fonte, preservando seu prefixo completo.
+Registros inválidos, headers errados, fontes com falha e endpoints ausentes geram diagnósticos JSON em stderr. A carga continua sobre os dados aceitos e o resumo informa `PARTIAL`. Conflitos de cardinalidade, propriedades single de edges e propriedades single de nós no modo `drop` removem a propriedade. Conflitos de nós resolvidos por first/last-wins geram warning com política e origem vencedora; sozinhos não tornam a carga parcial. Um EdgeID estruturalmente conflitante é quarentenado. Aspas abertas até EOF encerram apenas a fonte, preservando seu prefixo completo.
 
 Queries mantêm os dados limpos em stdout e avisam em stderr quando o snapshot veio de carga parcial. Cancelamento, falha do catálogo raiz ou do diagnóstico impedem publicação. O limite padrão por registro é 64 MiB, ajustável com `--max-record-bytes` (mínimo 1024).
 

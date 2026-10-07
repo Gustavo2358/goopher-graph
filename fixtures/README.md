@@ -7,7 +7,7 @@ Cada pasta contém `nodes/`, `edges/` e `expected.json`. São entradas do produt
 | 01_topology | Direção, diamante, ciclo, loop, paralelas, labels e índices |
 | 02_resilient | Registros ruins entre válidos e headers de papel errado |
 | 03_typed_values | Todas as tags, empty/blank, limites, Unicode, multiline e escapes |
-| 04_conflicts | Merge, conflitos e tombstones sem dependência de ordem |
+| 04_conflicts | Merge no modo explícito drop, conflitos e tombstones sem dependência de ordem |
 | 05_defaults_empty_id | Defaults, arquivo sem extensão CSV e IDs externos vazios |
 | 06_unrecoverable_csv | Preservar prefixo e continuar na próxima fonte |
 | 07_empty | Snapshot vazio completo |

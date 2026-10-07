@@ -45,6 +45,9 @@ const (
 )
 
 type Diagnostic struct {
+	Resolution    string // política resolvida; Location é a origem vencedora
+	Related       []Location
+	Contributions uint64
 	Severity      Severity
 	Code          string // código estável, não classificação por texto
 	Location      Location

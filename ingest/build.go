@@ -16,6 +16,8 @@ import (
 )
 
 type builder struct {
+	policy       NodePropertyConflictPolicy
+	sequence     uint64
 	ctx          context.Context
 	sink         ports.DiagnosticSink
 	report       Report
@@ -44,6 +46,7 @@ func Build(ctx context.Context, nodes, edges ports.Catalog, decoder ports.Decode
 	if e != nil {
 		return fail(e)
 	}
+	b.policy = options.NodePropertyConflictPolicy
 	if e = b.load(nodes, edges, decoder, options.Limits); e != nil {
 		return fail(e)
 	}
@@ -156,6 +159,16 @@ func (b *builder) source(cat ports.Catalog, decoder ports.Decoder, role ports.Ro
 }
 func structuralError(s string) error { return fmt.Errorf("invalid normalized record: %s", s) }
 
+// Assign order before sorting; diagnostic locations are opaque and need not
+// identify record order. Each property contribution gets its own sequence.
+func (b *builder) nextPropertySequence() (uint64, error) {
+	if b.sequence == math.MaxUint64 {
+		return 0, structuralError("contribution sequence capacity")
+	}
+	b.sequence++
+	return b.sequence, nil
+}
+
 // DiagnosticError marks a fatal failure of the diagnostic port.
 type DiagnosticError struct{ Cause error }
 
@@ -238,7 +251,7 @@ func (b *builder) load(nodes, edges ports.Catalog, decoder ports.Decoder, limits
 		if b.disk != nil {
 			err = b.disk.consolidate(ports.Role(role))
 		} else {
-			err = b.consolidate(owners)
+			err = b.consolidate(ports.Role(role), owners)
 		}
 		if e := err; e != nil {
 			return e
@@ -248,6 +261,9 @@ func (b *builder) load(nodes, edges ports.Catalog, decoder ports.Decoder, limits
 }
 
 func normalizeOptions(options Options) (Options, error) {
+	if options.NodePropertyConflictPolicy > DropConflictingProperty {
+		return options, errors.New("invalid node property conflict policy")
+	}
 	l := options.Limits
 	if l.MaxRecordBytes == 0 {
 		l.MaxRecordBytes = 67108864

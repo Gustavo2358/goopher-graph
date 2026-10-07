@@ -1,7 +1,6 @@
 package ingest
 
 import (
-	"fmt"
 	"gophergraph/graph"
 	"gophergraph/ingest/ports"
 	"math"
@@ -15,6 +14,11 @@ type group struct {
 	values  map[graph.Value]struct{}
 	count   uint64
 	origins []ports.Location
+	winner  *propertyCandidate
+}
+type propertyCandidate struct {
+	value  graph.Value
+	origin ports.Location
 }
 type entity struct {
 	id, source, target, label string
@@ -95,16 +99,27 @@ func (b *builder) stage(r *ports.Record) error {
 		if p.Key == "" || !utf8.ValidString(p.Key) || p.Cardinality > ports.Single || p.Value.Kind() < graph.BoolKind || p.Value.Kind() > graph.DatetimeKind || (r.Role == ports.Edges && p.Cardinality != ports.Single) {
 			return structuralError("property")
 		}
+		if _, err := b.nextPropertySequence(); err != nil {
+			return err
+		}
 		g := e.props[p.Key]
 		if g == nil {
 			g = &group{values: map[graph.Value]struct{}{}}
 			e.props[strings.Clone(p.Key)] = g
 		}
 		g.cards |= 1 << p.Cardinality
-		g.values[cloneValue(p.Value)] = struct{}{}
-		g.count++
+		value := cloneValue(p.Value)
+		g.values[value] = struct{}{}
 		loc := r.Location
 		loc.Column = p.Key
+		if r.Role == ports.Nodes && p.Cardinality == ports.Single && b.policy != DropConflictingProperty {
+			if g.winner == nil {
+				g.winner = &propertyCandidate{value: value, origin: loc}
+			} else if b.policy == LastWins {
+				g.winner.value, g.winner.origin = value, loc
+			}
+		}
+		g.count++
 		g.origins = addOrigin(g.origins, loc)
 	}
 	return nil
@@ -117,7 +132,7 @@ func sortedEntities(m map[string]*entity) []string {
 	sort.Strings(ids)
 	return ids
 }
-func (b *builder) consolidate(owners map[string]*entity) error {
+func (b *builder) consolidate(role ports.Role, owners map[string]*entity) error {
 	for _, id := range sortedEntities(owners) {
 		if e := b.ctx.Err(); e != nil {
 			return e
@@ -138,19 +153,18 @@ func (b *builder) consolidate(owners map[string]*entity) error {
 		sort.Strings(keys)
 		for _, key := range keys {
 			g := entity.props[key]
-			code := ""
-			if g.cards == 3 {
-				code = "PROPERTY_CARDINALITY_CONFLICT"
-				b.report.PropertyCardinalityConflictGroups++
-			} else if g.cards == 2 && len(g.values) > 1 {
-				code = "PROPERTY_CONFLICT"
-				b.report.PropertyConflictGroups++
+			summary := propertySummary{cards: g.cards, distinct: len(g.values) > 1, count: g.count, origins: g.origins}
+			if g.winner != nil {
+				summary.winner = g.winner.origin
 			}
-			if code != "" {
-				if e := b.emit(ports.Diagnostic{Severity: ports.Rejection, Code: code, Location: g.origins[0], Related: g.origins, Contributions: g.count, EntityID: id, EntityIDKnown: true, Message: fmt.Sprintf("property removed after %d contributions", g.count)}); e != nil {
-					return e
-				}
+			decision, err := b.decideProperty(role, id, summary)
+			if err != nil {
+				return err
+			}
+			if decision == propertyDrop {
 				delete(entity.props, key)
+			} else if decision == propertyWinner {
+				g.values = map[graph.Value]struct{}{g.winner.value: {}}
 			}
 		}
 	}

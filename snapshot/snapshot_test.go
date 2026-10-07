@@ -87,7 +87,7 @@ func build(t testing.TB, dir string) *graph.Graph {
 	if e != nil {
 		t.Fatal(e)
 	}
-	g, _, e := ingest.Build(context.Background(), n, edges, neptune.Decoder{}, discard{}, ingest.Options{IndexProperties: w.IndexProperties})
+	g, _, e := ingest.Build(context.Background(), n, edges, neptune.Decoder{}, discard{}, ingest.Options{NodePropertyConflictPolicy: ingest.DropConflictingProperty, IndexProperties: w.IndexProperties})
 	if e != nil {
 		t.Fatal(e)
 	}

@@ -22,7 +22,7 @@ Inteiros são assinados nas respectivas faixas. Float e Double preservam os bits
 
 Igualdade é `mesma tag + mesmo payload canônico`. `Int(1)` difere de `Long(1)`, e duas datas textualmente diferentes não se tornam iguais por timezone. Para ordenar conjuntos determinísticos, usar `(key_sid, type_tag, payload_u64)` em ordem crescente; essa ordem **não é uma ordenação numérica de consultas**.
 
-Não persistir cardinalidade declarada: ela é usada para validar e consolidar a carga. Um node pode ter vários pares `(key,value)`; uma edge no máximo um valor por chave. Uma declaração `set` pode unir tipos diferentes da mesma chave. Declarações conflitantes de cardinalidade, ou múltiplos valores em `single`, removem a propriedade inteira conforme INGEST.md.
+Não persistir cardinalidade declarada: ela é usada para validar e consolidar a carga. Um node pode ter vários pares `(key,value)`; uma edge no máximo um valor por chave. Uma declaração `set` pode unir tipos diferentes da mesma chave. Declarações conflitantes de cardinalidade removem a propriedade inteira. Múltiplos valores em `single` de node usam last-wins por padrão, first-wins ou remoção conforme a opção de carga. Em edges, removem a propriedade. Ver INGEST.md.
 
 ## Canonicalização
 
@@ -36,7 +36,15 @@ Depois de resolver registros/conflitos:
 
 Interner temporário não define identidade persistente. O builder não retém slices de células reutilizados pelo decoder. Copiar os dados necessários; usar strings Go normais, sem conversão unsafe. Para evitar reter registros enormes por substrings curtas, conferir retenção durante os testes de memória.
 
-O mesmo multiconjunto de contribuições, com as mesmas opções, produz os mesmos bytes, independentemente da ordem de enumeração/linhas. Para dados coerentes, reparticionar arquivos sem mudar a semântica de headers também preserva o resultado. Para um CSV quebrado, mudar a posição da quebra pode alterar o prefixo recuperável: isso não viola o determinismo definido.
+As mesmas entradas, ordem de registros e opções produzem os mesmos bytes,
+independentemente da ordem de enumeração dos arquivos pelo catálogo. Arquivos
+são percorridos por chave em bytes. Em first/last-wins, alterar a ordem de
+registros conflitantes, renomear ou reparticionar arquivos pode alterar o
+vencedor. Com `drop`, o mesmo multiconjunto de contribuições continua produzindo
+os mesmos bytes independentemente da ordem das linhas. Para dados coerentes,
+reparticionar arquivos sem mudar a semântica de headers preserva o resultado em
+todas as políticas. Para um CSV quebrado, mudar a posição da quebra pode alterar
+o prefixo recuperável: isso não viola o determinismo definido.
 
 Paths, datas de build, contadores de linhas, ordem de mensagens e tempos não entram no snapshot. Somente um bit `partial_load` registra perda conhecida de dados. Acrescentar registros rejeitados pode mudar esse bit mesmo quando o grafo sobrevivente é igual.
 

@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"gophergraph/ingest/ports"
 	"gophergraph/snapshot"
 	"gophergraph/snapshot/adapters/file"
+	"hash"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -21,21 +23,41 @@ import (
 	"time"
 )
 
-type discard struct{}
+type diagnosticDigest struct {
+	hash  hash.Hash
+	count uint64
+}
 
-func (discard) Emit(context.Context, ports.Diagnostic) error { return nil }
+func (d *diagnosticDigest) Emit(_ context.Context, diagnostic ports.Diagnostic) error {
+	d.count++
+	return json.NewEncoder(d.hash).Encode(diagnostic)
+}
+
 func main() {
 	root := flag.String("input", "", "generated corpus directory")
 	profile := flag.String("profile", "", "optional heap profile at sampled peaks (adds overhead)")
 	budget := flag.Uint64("memory-budget", 0, "external sort budget; zero measures legacy heap path")
 	scratch := flag.String("temp-dir", "", "scratch directory (default: input directory)")
+	policy := flag.String("node-property-conflict", "last-wins", "last-wins, first-wins or drop")
 	flag.Parse()
-	if err := run(*root, *profile, *budget, *scratch); err != nil {
+	var conflictPolicy ingest.NodePropertyConflictPolicy
+	switch *policy {
+	case "last-wins":
+		conflictPolicy = ingest.LastWins
+	case "first-wins":
+		conflictPolicy = ingest.FirstWins
+	case "drop":
+		conflictPolicy = ingest.DropConflictingProperty
+	default:
+		fmt.Fprintln(os.Stderr, "invalid node property conflict policy")
+		os.Exit(2)
+	}
+	if err := run(*root, *profile, *budget, *scratch, conflictPolicy); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
-func run(root, profile string, budget uint64, scratch string) error {
+func run(root, profile string, budget uint64, scratch string, policy ingest.NodePropertyConflictPolicy) error {
 	n, err := filesystem.New(filepath.Join(root, "nodes"))
 	if err != nil {
 		return err
@@ -78,7 +100,8 @@ func run(root, profile string, budget uint64, scratch string) error {
 			}
 		}
 	}()
-	options := ingest.Options{IndexProperties: []string{"group", "score"}}
+	options := ingest.Options{IndexProperties: []string{"group", "score"}, NodePropertyConflictPolicy: policy}
+	diagnostics := &diagnosticDigest{hash: sha256.New()}
 	if budget > 0 {
 		if scratch == "" {
 			scratch = root
@@ -87,7 +110,7 @@ func run(root, profile string, budget uint64, scratch string) error {
 		options.MemoryBudget = budget
 	}
 	start := time.Now()
-	g, report, err := ingest.Build(context.Background(), n, e, neptune.Decoder{}, discard{}, options)
+	g, report, err := ingest.Build(context.Background(), n, e, neptune.Decoder{}, diagnostics, options)
 	buildTime := time.Since(start)
 	phase.Store(1)
 	var writeTime time.Duration
@@ -119,5 +142,7 @@ func run(root, profile string, budget uint64, scratch string) error {
 		PhasePeakHeap                       [2]uint64
 		Scratch                             scratchStats
 		Snapshot                            int64
-	}{report, buildTime, writeTime, peak, total, live, phasePeaks, stats, info.Size()})
+		DiagnosticCount                     uint64
+		DiagnosticSHA256                    string
+	}{report, buildTime, writeTime, peak, total, live, phasePeaks, stats, info.Size(), diagnostics.count, fmt.Sprintf("%x", diagnostics.hash.Sum(nil))})
 }
