@@ -17,8 +17,8 @@ obrigatórios, listener operacional HTTP separado.
 | R05 | Concluído | Assets WASM instalados e build reproduzível |
 | R06 | Concluído | Validação de imports no startup e relatórios de execução |
 | R07 | Concluído | Admission sem fila e lifecycle próprio |
-| R08 | Em andamento | Queries nativas, ownership e streaming síncrono |
-| R09 | Pendente | RunWasm, discovery e identidade reproduzível |
+| R08 | Concluído | Queries nativas, ownership e streaming síncrono |
+| R09 | Em andamento | RunWasm, discovery e identidade reproduzível |
 | R10 | Pendente | Startup, ServerInfo e health |
 | R11 | Pendente | Transporte, limites, deadlines e cancelamento |
 | R12 | Pendente | Shutdown, Health.Watch e quiescência |
@@ -284,3 +284,5 @@ R05: três exemplos Go WASI compilados com trimpath/buildid vazio e empacotados 
 R06: registry default preparado e imutável; testes de imports WASI ausentes/signatura incorreta, cancelamento e instância sem _start passaram. Relatório WASM preserva métricas mesmo em erro. Teste revelou uso inválido de ExportedFunction em host module; corrigido para ExportedFunctionDefinitions.
 
 R07: `go test ./remote -count=1` passou. Admission não bloqueante, cleanup idempotente e drain sem corrida Add/Wait; token representa execução + resultado + envio.
+
+R08: queries nativas em TCP real equivalentes byte a byte a EmitEncoded; filtro nil/vazio/desconhecido, metadata e erros tipados passaram. Clone de ownership seguido de Send síncrono, sem fila de produtor.
