@@ -22,8 +22,8 @@ obrigatórios, listener operacional HTTP separado.
 | R10 | Concluído | Startup, ServerInfo e health |
 | R11 | Concluído | Transporte, limites, deadlines e cancelamento |
 | R12 | Concluído | Shutdown, Health.Watch e quiescência |
-| R13 | Em andamento | Métricas bounded e listener operacional |
-| R14 | Pendente | Clientes de referência Go/Python, interoperabilidade |
+| R13 | Concluído | Métricas bounded e listener operacional |
+| R14 | Em andamento | Clientes de referência Go/Python, interoperabilidade |
 | R15 | Pendente | TCP real, slow consumer, overload e memória |
 | R16 | Pendente | Benchmarks, gates completos, documentação e PR |
 
@@ -294,3 +294,5 @@ R10: build CGO_ENABLED=0 do servidor e `go test ./remote ./cmd/gophergraph-serve
 R11: request oversized libera token, deadline ausente/excessivo é recusado, limite global de conexões preserva conexão aceita. TCP real passou. Janelas estáticas 64KiB stream / 1MiB conexão desabilitam crescimento BDP por payload.
 
 R12: `go test ./remote -run Test\(HealthWatch\|UpstreamShutdown\) -count=1 -v` passou. Subprocesso reproduziu `grpc-go=1.84.0 concurrent-stop=blocked`; nosso shutdown não sobrepõe as chamadas e Watch não impede encerramento. Cleanup do runtime e Graph só após join.
+
+R13: `go test ./remote ./remote/observability ./cmd/gophergraph-server -count=1` passou. Métricas de processo/snapshot/admission/fases/WASM com labels finitas, histogramas cumulativos; /proc opcional. HTTP scrapes são selados/joinados antes de unmap.

@@ -46,6 +46,8 @@ type queryRecord struct {
 	Execution, Encode, Send      time.Duration
 	Bytes, Batches, Nodes, Edges uint64
 	Wasm                         wasmquery.Metrics
+	Trap                         bool
+	telemetry                    *telemetry
 }
 type recordKey struct{}
 
@@ -119,7 +121,7 @@ func (s *Service) Between(req *pb.BetweenRequest, stream grpc.ServerStreamingSer
 func (s *Service) native(stream grpc.ServerStreamingServer[pb.EncodedBatch], name string, from, to *string, f *pb.EdgeLabelFilter) error {
 	ctx := stream.Context()
 	rec := record(ctx)
-	rec.Name = name
+	renameRecord(ctx, name)
 	if err := external(from); err != nil {
 		return err
 	}

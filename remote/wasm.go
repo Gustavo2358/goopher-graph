@@ -2,6 +2,7 @@ package remote
 
 import (
 	"context"
+	"errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -10,6 +11,7 @@ import (
 	"gophergraph/ggpb"
 	"gophergraph/remote/installedwasm"
 	"gophergraph/remote/pb"
+	"gophergraph/wasmquery"
 	"time"
 )
 
@@ -20,7 +22,7 @@ func (s *Service) RunWasm(req *pb.RunWasmRequest, stream grpc.ServerStreamingSer
 		return status.Error(codes.NotFound, "installed query not found")
 	}
 	rec := record(ctx)
-	rec.Name = d.Name
+	renameRecord(ctx, "wasm:"+d.Name)
 	if req.ExpectedSha256 != nil && *req.ExpectedSha256 != d.SHA256 {
 		return status.Error(codes.FailedPrecondition, "installed query hash mismatch")
 	}
@@ -31,6 +33,7 @@ func (s *Service) RunWasm(req *pb.RunWasmRequest, stream grpc.ServerStreamingSer
 	result, metrics, err := s.runtime.ExecuteReport(ctx, m, s.g, req.Args)
 	rec.Execution = time.Since(t)
 	rec.Wasm = metrics
+	rec.Trap = errors.Is(err, wasmquery.ErrExecution)
 	if err != nil {
 		return rpcError(err)
 	}

@@ -56,6 +56,8 @@ func (o ServerOptions) defaults() (ServerOptions, error) {
 // through Shutdown. Serve is called once. Shutdown always joins readers before
 // returning, even when its grace deadline expires.
 type Server struct {
+	telemetry *telemetry
+
 	grpc         *grpc.Server
 	health       *health.Server
 	admission    *Admission
@@ -95,6 +97,7 @@ func NewServer(service *Service, options ServerOptions) (*Server, error) {
 	if o.Credentials != nil {
 		optionsGRPC = append(optionsGRPC, grpc.Creds(o.Credentials))
 	}
+	s.telemetry = newTelemetry(service)
 	s.grpc = grpc.NewServer(optionsGRPC...)
 	pb.RegisterGraphServiceServer(s.grpc, service)
 	grpc_health_v1.RegisterHealthServer(s.grpc, s.health)
@@ -116,7 +119,24 @@ func isQuery(method string) bool {
 	}
 	return false
 }
-func (s *Server) stream(server any, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+func (s *Server) stream(server any, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) (result error) {
+	var rec *queryRecord
+	admitted := false
+	if isQuery(info.FullMethod) {
+		name := "wasm:unknown"
+		switch info.FullMethod {
+		case pb.GraphService_Territory_FullMethodName:
+			name = "territory"
+		case pb.GraphService_AntiTerritory_FullMethodName:
+			name = "anti-territory"
+		case pb.GraphService_Between_FullMethodName:
+			name = "between"
+		}
+		rec = &queryRecord{Name: name, telemetry: s.telemetry}
+		started := time.Now()
+		s.telemetry.start(name)
+		defer func() { s.telemetry.finish(rec, admitted, status.Code(result), time.Since(started)) }()
+	}
 	s.mu.Lock()
 	if s.draining {
 		s.mu.Unlock()
@@ -149,7 +169,8 @@ func (s *Server) stream(server any, stream grpc.ServerStream, info *grpc.StreamS
 			return rpcError(err)
 		}
 		defer release()
-		ctx = context.WithValue(ctx, recordKey{}, new(queryRecord))
+		admitted = true
+		ctx = context.WithValue(ctx, recordKey{}, rec)
 	}
 	return handler(server, scopedStream{stream, ctx})
 }

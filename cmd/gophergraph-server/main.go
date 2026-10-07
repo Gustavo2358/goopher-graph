@@ -8,7 +8,9 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"gophergraph/remote/observability"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"runtime"
@@ -39,6 +41,7 @@ func run(ctx context.Context, args []string) (err error) {
 	f := flag.NewFlagSet("gophergraph-server", flag.ContinueOnError)
 	path := f.String("snapshot", "", "immutable snapshot path (required)")
 	address := f.String("listen", "127.0.0.1:9090", "gRPC listen address")
+	metricsAddress := f.String("metrics-listen", "127.0.0.1:9091", "operational HTTP listener; empty disables")
 	mode := f.String("residency", "locked", "locked, warm or lazy; no fallback")
 	capacity := f.Int("query-capacity", 0, "active query+stream capacity; 0 derives from CPUs and query-memory-budget")
 	budget := f.Uint64("query-memory-budget", 512<<20, "conservative budget for concurrent query workspaces, excluding snapshot/runtime base")
@@ -127,12 +130,35 @@ func run(ctx context.Context, args []string) (err error) {
 	if err != nil {
 		return err
 	}
+	httpErr := make(chan error, 1)
+	if *metricsAddress != "" {
+		metricsListener, e := net.Listen("tcp", *metricsAddress)
+		if e != nil {
+			listener.Close()
+			return e
+		}
+		handler := observability.Handler(server, observability.Options{Started: time.Now(), PrepareTime: report.PrepareTime, Observe: func() (observability.SnapshotObservation, error) {
+			v, e := source.Inspect()
+			return observability.SnapshotObservation{At: v.At, RSSBytes: v.RSSBytes, PSSBytes: v.PSSBytes, LockedPSSBytes: v.LockedPSSBytes}, e
+		}})
+		httpServer := &http.Server{Handler: handler, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 10 * time.Second, IdleTimeout: 30 * time.Second, MaxHeaderBytes: 8192}
+		go func() { httpErr <- httpServer.Serve(metricsListener) }()
+		defer func() {
+			defer handler.Close()
+			shutdown, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+			if e := httpServer.Shutdown(shutdown); e != nil {
+				_ = httpServer.Close()
+			}
+		}()
+	}
 	serveErr := make(chan error, 1)
 	go func() { serveErr <- server.Serve(listener) }()
 	fmt.Fprintf(os.Stderr, "serving gRPC=%s snapshot=%s mode=%s warm=%t locked=%t prepare=%s query_capacity=%d estimated_query_bytes=%d GOMAXPROCS=%d\n", listener.Addr(), report.SnapshotID, report.Mode, report.WarmCompleted, report.Locked, report.PrepareTime, c, envelope, runtime.GOMAXPROCS(0))
 	select {
 	case <-ctx.Done():
 	case err = <-serveErr:
+	case err = <-httpErr:
 	}
 	shutdown, cancelShutdown := context.WithTimeout(context.Background(), *grace)
 	defer cancelShutdown()
