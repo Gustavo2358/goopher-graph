@@ -18,8 +18,8 @@ obrigatórios, listener operacional HTTP separado.
 | R06 | Concluído | Validação de imports no startup e relatórios de execução |
 | R07 | Concluído | Admission sem fila e lifecycle próprio |
 | R08 | Concluído | Queries nativas, ownership e streaming síncrono |
-| R09 | Em andamento | RunWasm, discovery e identidade reproduzível |
-| R10 | Pendente | Startup, ServerInfo e health |
+| R09 | Concluído | RunWasm, discovery e identidade reproduzível |
+| R10 | Em andamento | Startup, ServerInfo e health |
 | R11 | Pendente | Transporte, limites, deadlines e cancelamento |
 | R12 | Pendente | Shutdown, Health.Watch e quiescência |
 | R13 | Pendente | Métricas bounded e listener operacional |
@@ -285,4 +285,6 @@ R06: registry default preparado e imutável; testes de imports WASI ausentes/sig
 
 R07: `go test ./remote -count=1` passou. Admission não bloqueante, cleanup idempotente e drain sem corrida Add/Wait; token representa execução + resultado + envio.
 
-R08: queries nativas em TCP real equivalentes byte a byte a EmitEncoded; filtro nil/vazio/desconhecido, metadata e erros tipados passaram. Clone de ownership seguido de Send síncrono, sem fila de produtor.
+R08: implementação e testes de paridade byte a byte com EmitEncoded, filtro nil/vazio/desconhecido e erros tipados. Primeira execução TCP impedida pelo sandbox (socket operation not permitted); reexecução fora do sandbox em andamento. Clone de ownership seguido de Send síncrono, sem fila de produtor.
+
+R08/R09: `go test ./remote -count=1` fora do sandbox passou (TCP real). WASM discovery, nome+SHA no Header/metadata, expected hash, aridade/NUL/tamanho e zero compile em request verificados. Restrição de socket era ambiental.
