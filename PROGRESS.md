@@ -19,8 +19,8 @@ obrigatórios, listener operacional HTTP separado.
 | R07 | Concluído | Admission sem fila e lifecycle próprio |
 | R08 | Concluído | Queries nativas, ownership e streaming síncrono |
 | R09 | Concluído | RunWasm, discovery e identidade reproduzível |
-| R10 | Em andamento | Startup, ServerInfo e health |
-| R11 | Pendente | Transporte, limites, deadlines e cancelamento |
+| R10 | Concluído | Startup, ServerInfo e health |
+| R11 | Em andamento | Transporte, limites, deadlines e cancelamento |
 | R12 | Pendente | Shutdown, Health.Watch e quiescência |
 | R13 | Pendente | Métricas bounded e listener operacional |
 | R14 | Pendente | Clientes de referência Go/Python, interoperabilidade |
@@ -288,3 +288,5 @@ R07: `go test ./remote -count=1` passou. Admission não bloqueante, cleanup idem
 R08: implementação e testes de paridade byte a byte com EmitEncoded, filtro nil/vazio/desconhecido e erros tipados. Primeira execução TCP impedida pelo sandbox (socket operation not permitted); reexecução fora do sandbox em andamento. Clone de ownership seguido de Send síncrono, sem fila de produtor.
 
 R08/R09: `go test ./remote -count=1` fora do sandbox passou (TCP real). WASM discovery, nome+SHA no Header/metadata, expected hash, aridade/NUL/tamanho e zero compile em request verificados. Restrição de socket era ambiental.
+
+R10: build CGO_ENABLED=0 do servidor e `go test ./remote ./cmd/gophergraph-server -count=1` TCP passaram. Snapshot único validado/preparado antes de listener; health gRPC Check/Watch, ServerInfo e startup fail-closed. Limites base e lifecycle conectados ao adapter.
