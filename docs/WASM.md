@@ -59,6 +59,7 @@ cancelamento descartam o resultado.
 | API | Semântica |
 |---|---|
 | `q.Nodes(ids...)`, `q.NodesWithLabel(label)` | IDs externos; ID inexistente é erro. `Nodes()` e label ausente produzem conjunto vazio. |
+| `q.NodesWithAnyLabelAndProperty(labels, key, value)` | OR entre labels, AND com igualdade tipada. Nil/vazio seleciona nenhum node; labels desconhecidos/repetidos são inócuos. |
 | `nodes.Out/In/Both(labels...)` | Vizinhos distintos a um salto, por direção. |
 | `nodes.OutE/InE/BothE(labels...)` | Edges por identidade; paralelas preservadas, loop incluído uma vez. |
 | `edges.Sources/Targets()` | Endpoints na direção original. |
@@ -88,7 +89,7 @@ Exemplos executáveis:
   alcançáveis por duas origens, equivalente ao exemplo Go nativo, com edges induzidas.
 - [between](../examples/wasm/between/main.go): `territory(A) ∩ antiTerritory(B)`.
 - [filtered](../examples/wasm/filtered/main.go): `out`, label/property tipada, `in`
-  e interseção de edges. Argumentos para a fixture: `A PROGRAM sigla CO`.
+  e interseção de edges. Argumentos para a [fixture genérica](../wasmquery/testdata/selection/nodes/data.csv): `S L tag X`.
 
 Para um módulo Go independente, use `require gophergraph v0.0.0` e
 `replace gophergraph => /caminho/local/gophergraph` no `go.mod`. Copie um exemplo,
@@ -113,7 +114,9 @@ são reutilizados nem resolvidos fora da execução que os criou.
 
 Parâmetros opcionais são um objeto JSON UTF-8 limitado, com os campos necessários
 à operação: `ids`, `label`, `key`, `value`, `direction`, `labels`, `id`, `index`.
-`labels:null` permite todas; `[]` nenhuma. `value` é `{kind,bits,text}` conforme
+`labels:null` permite todas nas operações de travessia; `[]` nenhuma.
+Na seleção composta (27), tanto null quanto [] selecionam nenhum node.
+`value` é `{kind,bits,text}` conforme
 acima. Leitura pontual escreve `{found,value}`. Não há payload de NodeSet,
 EdgeSet, Subgraph ou JSON de resultado nessa fronteira. A memória de parâmetros
 é lida apenas durante a chamada; o host não retém slices da memória guest.
@@ -126,7 +129,46 @@ EdgeSet, Subgraph ou JSON de resultado nessa fronteira. A memória de parâmetro
 | 13 / 14 / 15 | Union / Intersection / Difference | 16 | Reachable |
 | 17 / 18 | Induced / Subgraph | 19 / 20 | SubNodes / SubEdges |
 | 21 / 22 | Count / Empty | 23 / 24 | ReadNodeProperty / ReadEdgeProperty |
-| 25 / 26 | Release / Return | | |
+| 25 / 26 | Release / Return | 27 | NodesAnyLabelProperty |
+
+## Seleção composta e distribuição
+
+```go
+selected := q.NodesWithAnyLabelAndProperty([]string{"L", "M"}, "tag", sdk.String("X"))
+filtered := selected.Has("rank", sdk.Int(1))
+selected.Release()
+sub := filtered.Induced()
+filtered.Release()
+if err := q.Return(sub); err != nil { os.Exit(1) }
+```
+
+A seleção recebe apenas parâmetros genéricos. `NodeSet.Has` mantém a assinatura
+SDK e agora filtra candidatos no host: sem varredura global de propriedades e
+sem conjunto global intermediário. Propriedades indexadas usam os postings
+existentes. `EdgeSet.Has` conserva sua implementação. O orçamento do host cobre
+resultado e temporários efetivos: dois bitmaps para a seleção composta, somente
+o bitmap novo para `Has`, além dos handles vivos. Não é um teto de alocações
+acumuladas nem de RSS.
+
+A indexação permanece opcional e configurável para qualquer chave. Exemplo
+com propriedade fictícia (adicione outras flags repetindo `--index-property`):
+
+```sh
+bin/gophergraph build --nodes wasmquery/testdata/selection/nodes \
+  --edges wasmquery/testdata/selection/edges --index-property tag \
+  --output /tmp/selection.snapshot
+```
+
+A ABI continua `gophergraph_v1`; opcodes 1–26 mantêm números e semântica.
+Módulos antigos continuam executando no host novo. Módulos que chamam 27
+exigem este host ou posterior; um host anterior rejeita a operação. O módulo
+instalado `filtered` versão 2 usa 27. Distribua os assets reconstruídos com
+`go generate ./remote/installedwasm` junto com o servidor atualizado. A versão
+do descriptor e SHA do módulo identificam essa associação em discovery e
+`ExpectedSha256`; não há negociação nova de capacidades. A compatibilidade
+com os bytes empacotados da versão 1 é testada. [Operação remota](REMOTE.md).
+
+[Resultados medidos e limites](SELECTION_BENCHMARKS.md).
 
 ## Runtime reutilizável e ownership
 

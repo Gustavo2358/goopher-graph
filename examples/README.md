@@ -18,3 +18,9 @@ O E2E compila e executa um consumidor em módulo temporário separado, sem rede.
 `wasm/shared_targets`, `wasm/between` e `wasm/filtered` são programas externos à
 engine, escritos com `wasmquery/sdk`. Compilação com Go `wasip1/wasm`, argumentos
 e semântica estão em [docs/WASM.md](../docs/WASM.md).
+
+`filtered` usa seleção composta genérica e interseção com os vizinhos, mantendo
+os quatro argumentos. O asset instalado versão 2 deve acompanhar um host com
+opcode 27. Para testar com dados fictícios, construa a fixture
+`wasmquery/testdata/selection` e passe `S L tag X`; a indexação opcional de `tag`
+usará a flag genérica `--index-property`. [Contrato e comandos](../docs/WASM.md).

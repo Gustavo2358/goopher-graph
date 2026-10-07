@@ -37,3 +37,8 @@ sem acumular o resultado. Requer result_pb2.py gerado do schema, fora do build G
 [Comandos](../docs/GGPB.md#regenerar-e-validar-interoperabilidade).
 
 `tools/encodingmeasure` mede encoding residente sobre snapshot aberto, com warmup e perfis pprof opcionais. `--query-each` executa queries novas antes de cada encoding e reporta query/encode/CPU separadamente. `tools/ggpb_checkpoints.py` mede quatro casos em processos cold e residentes usando fixtures já construídas; não baixa dependências. Experimentos de concorrência/geometria são opt-in nos testes ggpb e não introduzem workers no produto. [Campanha de otimização](../docs/GGPB_BENCHMARKS.md).
+
+A medição opt-in de seleção genérica usa testes junto aos packages, sem novo
+profiler: `TestSelectionMeasurement` separa seleção, WASM, materialização e
+encoding local; `TestFilteredSelectionStreaming` mede `RunWasm` via TCP e as
+fases já instrumentadas no servidor. [Dados e reprodução](../docs/SELECTION_BENCHMARKS.md).

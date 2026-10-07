@@ -18,6 +18,23 @@ Value tem tag e payload canônico encapsulados, com construtores/acessores tipad
 
 Propriedade tem key e Value. Todas as propriedades, inclusive set de node e escalares de edge, são acessíveis. Busca por label/propriedade retorna conjunto vazio quando chave/label não existe. Índice presente e scan devem retornar exatamente o mesmo conjunto.
 
+`g.NodesWithAnyLabelAndProperty(ctx, labels, key, value)` seleciona a união
+(OR) dos labels e aplica a condição tipada (AND). Nil e lista vazia selecionam
+nenhum node; labels desconhecidos não acrescentam membros e repetidos não
+alteram o resultado. Multilabel e propriedades multivaloradas deduplicam por
+identidade; basta um valor igual. Os postings de labels alimentam um único
+bitmap de candidatos. Com índice, cruza postings de propriedade diretamente;
+sem índice, examina somente as propriedades dos candidatos. Não há índice
+físico composto nem mudança de snapshot.
+
+`nodes.Has(ctx, key, value)` usa a mesma filtragem e devolve um bitmap novo,
+preservando o conjunto de entrada. Com índice, lê postings; sem índice, visita
+somente nodes presentes no bitmap (a procura de membros percorre palavras do
+bitmap). Cancelamento é observado durante essas passagens e a leitura de
+propriedades, retornando erro sem resultado parcial. A seleção composta aloca
+dois bitmaps; `Has` aloca somente o resultado. [SDK e distribuição](WASM.md),
+[medição reproduzível](SELECTION_BENCHMARKS.md).
+
 `NodeSet` e `EdgeSet` são tipos separados com identidade de Graph. Interseção/união rejeitam outro Graph, mesmo que tenha tamanho igual. Bitmaps mutáveis são privados; o chamador pode montar um NodeSet, mas Subgraph copia o conjunto recebido para não ser invalidado por mutação posterior do input. Retorno de metadados não concede acesso ao backing.
 
 ## Consultas

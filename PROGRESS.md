@@ -1,5 +1,40 @@
 # Progresso
 
+## Seleção composta genérica — 2026-10-07
+
+Estado: **concluído** (implementação e validação). Branch
+`feat/composed-node-selection`; entrega via PR para revisão, sem merge.
+Core/host/SDK oferecem OR de labels e AND com igualdade tipada; `NodeSet.Has`
+filtra os candidatos pela mesma rotina. Índices opcionais continuam genéricos.
+Opcode 27 acrescentado, anteriores preservados, `filtered` versão 2 e assets
+reproduzíveis. Módulo empacotado versão 1 também executado contra o host novo.
+
+Evidência offline (`GOPROXY=off GOTOOLCHAIN=local`, cache em `/tmp`):
+
+- Teste inicial detectou ausência da API; focais posteriores passaram para
+  equivalência, multilabel, repetição/vazio/desconhecidos, tipos, multivalores,
+  entrada preservada, cancelamento durante loops e budget/ownership.
+  Mutação temporária para scan global fez o teste de contagem de trabalho
+  falhar; restaurada a implementação, o teste passou (nenhuma fixture alterada).
+- `go test -count=1 ./...` e
+  `CGO_ENABLED=1 go test -race -count=1 -p=1 ./...`: passaram, incluindo SDK
+  externo, E2E e TCP local. Focais complementares e race de graph passaram.
+  O primeiro run restrito falhou apenas ao abrir sockets; repetido com
+  permissão de TCP local, sem relaxar limites do produto.
+- `go vet ./...`, gofmt, diff check, checker documental e builds CLI/servidor
+  com `CGO_ENABLED=0`: passaram. CLI build com índice `tag` → snapshot → módulo
+  empacotado → JSON correto (2 nodes, 1 edge); geração de assets repetida com
+  mesmos hashes.
+- Medição final sequencial: 100k nodes/100k edges, 6k candidatos e 857 resultados,
+  3 warmups/11 amostras; core global/composição × scan/índice, WASM com 40/4
+  chamadas host, alocações/RSS/mapping e fases de saída local. TCP RunWasm
+  também medido em fixture pequena, com instrumentação existente.
+  [Dados, medianas e reprodução](docs/SELECTION_BENCHMARKS.md).
+
+Corpus anterior indisponível; nenhuma reprodução histórica alegada. Novas
+fixtures/configurações usam atributos fictícios. Snapshot/protocolo v1 mantidos;
+EdgeSet.Has e as demais operações adiadas não foram ampliados.
+
 ## Custo da sequência no spill — 2026-10-07
 
 Estado: **concluído**, a pedido do usuário. Comparação isolada do spill atual
