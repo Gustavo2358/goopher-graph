@@ -109,10 +109,18 @@ func (s *Subgraph) AddEdge(id graph.EdgeID) error {
 	_ = s.nodes.Add(edge.Target)
 	return s.edges.Add(id)
 }
-func (s *Subgraph) Nodes() graph.NodeIterator     { return s.nodes.Iterator() }
-func (s *Subgraph) Edges() graph.EdgeIDIterator   { return s.edges.Iterator() }
-func (s *Subgraph) NodeCount() uint64             { return s.nodes.Count() }
-func (s *Subgraph) EdgeCount() uint64             { return s.edges.Count() }
+func (s *Subgraph) Nodes() graph.NodeIterator   { return s.nodes.Iterator() }
+func (s *Subgraph) Edges() graph.EdgeIDIterator { return s.edges.Iterator() }
+func (s *Subgraph) NodeCount() uint64           { return s.nodes.Count() }
+func (s *Subgraph) EdgeCount() uint64           { return s.edges.Count() }
+func (s *Subgraph) CountsContext(ctx context.Context) (uint64, uint64, error) {
+	n, err := s.nodes.CountContext(ctx)
+	if err != nil {
+		return 0, 0, err
+	}
+	e, err := s.edges.CountContext(ctx)
+	return n, e, err
+}
 func (s *Subgraph) BelongsTo(g *graph.Graph) bool { return s != nil && s.g == g }
 func FromNodes(ctx context.Context, g *graph.Graph, nodes *graph.NodeSet, options Options) (*Subgraph, error) {
 	if e := ctx.Err(); e != nil {
@@ -121,11 +129,15 @@ func FromNodes(ctx context.Context, g *graph.Graph, nodes *graph.NodeSet, option
 	if !nodes.BelongsTo(g) {
 		return nil, graph.ErrGraphMismatch
 	}
-	s, e := NewSubgraph(g)
+	cloned, e := nodes.CloneContext(ctx)
 	if e != nil {
 		return nil, e
 	}
-	s.nodes = nodes.Clone()
+	edges, e := graph.NewEdgeSet(g)
+	if e != nil {
+		return nil, e
+	}
+	s := &Subgraph{g, cloned, edges}
 	it := s.nodes.Iterator()
 	var steps uint64
 	for it.Next() {
@@ -180,7 +192,7 @@ func Between(ctx context.Context, g *graph.Graph, from, to graph.NodeID, o Optio
 	if e != nil {
 		return nil, e
 	}
-	n, e := a.Intersection(b)
+	n, e := a.IntersectionContext(ctx, b)
 	if e != nil {
 		return nil, e
 	}

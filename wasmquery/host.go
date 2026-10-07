@@ -226,15 +226,18 @@ func (s *execution) dispatch(ctx context.Context, op uint32, a, b uint64, p abi.
 		var count uint64
 		switch {
 		case v.nodes != nil:
-			count = v.nodes.Count()
+			count, err = v.nodes.CountContext(ctx)
 		case v.edges != nil:
-			count = v.edges.Count()
+			count, err = v.edges.CountContext(ctx)
 		case b == 0:
-			count = v.sub.NodeCount()
+			count, _, err = v.sub.CountsContext(ctx)
 		case b == 1:
-			count = v.sub.EdgeCount()
+			_, count, err = v.sub.CountsContext(ctx)
 		default:
 			return 0, ErrABI
+		}
+		if err != nil {
+			return 0, err
 		}
 		if op == abi.Empty {
 			if count == 0 {

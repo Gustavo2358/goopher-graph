@@ -1,6 +1,9 @@
 package graph
 
-import "math/bits"
+import (
+	"context"
+	"math/bits"
+)
 
 type NodeSet struct {
 	g     *Graph
@@ -31,6 +34,71 @@ func (s *NodeSet) Count() uint64 {
 		n += uint64(bits.OnesCount64(v))
 	}
 	return n
+}
+
+// CountContext checks cancellation during large bitmap scans.
+func (s *NodeSet) CountContext(ctx context.Context) (uint64, error) {
+	var n uint64
+	for i, v := range s.words {
+		if i%1024 == 0 {
+			if err := ctx.Err(); err != nil {
+				return 0, err
+			}
+		}
+		n += uint64(bits.OnesCount64(v))
+	}
+	return n, ctx.Err()
+}
+
+// CloneContext owns its output; cancellation never exposes a partial set.
+func (s *NodeSet) CloneContext(ctx context.Context) (*NodeSet, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	out := &NodeSet{s.g, make([]uint64, len(s.words)), s.size}
+	for i := 0; i < len(s.words); i += 1024 {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		copy(out.words[i:min(i+1024, len(s.words))], s.words[i:min(i+1024, len(s.words))])
+	}
+	return out, ctx.Err()
+}
+func (s *NodeSet) IntersectionContext(ctx context.Context, other *NodeSet) (*NodeSet, error) {
+	if other == nil || s.g != other.g {
+		return nil, ErrGraphMismatch
+	}
+	out, err := s.CloneContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for i := range out.words {
+		if i%1024 == 0 {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+		}
+		out.words[i] &= other.words[i]
+	}
+	return out, ctx.Err()
+}
+func (s *NodeSet) UnionContext(ctx context.Context, other *NodeSet) (*NodeSet, error) {
+	if other == nil || s.g != other.g {
+		return nil, ErrGraphMismatch
+	}
+	out, err := s.CloneContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for i := range out.words {
+		if i%1024 == 0 {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+		}
+		out.words[i] |= other.words[i]
+	}
+	return out, ctx.Err()
 }
 func (s *NodeSet) Clone() *NodeSet         { return &NodeSet{s.g, append([]uint64(nil), s.words...), s.size} }
 func (s *NodeSet) BelongsTo(g *Graph) bool { return s != nil && s.g == g }
@@ -110,6 +178,71 @@ func (s *EdgeSet) Count() uint64 {
 		n += uint64(bits.OnesCount64(v))
 	}
 	return n
+}
+
+// CountContext checks cancellation during large bitmap scans.
+func (s *EdgeSet) CountContext(ctx context.Context) (uint64, error) {
+	var n uint64
+	for i, v := range s.words {
+		if i%1024 == 0 {
+			if err := ctx.Err(); err != nil {
+				return 0, err
+			}
+		}
+		n += uint64(bits.OnesCount64(v))
+	}
+	return n, ctx.Err()
+}
+
+// CloneContext owns its output; cancellation never exposes a partial set.
+func (s *EdgeSet) CloneContext(ctx context.Context) (*EdgeSet, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	out := &EdgeSet{s.g, make([]uint64, len(s.words)), s.size}
+	for i := 0; i < len(s.words); i += 1024 {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		copy(out.words[i:min(i+1024, len(s.words))], s.words[i:min(i+1024, len(s.words))])
+	}
+	return out, ctx.Err()
+}
+func (s *EdgeSet) IntersectionContext(ctx context.Context, other *EdgeSet) (*EdgeSet, error) {
+	if other == nil || s.g != other.g {
+		return nil, ErrGraphMismatch
+	}
+	out, err := s.CloneContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for i := range out.words {
+		if i%1024 == 0 {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+		}
+		out.words[i] &= other.words[i]
+	}
+	return out, ctx.Err()
+}
+func (s *EdgeSet) UnionContext(ctx context.Context, other *EdgeSet) (*EdgeSet, error) {
+	if other == nil || s.g != other.g {
+		return nil, ErrGraphMismatch
+	}
+	out, err := s.CloneContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for i := range out.words {
+		if i%1024 == 0 {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+		}
+		out.words[i] |= other.words[i]
+	}
+	return out, ctx.Err()
 }
 func (s *EdgeSet) Clone() *EdgeSet         { return &EdgeSet{s.g, append([]uint64(nil), s.words...), s.size} }
 func (s *EdgeSet) BelongsTo(g *Graph) bool { return s != nil && s.g == g }

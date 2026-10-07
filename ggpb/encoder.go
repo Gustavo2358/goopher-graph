@@ -77,7 +77,11 @@ func Emit(ctx context.Context, g *graph.Graph, s *query.Subgraph, q Query, optio
 	labels := slices.Clone(q.EdgeLabels)
 	slices.Sort(labels)
 	labels = slices.Compact(labels)
-	h := &pb.ResultHeader{Version: Version, Query: &pb.Query{Name: q.Name, Node: q.Node, From: q.From, To: q.To, Filtered: q.EdgeLabels != nil, EdgeLabels: labels}, Directed: true, PartialSnapshot: g.Metadata().PartialLoad, Nodes: s.NodeCount(), Edges: s.EdgeCount()}
+	nodes, edges, err := s.CountsContext(ctx)
+	if err != nil {
+		return err
+	}
+	h := &pb.ResultHeader{Version: Version, Query: &pb.Query{Name: q.Name, Node: q.Node, From: q.From, To: q.To, Filtered: q.EdgeLabels != nil, EdgeLabels: labels}, Directed: true, PartialSnapshot: g.Metadata().PartialLoad, Nodes: nodes, Edges: edges}
 	if e := new(validator).header(h); e != nil {
 		return e
 	}

@@ -12,8 +12,8 @@ obrigatórios, listener operacional HTTP separado.
 |---|---|---|
 | R01 | Concluído | Contrato tipado, Protobuf separado, dependências e arquitetura |
 | R02 | Concluído | Validação incremental de batches GGPB |
-| R03 | Em andamento | Cancelamento de operações extensas de bitsets |
-| R04 | Pendente | Residency Linux, identity na passagem de warm, lock fail-closed |
+| R03 | Concluído | Cancelamento de operações extensas de bitsets |
+| R04 | Em andamento | Residency Linux, identity na passagem de warm, lock fail-closed |
 | R05 | Pendente | Assets WASM instalados e build reproduzível |
 | R06 | Pendente | Validação de imports no startup e relatórios de execução |
 | R07 | Pendente | Admission sem fila e lifecycle próprio |
@@ -274,3 +274,5 @@ Fechamento documental concluído após aprovação do usuário do HEAD 5f6e196 e
 R01: `go test ./remote/pb ./tests/e2e -run TestCapabilityImports -count=1` passou. grpc-go 1.84.0; protocolo remoto separado. Gerador oficial protoc-gen-go 1.34.2 evita unsafe próprio.
 
 R02: `go test ./ggpb -count=1` passou; decoder bounded sem framing, testes de ordem, End, cancelamento e paridade com leitor de arquivo.
+
+R03: `go test ./graph ./query ./ggpb ./wasmquery -count=1` passou. Scans canceláveis, FromNodes evita alocação redundante; ABI e APIs anteriores preservadas.
