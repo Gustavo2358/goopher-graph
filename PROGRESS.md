@@ -1,5 +1,44 @@
 # Progresso
 
+## Ajustes da revisão do PR #7 — 2026-10-07
+
+Estado: **concluído**. Ajustes na branch `feat/composed-node-selection` para o
+[PR #7](https://github.com/Gustavo2358/goopher-graph/pull/7), sem merge ou auto-merge.
+`Has` detecta candidatos vazios antes de buscar propriedades/postings, com
+resultado independente e cancelamento durante a leitura do bitmap. `filtered`
+volta a `Out().HasLabel().Has()`; `select_labels` exercita opcode 27 como
+exemplo genérico separado. Asset `filtered` versão 2 reconstruído e reproduzível.
+
+Evidência executada offline (`GOPROXY=off GOTOOLCHAIN=local`, cache em `/tmp`):
+
+- `TestEmptySelectionSkipsPropertyWork` falhou antes do ajuste: 100–102 checks
+  com 100k postings e input vazio. Passou depois, com limite de 8 checks cobrindo
+  apenas palavras do bitmap, incluindo labels nil/vazios/desconhecidos,
+  ownership, cancelamento e deadline.
+- `TestFilteredPropertyWorkStaysWithNeighbors`: 5k nodes, um vizinho, mesma
+  quantidade de propriedades, labels raros/comuns. 40.946/40.946 alocações por
+  execução (3 amostras e warmup de `AllocsPerRun`). Mutação temporária para
+  seleção global foi rejeitada: 40.936/45.935 alocações. Implementação correta
+  restaurada antes dos gates; nenhuma fixture/expectativa alterada.
+- `go test -count=1 ./...`: passou, incluindo exemplos WASM, módulo antigo,
+  SDK externo, E2E e TCP `RunWasm`. `go vet ./...`, gofmt, diff check e checker
+  documental passaram; CLI/servidor compilados com `CGO_ENABLED=0`.
+- Race com cgo: testes de seleção/Has/cancelamento/budget e ambos os exemplos
+  em `./graph ./wasmquery`, mais `TestFilteredSelectionStreaming` em `./remote`:
+  passaram. A suíte race completa permanece a evidência da implementação
+  inicial abaixo; nesta revisão foram repetidos os caminhos alterados.
+- `go generate ./remote/installedwasm` repetido com hashes iguais. CLI:
+  build com índice genérico `tag` → snapshot → `select_labels` compilado WASI
+  → JSON correto (A/C, 2 nodes, 0 edges).
+- TCP `RunWasm` novamente medido após os ajustes, sem gates concorrentes:
+  3 warmups/11 amostras por variante, 2 nodes/1 edge, 218 bytes/3 batches.
+  Medianas de ponta a ponta: 3,723 ms sem índice e 4,575 ms com índice nessa
+  fixture pequena. Raw e fases atualizados em
+  [SELECTION_BENCHMARKS](docs/SELECTION_BENCHMARKS.md); matriz core/WASM e
+  saída local mantêm a coleta inicial, explicitamente identificada.
+
+Próximo passo: revisão do PR. Nenhum requisito de implementação pendente.
+
 ## Seleção composta genérica — 2026-10-07
 
 Estado: **concluído**. Branch `feat/composed-node-selection` publicada;

@@ -6,6 +6,11 @@ fictícias; corpus e módulos do ambiente anterior não estão disponíveis.
 Esta medição não reproduz os números históricos apresentados no pedido.
 Sem metas de latência, p95/p99 ou comparação com outras linguagens.
 
+A matriz do core/WASM e a saída local abaixo foram coletadas na implementação
+inicial do PR #7. O ajuste de candidatos vazios não muda esses inputs, que têm
+membros; esses tempos não foram novamente medidos. A coleta TCP foi atualizada
+após restaurar `filtered` à filtragem sobre vizinhos (ver seção de transporte).
+
 ## Método
 
 100.000 nodes, 100.000 edges formando um ciclo dirigido. Cada node tem `tag`
@@ -102,18 +107,18 @@ rede. Três warmups e 11 amostras por fase.
 | conversion ggpb-file-to-json | 1.814 | 1.655 | 40158 |
 
 A medição TCP usa uma **outra fixture**, pequena (5 nodes, 2 edges): `filtered`
-versão 2 via `RunWasm`, argumentos `S L tag X`, resultado 2 nodes e 1 edge,
-218 bytes GGPB em 3 batches. Cliente e servidor Go no mesmo processo,
+versão 2 com filtragem sobre vizinhos via `RunWasm`, argumentos `S L tag X`,
+resultado 2 nodes e 1 edge, 218 bytes GGPB em 3 batches. Cliente e servidor Go no mesmo processo,
 TCP loopback real, sem TLS, concorrência 1. Três warmups e 11 amostras.
 O caminho não usa GraphJSON; o cliente decodifica/valida batches GGPB.
 
 | Fase TCP/GGPB | Sem índice (ms) | Com índice (ms) |
 |---|---:|---:|
-| EndToEndMS | 4.570 | 5.115 |
-| ExecutionMaterializationMS | 4.365 | 4.935 |
-| EncodeMS | 0.013 | 0.015 |
-| SendMS | 0.005 | 0.005 |
-| ClientDecodeMS | 0.017 | 0.016 |
+| EndToEndMS | 3.723 | 4.575 |
+| ExecutionMaterializationMS | 3.486 | 4.379 |
+| EncodeMS | 0.014 | 0.015 |
+| SendMS | 0.004 | 0.006 |
+| ClientDecodeMS | 0.013 | 0.015 |
 
 `ExecutionMaterializationMS`, `EncodeMS` e `SendMS` usam a instrumentação
 existente do servidor. Send mede a chamada ao gRPC, incluindo cópia/envio
@@ -157,3 +162,18 @@ for key, samples in groups.items():
 `EdgeSet.Has`, novas operações de expansão/alcance, projeção de resposta,
 RPCs específicos, planner, formato de snapshot e modelagem transacional não
 fazem parte desta entrega. Nenhuma otimização adicional de saída foi aplicada.
+
+## Regressões da revisão
+
+`TestEmptySelectionSkipsPropertyWork` usa 100.000 postings coincidentes e um
+conjunto vazio. O limite observado cobre somente verificações no bitmap;
+a implementação anterior ultrapassou esse limite (100–102 checks). Abrange
+Has, labels nil/vazios/desconhecidos, index/scan, ownership e cancelamento.
+
+`TestFilteredPropertyWorkStaysWithNeighbors` mantém 5.000 nodes/propriedades
+e um único vizinho, variando a frequência de `L` de 1 para 5.000. Strings de
+propriedades em mmap tornam os decodes observáveis em alocações. Três execuções
+por caso com `testing.AllocsPerRun`, após warmup próprio, sem assert de tempo.
+A versão que seleciona globalmente antes de intersectar é rejeitada; a versão
+restrita aos vizinhos mantém o trabalho. Os valores observados constam em
+PROGRESS. Essas contagens não representam RSS nem o orçamento do host.

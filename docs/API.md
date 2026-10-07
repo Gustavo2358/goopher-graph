@@ -28,7 +28,11 @@ sem índice, examina somente as propriedades dos candidatos. Não há índice
 físico composto nem mudança de snapshot.
 
 `nodes.Has(ctx, key, value)` usa a mesma filtragem e devolve um bitmap novo,
-preservando o conjunto de entrada. Com índice, lê postings; sem índice, visita
+preservando o conjunto de entrada. Se os candidatos estão vazios, examina
+apenas as palavras do bitmap e devolve um resultado vazio independente, sem
+buscar/percorrer propriedades ou postings. Essa verificação também observa
+cancelamento; o custo dessa verificação depende do tamanho do bitmap.
+Com índice, lê postings; sem índice, visita
 somente nodes presentes no bitmap (a procura de membros percorre palavras do
 bitmap). Cancelamento é observado durante essas passagens e a leitura de
 propriedades, retornando erro sem resultado parcial. A seleção composta aloca

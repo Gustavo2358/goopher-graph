@@ -134,10 +134,11 @@ parâmetros nominais, ABI, versão e SHA original. Identidade do resultado:
 Registry tem digest estável; discovery retorna cópias, sem aliases mutáveis.
 
 Assets WASI embutidos e versionados. Atualizar no build/deployment, nunca por
-RPC: `go generate ./remote/installedwasm`. `filtered` versão 2 usa a seleção
-composta genérica (opcode 27) e exige o host atualizado; servidor e assets são
-distribuídos juntos. Módulos antigos continuam suportados. ABI v1, parâmetros
-remotos e `ExpectedSha256` permanecem iguais. [Detalhes](WASM.md).
+RPC: `go generate ./remote/installedwasm`. `filtered` versão 2 usa filtragem sobre
+os vizinhos e conserva os opcodes anteriores. O exemplo separado `select_labels`
+usa opcode 27 e exige o host atualizado; compile-o para uso pela CLI.
+Servidor e assets são distribuídos juntos. Módulos antigos continuam suportados.
+Os contratos da ABI v1, dos parâmetros remotos e de `ExpectedSha256` são preservados. [Detalhes](WASM.md).
 
 Go WASI, trimpath/buildid vazio,
 sem metadata VCS que mudaria o hash a cada commit;

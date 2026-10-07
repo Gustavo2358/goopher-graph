@@ -19,8 +19,13 @@ O E2E compila e executa um consumidor em módulo temporário separado, sem rede.
 engine, escritos com `wasmquery/sdk`. Compilação com Go `wasip1/wasm`, argumentos
 e semântica estão em [docs/WASM.md](../docs/WASM.md).
 
-`filtered` usa seleção composta genérica e interseção com os vizinhos, mantendo
-os quatro argumentos. O asset instalado versão 2 deve acompanhar um host com
-opcode 27. Para testar com dados fictícios, construa a fixture
-`wasmquery/testdata/selection` e passe `S L tag X`; a indexação opcional de `tag`
-usará a flag genérica `--index-property`. [Contrato e comandos](../docs/WASM.md).
+`filtered` mantém a filtragem de propriedades restrita aos vizinhos:
+`Out().HasLabel(label).Has(key, value)`, com os quatro argumentos existentes.
+Isso evita examinar propriedades de outros nodes quando o label é comum.
+Para a fixture `wasmquery/testdata/selection`, passe `S L tag X`.
+
+`wasm/select_labels` exercita a seleção composta global genérica: recebe
+propriedade, valor string e zero ou mais labels (`tag X L M`), usando opcode 27.
+Sem labels, seleciona vazio. Esse exemplo é compilado para a CLI, separado do
+registry padrão do servidor. A indexação opcional de `tag` usa a flag genérica
+`--index-property`. [Contrato e comandos](../docs/WASM.md).

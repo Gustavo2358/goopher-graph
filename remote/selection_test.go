@@ -19,7 +19,7 @@ import (
 	"gophergraph/wasmquery"
 )
 
-// Exercises the packaged new opcode through the existing RunWasm transport.
+// Exercises the packaged neighbor-restricted filtering through RunWasm.
 func TestFilteredSelectionStreaming(t *testing.T) {
 	ctx := context.Background()
 	for _, indexed := range []bool{false, true} {

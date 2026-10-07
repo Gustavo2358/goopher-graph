@@ -88,6 +88,8 @@ Exemplos executáveis:
 - [shared targets](../examples/wasm/shared_targets/main.go): interseção dos nodes
   alcançáveis por duas origens, equivalente ao exemplo Go nativo, com edges induzidas.
 - [between](../examples/wasm/between/main.go): `territory(A) ∩ antiTerritory(B)`.
+- [select labels](../examples/wasm/select_labels/main.go): seleção composta de labels
+  e propriedade string, com argumentos `tag X L M`. Sem labels, seleciona vazio.
 - [filtered](../examples/wasm/filtered/main.go): `out`, label/property tipada, `in`
   e interseção de edges. Argumentos para a [fixture genérica](../wasmquery/testdata/selection/nodes/data.csv): `S L tag X`.
 
@@ -142,11 +144,26 @@ filtered.Release()
 if err := q.Return(sub); err != nil { os.Exit(1) }
 ```
 
+O exemplo `filtered` mantém `Out().HasLabel(label).Has(key, value)`:
+o filtro de propriedades recebe apenas os vizinhos que passaram pelo label.
+Selecionar todos os nodes do label e intersectar depois pode fazer trabalho
+extra quando a origem tem poucos vizinhos e o label é comum. A API composta é
+apropriada quando a query pede seleção global por vários labels, como no
+exemplo separado `select_labels`.
+
+```sh
+GOOS=wasip1 GOARCH=wasm CGO_ENABLED=0 go build \
+  -o /tmp/select_labels.wasm ./examples/wasm/select_labels
+bin/gophergraph wasm --snapshot /tmp/selection.snapshot \
+  --module /tmp/select_labels.wasm --arg tag --arg X --arg L --arg M
+```
+
 A seleção recebe apenas parâmetros genéricos. `NodeSet.Has` mantém a assinatura
 SDK e agora filtra candidatos no host: sem varredura global de propriedades e
-sem conjunto global intermediário. Propriedades indexadas usam os postings
-existentes. `EdgeSet.Has` conserva sua implementação. O orçamento do host cobre
-resultado e temporários efetivos: dois bitmaps para a seleção composta, somente
+sem conjunto global intermediário. Candidatos vazios encerram a filtragem
+após verificar o bitmap, sem ler propriedades/postings. Propriedades indexadas
+usam os postings existentes. `EdgeSet.Has` conserva sua implementação.
+O orçamento do host cobre resultado e temporários efetivos: dois bitmaps para a seleção composta, somente
 o bitmap novo para `Has`, além dos handles vivos. Não é um teto de alocações
 acumuladas nem de RSS.
 
@@ -162,7 +179,9 @@ bin/gophergraph build --nodes wasmquery/testdata/selection/nodes \
 A ABI continua `gophergraph_v1`; opcodes 1–26 mantêm números e semântica.
 Módulos antigos continuam executando no host novo. Módulos que chamam 27
 exigem este host ou posterior; um host anterior rejeita a operação. O módulo
-instalado `filtered` versão 2 usa 27. Distribua os assets reconstruídos com
+`select_labels` usa 27 e deve acompanhar esse host. O módulo instalado
+`filtered` versão 2 usa os opcodes anteriores e filtra apenas os vizinhos.
+Distribua os assets reconstruídos com
 `go generate ./remote/installedwasm` junto com o servidor atualizado. A versão
 do descriptor e SHA do módulo identificam essa associação em discovery e
 `ExpectedSha256`; não há negociação nova de capacidades. A compatibilidade

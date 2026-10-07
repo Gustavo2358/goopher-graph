@@ -256,3 +256,47 @@ func TestSelectionEmptyAndClosedGraph(t *testing.T) {
 		t.Fatal(result, err)
 	}
 }
+
+func TestEmptySelectionSkipsPropertyWork(t *testing.T) {
+	value, _ := IntegerValue(IntKind, 0)
+	for _, indexed := range []bool{false, true} {
+		g := selectionGraph(t, 100000, 1, indexed)
+		empty, _ := NewNodeSet(g)
+		for _, run := range []struct {
+			name        string
+			selectNodes func(context.Context) (*NodeSet, error)
+		}{
+			{"Has", func(c context.Context) (*NodeSet, error) { return empty.Has(c, "p", value) }},
+			{"nil labels", func(c context.Context) (*NodeSet, error) { return g.NodesWithAnyLabelAndProperty(c, nil, "p", value) }},
+			{"empty labels", func(c context.Context) (*NodeSet, error) {
+				return g.NodesWithAnyLabelAndProperty(c, []string{}, "p", value)
+			}},
+			{"unknown labels", func(c context.Context) (*NodeSet, error) {
+				return g.NodesWithAnyLabelAndProperty(c, []string{"unknown"}, "p", value)
+			}},
+		} {
+			t.Run(fmt.Sprintf("indexed=%v/%s", indexed, run.name), func(t *testing.T) {
+				ctx := &selectionContext{Context: context.Background()}
+				got, err := run.selectNodes(ctx)
+				// Only the 1563 candidate bitmap words need scanning. Reading the
+				// 100000 property postings would exceed this observable work bound.
+				if err != nil || got.Count() != 0 || !got.BelongsTo(g) || ctx.checks > 8 {
+					t.Fatalf("err=%v checks=%d", err, ctx.checks)
+				}
+				if err := got.Add(0); err != nil {
+					t.Fatal(err)
+				}
+				if empty.Count() != 0 {
+					t.Fatal("empty input aliased the output")
+				}
+			})
+		}
+		for _, cause := range []error{context.Canceled, context.DeadlineExceeded} {
+			ctx := &selectionContext{Context: context.Background(), cancelAt: 3, cause: cause}
+			got, err := empty.Has(ctx, "p", value)
+			if got != nil || !errors.Is(err, cause) {
+				t.Fatal(got, err)
+			}
+		}
+	}
+}

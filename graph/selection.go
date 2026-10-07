@@ -48,6 +48,23 @@ func (s *NodeSet) Has(ctx context.Context, key string, value Value) (*NodeSet, e
 	if err != nil {
 		return nil, err
 	}
+	// Find the first candidate before looking up a property. Empty sets do no
+	// property work, and sparse scans can start at this first nonempty word.
+	first := 0
+	for first < len(s.words) && s.words[first] == 0 {
+		if first%1024 == 0 {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+		}
+		first++
+	}
+	if first == len(s.words) {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		return out, nil
+	}
 	start, count, indexed, err := s.g.propertyPosting(0, key, value)
 	if err != nil {
 		return nil, err
@@ -73,7 +90,8 @@ func (s *NodeSet) Has(ctx context.Context, key string, value Value) (*NodeSet, e
 			var nodes, properties uint64
 			// Scan bitmap words explicitly: Iterator.Next can cross a large empty span
 			// without returning control to the caller to check cancellation.
-			for word, members := range s.words {
+			for offset, members := range s.words[first:] {
+				word := first + offset
 				if word%1024 == 0 {
 					if err := ctx.Err(); err != nil {
 						return nil, err

@@ -6,13 +6,18 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 
 	"gophergraph/graph"
 	"gophergraph/internal/testutil"
+	"gophergraph/snapshot"
+	snapshotfile "gophergraph/snapshot/adapters/file"
+	"gophergraph/snapshot/adapters/mmap"
 	"gophergraph/wasmquery/internal/abi"
 )
 
@@ -188,6 +193,107 @@ func TestSelectionHostInvalidValueAndCancellation(t *testing.T) {
 	token, err := s.dispatch(ctx, abi.NodesAnyLabelProperty, 0, 0, abi.Params{Labels: []string{"L"}, Key: "tag", Value: abi.Value{Kind: 8, Text: "X"}})
 	if token != 0 || !errors.Is(err, context.Canceled) || len(s.handles) != 0 {
 		t.Fatal(token, err, s)
+	}
+	assertClean(t, r)
+}
+
+func TestSelectLabelsExample(t *testing.T) {
+	r := newRuntime(t, Limits{})
+	m := compileGuest(t, r, "../examples/wasm/select_labels")
+	for _, indexed := range []bool{false, true} {
+		g := loadGraph(t, "testdata/selection", indexed, "tag")
+		for _, tc := range []struct{ labels, want []string }{
+			{nil, nil},
+			{[]string{"unknown"}, nil},
+			{[]string{"L"}, []string{"A"}},
+			{[]string{"L", "M", "M", "unknown"}, []string{"A", "C"}},
+		} {
+			result := execute(t, r, m, g, append([]string{"tag", "X"}, tc.labels...)...)
+			sub, err := result.Subgraph()
+			if err != nil {
+				t.Fatal(err)
+			}
+			var got []string
+			it := sub.Nodes()
+			for it.Next() {
+				id, err := g.NodeExternalID(it.ID())
+				if err != nil {
+					t.Fatal(err)
+				}
+				got = append(got, id)
+			}
+			if !reflect.DeepEqual(got, tc.want) || sub.EdgeCount() != 0 {
+				t.Fatal(got, tc.want, sub.EdgeCount())
+			}
+			result.Close()
+		}
+		assertClean(t, r)
+	}
+}
+
+// With mapped strings, decoding each property value allocates a string. Vary
+// label frequency while keeping nodes, properties and the single neighbor
+// fixed: neighbor-restricted Has should do the same property work in both.
+func TestFilteredPropertyWorkStaysWithNeighbors(t *testing.T) {
+	r := newRuntime(t, Limits{})
+	m := compileGuest(t, r, "../examples/wasm/filtered")
+	const n = 5000
+	graphs := make([]*graph.Graph, 2)
+	for variant := range graphs {
+		root := t.TempDir()
+		for _, role := range []string{"nodes", "edges"} {
+			if err := os.Mkdir(filepath.Join(root, role), 0700); err != nil {
+				t.Fatal(err)
+			}
+		}
+		var csv bytes.Buffer
+		fmt.Fprintln(&csv, "~id,~label,tag:String")
+		for i := 0; i < n; i++ {
+			label := "OTHER"
+			if variant == 1 || i == 0 {
+				label = "L"
+			}
+			fmt.Fprintf(&csv, "n%09d,%s,chosen-value\n", i, label)
+		}
+		fmt.Fprintln(&csv, "S,OTHER,")
+		if err := os.WriteFile(filepath.Join(root, "nodes", "data.csv"), csv.Bytes(), 0600); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(root, "edges", "data.csv"), []byte("~id,~from,~to,~label\nedge,S,n000000000,LINK\n"), 0600); err != nil {
+			t.Fatal(err)
+		}
+		heap := loadGraph(t, root, false, "tag")
+		path := filepath.Join(root, "graph.snapshot")
+		if _, err := snapshot.Write(context.Background(), heap, snapshotfile.New(path)); err != nil {
+			t.Fatal(err)
+		}
+		heap.Close()
+		mapped, err := snapshot.Open(context.Background(), mmap.New(path))
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { mapped.Close() })
+		graphs[variant] = mapped
+	}
+	var allocs [2]float64
+	for i, g := range graphs {
+		allocs[i] = testing.AllocsPerRun(3, func() {
+			result, err := r.Execute(context.Background(), m, g, []string{"S", "L", "tag", "chosen-value"})
+			if err != nil {
+				t.Fatal(err)
+			}
+			sub, err := result.Subgraph()
+			if err != nil || sub.NodeCount() != 2 || sub.EdgeCount() != 1 {
+				t.Fatal(sub, err)
+			}
+			result.Close()
+		})
+	}
+	t.Logf("allocations/execution: rare label=%.0f, common label=%.0f", allocs[0], allocs[1])
+	// Allow incidental runtime bookkeeping, but not 4999 unrelated property
+	// decodes. This is a work regression, not a wall-clock performance assertion.
+	if allocs[1] > allocs[0]+128 {
+		t.Fatalf("property work grew with unrelated label members: %.0f -> %.0f", allocs[0], allocs[1])
 	}
 	assertClean(t, r)
 }
