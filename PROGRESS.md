@@ -11,8 +11,8 @@ obrigatórios, listener operacional HTTP separado.
 | Checkpoint | Estado | Componente / aceite |
 |---|---|---|
 | R01 | Concluído | Contrato tipado, Protobuf separado, dependências e arquitetura |
-| R02 | Em andamento | Validação incremental de batches GGPB |
-| R03 | Pendente | Cancelamento de operações extensas de bitsets |
+| R02 | Concluído | Validação incremental de batches GGPB |
+| R03 | Em andamento | Cancelamento de operações extensas de bitsets |
 | R04 | Pendente | Residency Linux, identity na passagem de warm, lock fail-closed |
 | R05 | Pendente | Assets WASM instalados e build reproduzível |
 | R06 | Pendente | Validação de imports no startup e relatórios de execução |
@@ -272,3 +272,5 @@ Otimização concluída: cópia limpa de `git archive f6845ce` passou offline em
 Fechamento documental concluído após aprovação do usuário do HEAD 5f6e196 e autorização explícita de merge no PR #4. Contrato, limitações, todos os experimentos e evidências finais estão em docs/GGPB.md e docs/GGPB_BENCHMARKS.md; gates completos e qualificação limpa acima permanecem válidos, sem alteração de código neste fechamento. Integração autorizada por merge commit para preservar os checkpoints revisáveis. Escopo GGPB encerrado; PoC gRPC residente é trabalho futuro separado, sem implementação nesta entrega.
 
 R01: `go test ./remote/pb ./tests/e2e -run TestCapabilityImports -count=1` passou. grpc-go 1.84.0; protocolo remoto separado. Gerador oficial protoc-gen-go 1.34.2 evita unsafe próprio.
+
+R02: `go test ./ggpb -count=1` passou; decoder bounded sem framing, testes de ordem, End, cancelamento e paridade com leitor de arquivo.
