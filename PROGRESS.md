@@ -16,8 +16,8 @@ obrigatórios, listener operacional HTTP separado.
 | R04 | Concluído | Residency Linux, identity na passagem de warm, lock fail-closed |
 | R05 | Concluído | Assets WASM instalados e build reproduzível |
 | R06 | Concluído | Validação de imports no startup e relatórios de execução |
-| R07 | Em andamento | Admission sem fila e lifecycle próprio |
-| R08 | Pendente | Queries nativas, ownership e streaming síncrono |
+| R07 | Concluído | Admission sem fila e lifecycle próprio |
+| R08 | Em andamento | Queries nativas, ownership e streaming síncrono |
 | R09 | Pendente | RunWasm, discovery e identidade reproduzível |
 | R10 | Pendente | Startup, ServerInfo e health |
 | R11 | Pendente | Transporte, limites, deadlines e cancelamento |
@@ -282,3 +282,5 @@ R04: `go test ./snapshot/adapters/mmap -count=1` passou com mlock real, RLIMIT_M
 R05: três exemplos Go WASI compilados com trimpath/buildid vazio e empacotados via embed; arquivos presentes em build limpo. Compilação ocorre apenas no build, não por RPC.
 
 R06: registry default preparado e imutável; testes de imports WASI ausentes/signatura incorreta, cancelamento e instância sem _start passaram. Relatório WASM preserva métricas mesmo em erro. Teste revelou uso inválido de ExportedFunction em host module; corrigido para ExportedFunctionDefinitions.
+
+R07: `go test ./remote -count=1` passou. Admission não bloqueante, cleanup idempotente e drain sem corrida Add/Wait; token representa execução + resultado + envio.
