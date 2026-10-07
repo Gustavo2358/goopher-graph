@@ -20,8 +20,8 @@ obrigatórios, listener operacional HTTP separado.
 | R08 | Concluído | Queries nativas, ownership e streaming síncrono |
 | R09 | Concluído | RunWasm, discovery e identidade reproduzível |
 | R10 | Concluído | Startup, ServerInfo e health |
-| R11 | Em andamento | Transporte, limites, deadlines e cancelamento |
-| R12 | Pendente | Shutdown, Health.Watch e quiescência |
+| R11 | Concluído | Transporte, limites, deadlines e cancelamento |
+| R12 | Em andamento | Shutdown, Health.Watch e quiescência |
 | R13 | Pendente | Métricas bounded e listener operacional |
 | R14 | Pendente | Clientes de referência Go/Python, interoperabilidade |
 | R15 | Pendente | TCP real, slow consumer, overload e memória |
@@ -290,3 +290,5 @@ R08: implementação e testes de paridade byte a byte com EmitEncoded, filtro ni
 R08/R09: `go test ./remote -count=1` fora do sandbox passou (TCP real). WASM discovery, nome+SHA no Header/metadata, expected hash, aridade/NUL/tamanho e zero compile em request verificados. Restrição de socket era ambiental.
 
 R10: build CGO_ENABLED=0 do servidor e `go test ./remote ./cmd/gophergraph-server -count=1` TCP passaram. Snapshot único validado/preparado antes de listener; health gRPC Check/Watch, ServerInfo e startup fail-closed. Limites base e lifecycle conectados ao adapter.
+
+R11: request oversized libera token, deadline ausente/excessivo é recusado, limite global de conexões preserva conexão aceita. TCP real passou. Janelas estáticas 64KiB stream / 1MiB conexão desabilitam crescimento BDP por payload.
