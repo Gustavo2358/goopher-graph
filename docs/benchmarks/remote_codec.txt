@@ -1,0 +1,18 @@
+goos: linux
+goarch: amd64
+pkg: gophergraph/remote
+cpu: AMD Ryzen 5 5600GT with Radeon Graphics
+BenchmarkCorpusTransport/encoded-sink-12         	      10	 688174782 ns/op	 128.20 MB/s	41778244 B/op	 2937257 allocs/op
+BenchmarkCorpusTransport/encoded-sink-12         	      10	 673777185 ns/op	 130.94 MB/s	41778244 B/op	 2937257 allocs/op
+BenchmarkCorpusTransport/encoded-sink-12         	      10	 677588313 ns/op	 130.21 MB/s	41778211 B/op	 2937257 allocs/op
+BenchmarkCorpusTransport/generated-sink-12       	      10	1336686566 ns/op	  66.00 MB/s	132781529 B/op	 2945672 allocs/op
+BenchmarkCorpusTransport/generated-sink-12       	      10	1410935260 ns/op	  62.53 MB/s	132781552 B/op	 2945672 allocs/op
+BenchmarkCorpusTransport/generated-sink-12       	      10	1401303818 ns/op	  62.96 MB/s	132781574 B/op	 2945672 allocs/op
+BenchmarkCorpusTransport/encoded-tcp-12          	      10	 995812222 ns/op	  88.60 MB/s	238235341 B/op	 3056369 allocs/op
+BenchmarkCorpusTransport/encoded-tcp-12          	      10	1073490505 ns/op	  82.19 MB/s	238157368 B/op	 3052670 allocs/op
+BenchmarkCorpusTransport/encoded-tcp-12          	      10	1016116318 ns/op	  86.83 MB/s	238077412 B/op	 3053392 allocs/op
+BenchmarkCorpusTransport/generated-tcp-12        	      10	1652932148 ns/op	  53.38 MB/s	238299646 B/op	 3071487 allocs/op
+BenchmarkCorpusTransport/generated-tcp-12        	      10	1672331069 ns/op	  52.76 MB/s	238257820 B/op	 3071761 allocs/op
+BenchmarkCorpusTransport/generated-tcp-12        	      10	1674554866 ns/op	  52.69 MB/s	238175428 B/op	 3069572 allocs/op
+PASS
+ok  	gophergraph/remote	160.868s

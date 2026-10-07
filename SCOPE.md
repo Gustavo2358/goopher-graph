@@ -56,3 +56,13 @@ incremental para o contrato JSON. [Contrato](docs/GGPB.md) e
 [medições](docs/GGPB_BENCHMARKS.md). Runtime oficial Protobuf autorizado por essa
 extensão. Dicionários locais não alteram layout de snapshot nem execução da query.
 API gRPC, HTTP, Lambda e streaming durante traversal permanecem excluídos.
+
+## Extensão autorizada: servidor residente gRPC
+
+Discovery aprovado e implementação autorizada em 2026-10-06. Adiciona adapter
+remoto read-only, snapshot locked por padrão, admission finito, queries nativas
++ WASM pré-instalado, server-streaming GGPB encoded, health/métricas e clientes.
+Dependências gRPC/Protobuf oficiais autorizadas. Core/CLI anteriores preservados.
+JSON da ABI WASM existente permanece; não é payload remoto. HTTP é apenas plano
+operacional. [Contrato e operação](docs/REMOTE.md). Sem mutations, registry
+remoto dinâmico, upload, hot-swap, cache, HA/replicação ou plataforma de auth.

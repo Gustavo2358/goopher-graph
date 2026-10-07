@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"runtime"
-	"slices"
-	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -15,8 +13,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"gophergraph/ggpb"
-	"gophergraph/graph"
-	"gophergraph/internal/graphdata"
+	"gophergraph/internal/benchfixture"
 	"gophergraph/remote/installedwasm"
 	"gophergraph/remote/pb"
 	"gophergraph/snapshot"
@@ -29,34 +26,8 @@ import (
 // interns this value once; emitted results repeat it for every node/edge.
 func flowService(t testing.TB, scalar int) *Service {
 	t.Helper()
-	const n = 4000
 	ctx := context.Background()
-	d := graphdata.Empty()
-	value := strings.Repeat("x", scalar)
-	d.Strings = []string{"", "L", "payload", value}
-	for i := range n {
-		d.Strings = append(d.Strings, fmt.Sprintf("n%09d", i), fmt.Sprintf("e%09d", i))
-	}
-	slices.Sort(d.Strings)
-	sid := func(v string) uint32 { i, _ := slices.BinarySearch(d.Strings, v); return uint32(i) }
-	for i := range n {
-		d.NodeIDs.Heap = append(d.NodeIDs.Heap, sid(fmt.Sprintf("n%09d", i)))
-		d.NodeLabelOffsets.Heap = append(d.NodeLabelOffsets.Heap, uint64(i+1))
-		d.NodeLabels.Heap = append(d.NodeLabels.Heap, sid("L"))
-		d.NodePropOffsets.Heap = append(d.NodePropOffsets.Heap, uint64(i+1))
-		d.NodeProps.Heap = append(d.NodeProps.Heap, graphdata.Property{Key: sid("payload"), Kind: 8, Payload: uint64(sid(value))})
-		d.EdgeIDs.Heap = append(d.EdgeIDs.Heap, sid(fmt.Sprintf("e%09d", i)))
-		d.Sources.Heap = append(d.Sources.Heap, uint32(i))
-		d.Targets.Heap = append(d.Targets.Heap, uint32((i+1)%n))
-		d.EdgeLabels.Heap = append(d.EdgeLabels.Heap, sid("L"))
-		d.EdgePropOffsets.Heap = append(d.EdgePropOffsets.Heap, uint64(i+1))
-		d.EdgeProps.Heap = append(d.EdgeProps.Heap, graphdata.Property{Key: sid("payload"), Kind: 8, Payload: uint64(sid(value))})
-	}
-	graphdata.BuildCSR(d)
-	if err := graphdata.BuildIndexes(ctx, d); err != nil {
-		t.Fatal(err)
-	}
-	heap, err := graph.New(d, nil)
+	heap, err := benchfixture.StreamingGraph(ctx, 4000, scalar)
 	if err != nil {
 		t.Fatal(err)
 	}
