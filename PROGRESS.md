@@ -339,3 +339,30 @@ warm por limite de memlock do host. Sem SLA, benchmark WAN/TLS, integração
 Lambda/Kubernetes ou prova de sobrevivência a cgroup OOM. Admission deriva de
 estimativa conservadora e precisa ser calibrado no deployment real. Implementação
 autorizada entregue; nenhum hot-swap, upload, mutation ou merge nesta campanha.
+
+## Medição adicional de residency — 2026-10-07
+
+Concluído, a pedido do usuário: comparação de traversal com page cache frio,
+cache quente/PTEs descartadas, mapping prefaulted e locked. Cópias privadas
+synced, sem drop global de caches; mincore antes de cada amostra confirmou 0%
+ou 100% de residency conforme o rótulo. Sem mudanças nos builds de produção:
+controle Linux isolado no adapter mmap com tag opt-in `residencybench`.
+
+`residencymeasure --repeats=36 --encode-repeats=6` executou 756 queries,
+ordem rotativa balanceada, três nativas: corpus 400k/2M (~197 MiB) e ciclo
+40k/40k (~5,95 MiB). No grande, cold→warm mediano: Territory
+202,88→105,00 ms, AntiTerritory 237,18→107,91 ms, Between 286,61→159,48 ms;
+1,8–2,2× de velocidade. Cold sempre teve major faults; warm/cache/locked zero.
+Locked disponível só no menor, sem ganho consistente sobre warm (variação
+aproximadamente ±6%). Mlock grande foi explicitamente registrado indisponível.
+Raw, resumo/reprodução e limites em docs/REMOTE_BENCHMARKS.md.
+
+Gates executados: `CGO_ENABLED=1 go test -race -tags=residencybench -count=1
+./tools/residencymeasure ./tests/e2e -run
+'TestPrivateCopyColdAndWarmPages|TestCapabilityImports'`, vet com tag, build
+CGO_ENABLED=0 do tool, piloto do binário final, reducer sobre todos os samples
+e rejeição de estado cold falso, py_compile, gofmt/diff check e check_package
+passaram. TMPDIR de disco foi usado; /tmp do ambiente é tmpfs, incompatível com
+essa prova de eviction. O gate de imports detectou Unix no primeiro harness:
+corrigido isolando as operações no adapter opt-in, sem relaxar a regra.
+Dados frios no page cache Linux não significam SSD/controlador fisicamente frio.

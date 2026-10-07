@@ -110,6 +110,118 @@ python tools/remote_empty.py
 python tools/remote_resilience.py
 ```
 
+## Cache frio versus snapshot residente
+
+Campanha adicional solicitada pelo usuário: **aquecer o snapshot reduziu o tempo
+de execução das queries grandes em 44–55%**, aproximadamente 1,8–2,2× de velocidade.
+Isso compara estados de memória controlados; não houve alteração de algoritmo.
+Os 39,2% do comparativo de transporte acima continuam sendo outro efeito.
+
+Mesmo hardware/Go, armazenamento ext4 sobre Lexar SSD NQ100 512 GB. Dois
+snapshots: corpus original 400k nodes/2M edges, 206.405.120 bytes (~197 MiB),
+e ciclo sintético 40k nodes/40k edges, 6.241.408 bytes (~5,95 MiB), que cabe no
+memlock de 8 MiB. Nativas Territory/AntiTerritory/Between, sem concorrência
+entre queries nem paralelismo interno. 36 amostras por condição/query, ordem
+rotativa balanceada; 756 queries no total. Primeiras seis amostras por grupo
+também fizeram encoding EmitEncoded para sink, cronometrado separadamente.
+
+Abrir/validar já aquece páginas. Portanto o tool cria uma cópia privada synced
+do arquivo, valida normalmente e estabelece novamente o estado antes de cada
+query. Código Go/workspaces têm warmup; GC antes de cada preparação, fora do
+cronômetro. Lookup de IDs, contagens, inspeção e setup também ficam fora da
+fase query. Não toca caches globais nem evicta o inode original de leitores.
+
+| Condição | Estado estabelecido e verificado antes da query |
+|---|---|
+| cold | MADV_DONTNEED no mapping + FADV_DONTNEED no arquivo privado; zero páginas no page cache |
+| warm-cache | prefault completo, depois descarte de PTEs do mapping; todas as páginas no page cache da RAM |
+| warm | prefault completo, mapping pronto; todas as páginas na RAM |
+| locked | warm + mlock integral bem-sucedido; somente no snapshot menor |
+
+mincore em processo auxiliar observa o arquivo sem lê-lo. Cada amostra exige
+0% de páginas residentes em cold ou 100% nas demais condições; falha aborta,
+não muda o rótulo. Cold teve major faults em todas as amostras; demais condições
+tiveram zero. Minor faults incluem heap/código do processo, não só o mapping.
+FADV_DONTNEED é advisory e precisa de páginas limpas: a cópia é fsynced e o
+resultado é verificado, não presumido. Sem unsafe/cgo no código Go de produto;
+o probe usa ctypes da stdlib Python para libc mincore. Controle Linux fica no
+adapter mmap, compilado somente com a tag explícita residencybench; esses
+helpers não entram nos builds normais do servidor/biblioteca.
+[Fadvise](https://man7.org/linux/man-pages/man2/posix_fadvise.2.html),
+[madvise](https://man7.org/linux/man-pages/man2/madvise.2.html),
+[mincore](https://man7.org/linux/man-pages/man2/mincore.2.html).
+
+Corpus grande: as três queries retornam 360k nodes/1,8M edges. Medianas de
+execução pura; não incluem abertura, encoding, gRPC ou decode do consumidor:
+
+| Query | Cold ms | Cache RAM/PTEs descartadas ms | Warm ms | Cold/warm | Redução do tempo |
+|---|---:|---:|---:|---:|---:|
+| Territory | 202,88 | 105,95 | 105,00 | 1,93× | 48,2% |
+| AntiTerritory | 237,18 | 109,96 | 107,91 | 2,20× | 54,5% |
+| Between | 286,61 | 161,71 | 159,48 | 1,80× | 44,4% |
+
+P95 cold/warm: Territory 208,91/110,72 ms; AntiTerritory 252,45/119,95 ms;
+Between 303,05/186,40 ms. Mediana de major faults: cold 140/191/199,
+respectivamente; warm zero. CPU mediana Territory 124,77→108,25 ms, contra
+wall 202,88→105,00 ms: a principal diferença é espera por I/O e faults.
+Prefault adicionou apenas ~1–2% de redução mediana frente a arquivo já no cache
+da RAM com PTEs descartadas neste corpus. Não extrapolar para outras máquinas.
+
+Com encoding grande (~88,23 MB), medianas query+encode das seis amostras por
+grupo: Territory 1045,53→784,32 ms; AntiTerritory 1077,16→784,22 ms;
+Between 1143,18→840,12 ms, aproximadamente 25–27% de redução. A traversal
+aquece somente parte do snapshot; encoding cold ainda teve I/O para propriedades.
+Esses totais excluem transporte/decoding e intervalos de inspeção, não são RPC SLA.
+
+Snapshot menor, 40k/40k em cada resultado:
+
+| Query | Cold ms | Warm ms | Locked ms |
+|---|---:|---:|---:|
+| Territory | 9,97 | 4,46 | 4,69 |
+| AntiTerritory | 14,10 | 4,76 | 4,49 |
+| Between | 15,47 | 6,55 | 6,67 |
+
+Locked não apresentou ganho consistente sobre warm sem pressão de reclaim:
+variação aproximadamente ±6%, com distribuições sobrepostas. Seu contrato é
+manter as páginas na RAM, não acelerar uma página que já está quente. No corpus
+grande, mlock falhou explicitamente por limite do ambiente e foi registrado como
+condição indisponível; não houve downgrade nem alegação de benchmark locked.
+
+Abertura/validação fria foi medida separadamente uma vez por snapshot/processo,
+com zero páginas no cache antes e 100% após abrir. Não é distribuição de startup.
+SHA/prefault inicial também tem fase própria no raw. Preparações artificiais
+entre queries não fazem parte do tempo medido e não foram adicionadas ao servidor.
+
+[Raw grande](benchmarks/residency_large.jsonl),
+[raw lockable](benchmarks/residency_lockable.jsonl),
+[resumo validado](benchmarks/residency_summary.json). O reducer verifica estados,
+faults e igualdade das contagens entre condições. P95 usa índice floor((n-1)*.95);
+36 amostras não sustentam p99. Alocações da query ficam separadas do encoder.
+
+Reprodução em diretório de disco, **não tmpfs**:
+
+```sh
+mkdir -p .measure/tmp
+CGO_ENABLED=0 go build -o bin/gophergraph ./cmd/gophergraph
+CGO_ENABLED=0 go build -o bin/gophergraph-remotefixture ./tools/remotefixture
+CGO_ENABLED=0 go build -tags=residencybench -o bin/gophergraph-residencymeasure ./tools/residencymeasure
+go run ./tools/benchdata --nodes=400000 --output=.measure/residency-large-input
+bin/gophergraph build --nodes=.measure/residency-large-input/nodes \
+  --edges=.measure/residency-large-input/edges --output=.measure/residency-large.snapshot
+bin/gophergraph-remotefixture --nodes=40000 --scalar=64 --output=.measure/residency-lockable.snapshot
+TMPDIR="$PWD/.measure/tmp" bin/gophergraph-residencymeasure \
+  --snapshot=.measure/residency-large.snapshot --repeats=36 --encode-repeats=6 > .measure/residency-large.jsonl
+TMPDIR="$PWD/.measure/tmp" bin/gophergraph-residencymeasure \
+  --snapshot=.measure/residency-lockable.snapshot --repeats=36 --encode-repeats=6 > .measure/residency-lockable.jsonl
+python3 tools/residency_summary.py .measure/residency-large.jsonl .measure/residency-lockable.jsonl
+```
+
+Limites: cache de páginas Linux frio, **não** cache de controlador/SSD fisicamente
+frio; processo/Go aquecidos para isolar os dados do grafo. Sem pressão de memória,
+host dedicado ou medição de concorrência nessa comparação. Cold após validação
+simula dados reclaimed; não é o estado normal de um servidor READY em locked.
+O ganho decorre de evitar I/O, não de mudar o algoritmo ou do mlock isoladamente.
+
 ## Backpressure e shutdown
 
 TCP real, mesmo mmap locked de 4k nodes/4k edges. Property payload lógico
