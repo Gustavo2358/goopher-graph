@@ -14,9 +14,22 @@ const (
 )
 
 type Options struct {
-	IndexProperties []string
-	Limits          ports.Limits
+	NodePropertyConflictPolicy NodePropertyConflictPolicy
+	Scratch                    ports.Scratch
+	MemoryBudget               uint64
+	IndexProperties            []string
+	Limits                     ports.Limits
 }
+
+type NodePropertyConflictPolicy uint8
+
+const (
+	LastWins NodePropertyConflictPolicy = iota
+	FirstWins
+	DropConflictingProperty
+)
+
+func (p NodePropertyConflictPolicy) String() string
 
 type CatalogReport struct {
 	SourcesSeen           uint64
@@ -31,15 +44,16 @@ type CatalogReport struct {
 }
 
 type Report struct {
-	Completeness                      Completeness
-	NodeSources                       CatalogReport
-	EdgeSources                       CatalogReport
-	Nodes                             uint64
-	Edges                             uint64
-	PropertyConflictGroups            uint64
-	PropertyCardinalityConflictGroups uint64
-	QuarantinedEdgeIDs                uint64
-	Warnings                          uint64
+	Completeness                       Completeness
+	NodeSources                        CatalogReport
+	EdgeSources                        CatalogReport
+	Nodes                              uint64
+	Edges                              uint64
+	PropertyConflictGroups             uint64
+	PropertyCardinalityConflictGroups  uint64
+	ResolvedNodePropertyConflictGroups uint64
+	QuarantinedEdgeIDs                 uint64
+	Warnings                           uint64
 }
 
 func Build(ctx context.Context, nodes, edges ports.Catalog, decoder ports.Decoder, diagnostics ports.DiagnosticSink, options Options) (*graph.Graph, Report, error)

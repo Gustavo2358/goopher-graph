@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"gophergraph/graph"
 	"gophergraph/ingest/ports"
 	"io"
@@ -77,6 +76,7 @@ func buildDisk(ctx context.Context, nodes, edges ports.Catalog, decoder ports.De
 	if err != nil {
 		return
 	}
+	b.policy = options.NodePropertyConflictPolicy
 	budget := options.MemoryBudget
 	if budget == 0 {
 		budget = 64 << 20
@@ -188,6 +188,10 @@ func (d *diskBuilder) stage(r *ports.Record) error {
 		if p.Key == "" || !utf8.ValidString(p.Key) || p.Cardinality > ports.Single || p.Value.Kind() < graph.BoolKind || p.Value.Kind() > graph.DatetimeKind || (r.Role == ports.Edges && p.Cardinality != ports.Single) {
 			return structuralError("property")
 		}
+		sequence, err := d.b.nextPropertySequence()
+		if err != nil {
+			return err
+		}
 		key := sortString(append(bytes.Clone(base), 2), p.Key)
 		key = append(key, byte(p.Value.Kind()))
 		if s, ok := p.Value.Text(); ok {
@@ -195,7 +199,8 @@ func (d *diskBuilder) stage(r *ports.Record) error {
 		} else {
 			key = big64(key, payload(p.Value, nil))
 		}
-		if err := d.pending.row(key, append([]byte{byte(p.Cardinality)}, loc...)); err != nil {
+		value := big64([]byte{byte(p.Cardinality)}, sequence)
+		if err := d.pending.row(key, append(value, loc...)); err != nil {
 			return err
 		}
 	}
@@ -374,20 +379,29 @@ func (d *diskBuilder) consolidate(role ports.Role) error {
 			var origins []ports.Location
 			var count uint64
 			var cards uint8
+			var winnerKey []byte
+			var winnerOrigin ports.Location
+			var winnerSequence uint64
 			var prev []byte
 			distinct := 0
 			for nextErr == nil && bytes.HasPrefix(r.row.key, prefix) {
-				if len(r.row.value) == 0 {
+				if len(r.row.value) < 9 {
 					return io.ErrUnexpectedEOF
 				}
 				cards |= 1 << r.row.value[0]
 				count++
-				loc, err := readOrigin(r.row.value[1:], role)
+				sequence := spillBE.Uint64(r.row.value[1:9])
+				loc, err := readOrigin(r.row.value[9:], role)
 				if err != nil {
 					return err
 				}
 				loc.Column = name
 				origins = addOrigin(origins, loc)
+				if role == ports.Nodes && r.row.value[0] == byte(ports.Single) && d.b.policy != DropConflictingProperty &&
+					(winnerKey == nil || (d.b.policy == FirstWins && sequence < winnerSequence) || (d.b.policy == LastWins && sequence > winnerSequence)) {
+					winnerKey = append(winnerKey[:0], r.row.key...)
+					winnerSequence, winnerOrigin = sequence, loc
+				}
 				if prev == nil || !bytes.Equal(prev, r.row.key) {
 					distinct = min(2, distinct+1)
 					prev = append(prev[:0], r.row.key...)
@@ -401,19 +415,15 @@ func (d *diskBuilder) consolidate(role ports.Role) error {
 			if quarantined {
 				continue
 			}
-			code := ""
-			if cards == 3 {
-				code = "PROPERTY_CARDINALITY_CONFLICT"
-				d.b.report.PropertyCardinalityConflictGroups++
-			} else if cards == 2 && distinct > 1 {
-				code = "PROPERTY_CONFLICT"
-				d.b.report.PropertyConflictGroups++
+			decision, err := d.b.decideProperty(role, id, propertySummary{cards: cards, distinct: distinct > 1, count: count, origins: origins, winner: winnerOrigin})
+			if err != nil {
+				return err
 			}
-			if code != "" {
-				if err = d.b.emit(ports.Diagnostic{Severity: ports.Rejection, Code: code, Location: origins[0], Related: origins, Contributions: count, EntityID: id, EntityIDKnown: true, Message: fmt.Sprintf("property removed after %d contributions", count)}); err != nil {
+			if decision == propertyWinner {
+				if err = d.accept(out, winnerKey); err != nil {
 					return err
 				}
-			} else {
+			} else if decision == propertyKeep {
 				// Re-read a property group after its decision. Even one enormous set stays
 				// on disk; only the previous value and two diagnostic origins are retained.
 				groupReader.reset(sorted, start, end)

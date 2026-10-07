@@ -12,6 +12,11 @@ O produto inicial é uma biblioteca Go reutilizável e uma CLI local. Cloud é u
 
 **Modelo:** directed property multigraph, IDs externos de nodes/edges, multilabel de nodes, um label de edge, propriedades single/set de nodes e single de edges, loops e paralelas. Canonicalização determinística, CSR forward/reverse, dicionário de strings e postings compactos. Índices de propriedade apenas para chaves escolhidas.
 
+Conflitos de valores em propriedades single de nodes usam `last-wins` por
+padrão, com `first-wins` ou remoção (`drop`) configuráveis na carga. Ordem:
+chaves dos arquivos em bytes, depois registros lógicos. Sets, conflitos de
+cardinalidade e edges seguem suas regras próprias. [Contrato](docs/INGEST.md).
+
 **Persistência:** layout binário desta spec, validação rigorosa, snapshot imutável, publicação local com staging e rename. Leitura por mmap em Linux/amd64. Codec testável em memória. Arquivo maior que 4 GiB não é proibido pelo layout, sujeito aos limites efetivos de memória/arquitetura.
 
 **Uso:** território, antiterritório, região entre dois nodes; filtro de labels de edge; lookup de metadados e igualdade de propriedades; bitsets e iteração para consultas Go próprias. Saída CSV de IDs, DOT ou JSON estruturado por streaming, sem integração com renderer.

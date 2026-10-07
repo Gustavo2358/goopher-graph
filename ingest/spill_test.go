@@ -8,6 +8,7 @@ import (
 	"gophergraph/ingest"
 	"gophergraph/ingest/adapters/filesystem"
 	"gophergraph/ingest/adapters/neptune"
+	"gophergraph/ingest/ports"
 	"gophergraph/internal/testutil"
 	"gophergraph/snapshot"
 	"gophergraph/snapshot/adapters/file"
@@ -33,12 +34,21 @@ func snapshotBytes(t *testing.T, g *graph.Graph) []byte {
 }
 func compareBuilds(t *testing.T, n, e memory, keys []string, check func(*graph.Graph)) {
 	t.Helper()
+	compareBuildsWithOptions(t, n, e, ingest.Options{NodePropertyConflictPolicy: ingest.DropConflictingProperty, IndexProperties: keys}, func(g *graph.Graph, _ ingest.Report, _ []ports.Diagnostic) {
+		if check != nil {
+			check(g)
+		}
+	})
+}
+
+func compareBuildsWithOptions(t *testing.T, n, e ports.Catalog, base ingest.Options, check func(*graph.Graph, ingest.Report, []ports.Diagnostic)) {
+	t.Helper()
 	dir := t.TempDir()
 	var want []byte
 	var wantReport ingest.Report
 	var wantDiag *diagnostics
 	for _, budget := range []uint64{0, 1 << 20, 2 << 20} {
-		options := ingest.Options{IndexProperties: keys}
+		options := base
 		if budget > 0 {
 			options.Scratch = filesystem.Scratch{Dir: dir}
 			options.MemoryBudget = budget
@@ -49,7 +59,7 @@ func compareBuilds(t *testing.T, n, e memory, keys []string, check func(*graph.G
 			t.Fatal(err)
 		}
 		if check != nil {
-			check(g)
+			check(g, r, diag.events)
 		}
 		got := snapshotBytes(t, g)
 		if err = g.Close(); err != nil {
@@ -112,7 +122,7 @@ func TestExternalLargeGroupsAndPermutations(t *testing.T) {
 	for seed := int64(0); seed < 3; seed++ {
 		rand.New(rand.NewSource(seed)).Shuffle(len(rows), func(i, j int) { rows[i], rows[j] = rows[j], rows[i] })
 		n["n"] = "~id,~label,p:String,q:String(single)\n" + strings.Join(rows, "\n") + "\n"
-		g, _, err := ingest.Build(context.Background(), n, memory{"e": e.String()}, neptune.Decoder{}, &diagnostics{}, ingest.Options{Scratch: filesystem.Scratch{Dir: t.TempDir()}, MemoryBudget: 1 << 20, IndexProperties: []string{"q", "p", "absent"}})
+		g, _, err := ingest.Build(context.Background(), n, memory{"e": e.String()}, neptune.Decoder{}, &diagnostics{}, ingest.Options{NodePropertyConflictPolicy: ingest.DropConflictingProperty, Scratch: filesystem.Scratch{Dir: t.TempDir()}, MemoryBudget: 1 << 20, IndexProperties: []string{"q", "p", "absent"}})
 		if err != nil {
 			t.Fatal(err)
 		}

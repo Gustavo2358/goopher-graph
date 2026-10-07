@@ -45,6 +45,7 @@ const (
 )
 
 type Diagnostic struct {
+	Resolution    string `json:",omitempty"` // policy for a resolved conflict; Location is the winner
 	Related       []Location
 	Contributions uint64
 	Severity      Severity

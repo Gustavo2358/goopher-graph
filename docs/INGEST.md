@@ -22,7 +22,11 @@ validar opções e enumerar catálogos
   -> relatório final
 ```
 
-Ordenar descriptors por key em bytes torna os diagnósticos mais previsíveis, mas a semântica de merge não depende dessa ordenação. Antes da barreira, nenhum registro de edge é consumido. Não criar placeholder para node inexistente nem agendar retries esperando um node que já não pode surgir.
+Ordenar descriptors por key em bytes define a precedência entre fontes para
+first/last-wins. Dentro da fonte, vale a sequência de registros lógicos do
+decoder, inclusive campos multilinha. Antes da barreira, nenhum registro de
+edge é consumido. Não criar placeholder para node inexistente nem agendar
+retries esperando um node que já não pode surgir.
 
 A implementação externa usada pela CLI mantém a mesma ordem, contadores,
 diagnósticos e canonicalização. Os catálogos de origem são consumidos uma vez;
@@ -81,14 +85,31 @@ Após os registros individualmente válidos, consolidar por ID e chave:
 | Node repetido com labels diferentes | União dos labels e contribuições |
 | `set` repetido | União de valores tipados sem duplicatas |
 | `single` repetido com valor idêntico | Um valor; contribuição idempotente |
-| `single` com valores diferentes | Remover todos os valores dessa chave no dono; diagnóstico de conflito |
+| `single` de node com valores diferentes | Last-wins por padrão; first-wins ou remoção configuráveis |
+| `single` de edge com valores diferentes | Remover todos os valores dessa chave no dono; diagnóstico de conflito |
 | Declarações single/set incompatíveis, com contribuições presentes | Remover a propriedade inteira; diagnóstico |
 | Edge repetida, mesmos endpoints e label | União de contribuições; propriedades de edge são single |
 | Mesmo EdgeID externo com endpoints ou label diferentes | Quarentenar todo esse ID; nenhuma variante é publicada |
 | EdgeIDs diferentes com a mesma tripla | Preservar ambas, inclusive propriedades |
 | Edge com endpoint ausente | Rejeitar o registro; não participar do merge |
 
-Não existe first-wins ou last-wins. A propriedade removida não reaparece ao chegar outra contribuição. Em conflito estrutural de edge, tombstone do ID impede sua ressurreição. Um registro com endpoint ausente não torna inválida uma edge válida de mesmo ID: ele já foi rejeitado antes de participar.
+`Options.NodePropertyConflictPolicy` aceita `LastWins` (zero/default),
+`FirstWins` e `DropConflictingProperty`. A CLI aceita
+`--node-property-conflict=last-wins|first-wins|drop`. A escolha é por ID de node
+e chave, entre contribuições presentes de registros válidos, na ordem de
+arquivos por chave em bytes e registros dentro de cada arquivo. Não substitui
+o node inteiro: labels e outras propriedades continuam consolidados. Ausência
+não apaga um valor; string quoted vazia é valor. Uma repetição posterior do
+mesmo valor participa da ordem: `CO, CT, CO` termina em `CO` com last-wins.
+Igualdade permanece tipada; `Int(1)` e `Long(1)` são valores diferentes.
+
+Sets continuam união, inclusive quando o header omite a cardinalidade.
+Conflito single/set remove o grupo em todas as políticas. No modo drop, a
+propriedade removida não reaparece ao chegar outra contribuição. Em conflito
+estrutural de edge, tombstone do ID impede sua ressurreição. Um registro com
+endpoint ausente não torna inválida uma edge válida de mesmo ID: ele já foi
+rejeitado antes de participar. Abrir um snapshot não reaplica a política;
+é preciso reconstruí-lo para escolher outro resultado. O formato v1 não muda.
 
 Conflitos eliminam grupos, não o lote. Guardar identidade do grupo, número de contribuições e pelo menos duas origens de diagnóstico determinísticas quando houver dois valores/estruturas conflitantes. Não guardar todos os CSVs em memória só para logging.
 
@@ -105,6 +126,16 @@ Limite default por registro lógico: **64 MiB**, configurável via `--max-record
 Evento estruturado: severidade, código estável, papel nodes/edges, source key, registro lógico/linha inicial quando conhecidos, entity ID quando conhecido, coluna e explicação curta. Eventos usam strings Go e campos tipados; o sink não pode reter slices temporários do decoder. Não imprimir linha completa nem valores de propriedades sensíveis por padrão. Escapar controle na saída local.
 
 Emitir um evento por rejeição de registro/arquivo e um por grupo conflitante; warnings de coerção são distintos de perda. Erro do sink de diagnóstico é fatal antes da publicação, pois continuar sem reportar perdas viola o contrato.
+
+Conflitos de valores de nodes resolvidos por first/last-wins emitem um warning
+`NODE_PROPERTY_CONFLICT_RESOLVED` por grupo. `Resolution` informa a política,
+`Location` a origem vencedora (incluindo a coluna), `Related` conserva até duas
+origens determinísticas e `Contributions` conta as contribuições presentes,
+inclusive duplicatas. Nenhum valor de propriedade é incluído. O report conta
+`ResolvedNodePropertyConflictGroups` e `Warnings`; os contadores
+`PropertyConflictGroups` e `PropertyCardinalityConflictGroups` continuam
+representando grupos removidos. Uma resolução configurada, sozinha, não torna
+a carga parcial. Falha de emitir esse warning também impede a publicação.
 
 Por catálogo, contar arquivos vistos, concluídos, rejeitados por header, falhas de I/O, fontes interrompidas por estrutura lexical e entradas não regulares. Essas categorias finais são disjuntas: erro de leitura é `sources_io_failed`, não também `sources_interrupted`; esta última fica para cauda CSV irrecuperável/limite sem recuperação. `sources_seen` inclui entradas não regulares. Em carga terminada sem falha global, seen é a soma das categorias finais. Contar registros completos vistos, rejeitados e staged. `staged = vistos - rejeitados`; **staged não significa entidade final**, pois duplicatas e conflitos são consolidados depois. Guardar ainda grupos de propriedades removidos, IDs de edge quarentenados e números finais de nodes/edges. `Report.Nodes` e `Report.Edges` são contagens do Graph consolidado; o resultado de publicação é separado e informa se o Graph chegou a ser persistido/publicado.
 

@@ -30,10 +30,22 @@ func buildCommand(ctx context.Context, args []string, stdout, stderr io.Writer) 
 	budget := fs.Uint64("memory-budget", 64<<20, "sort buffer budget in bytes (minimum 1 MiB; excludes record buffers and mappings)")
 	tempDir := fs.String("temp-dir", "", "build scratch parent directory (default: output directory)")
 	limit := fs.Uint64("max-record-bytes", 67108864, "maximum logical record bytes (minimum 1024)")
+	conflict := fs.String("node-property-conflict", "last-wins", "single node property conflict policy: last-wins, first-wins, drop")
 	var keys repeated
 	fs.Var(&keys, "index-property", "property key to index (repeatable)")
 	if code := parse(fs, args); code >= 0 {
 		return code
+	}
+	var policy ingest.NodePropertyConflictPolicy
+	switch *conflict {
+	case "last-wins":
+		policy = ingest.LastWins
+	case "first-wins":
+		policy = ingest.FirstWins
+	case "drop":
+		policy = ingest.DropConflictingProperty
+	default:
+		return failure(stderr, errors.New("node-property-conflict must be last-wins, first-wins or drop"), 2)
 	}
 	if *budget < 1<<20 || *budget > uint64(math.MaxInt) {
 		return failure(stderr, errors.New("memory-budget must be 1 MiB..MaxInt"), 2)
@@ -63,7 +75,7 @@ func buildCommand(ctx context.Context, args []string, stdout, stderr io.Writer) 
 	if e := filesystem.ValidateBuildPaths(*nodes, *edges, *tempDir); e != nil {
 		return failure(stderr, fmt.Errorf("temp-dir: %w", e), 2)
 	}
-	g, report, e := ingest.Build(ctx, n, r, neptune.Decoder{}, diagnostic.New(stderr), ingest.Options{Scratch: filesystem.Scratch{Dir: *tempDir}, MemoryBudget: *budget, IndexProperties: keys, Limits: ingestports.Limits{MaxRecordBytes: *limit}})
+	g, report, e := ingest.Build(ctx, n, r, neptune.Decoder{}, diagnostic.New(stderr), ingest.Options{NodePropertyConflictPolicy: policy, Scratch: filesystem.Scratch{Dir: *tempDir}, MemoryBudget: *budget, IndexProperties: keys, Limits: ingestports.Limits{MaxRecordBytes: *limit}})
 	if e != nil {
 		return failure(stderr, e, 1)
 	}
@@ -84,7 +96,7 @@ func buildCommand(ctx context.Context, args []string, stdout, stderr io.Writer) 
 	if report.Completeness == ingest.Partial {
 		completeness = "PARTIAL"
 	}
-	_, e = fmt.Fprintf(stdout, "PUBLISHED_DURABLE %s nodes=%d edges=%d\nnode_sources=%+v\nedge_sources=%+v\nproperty_conflicts=%d cardinality_conflicts=%d quarantined_edges=%d warnings=%d\n", completeness, report.Nodes, report.Edges, report.NodeSources, report.EdgeSources, report.PropertyConflictGroups, report.PropertyCardinalityConflictGroups, report.QuarantinedEdgeIDs, report.Warnings)
+	_, e = fmt.Fprintf(stdout, "PUBLISHED_DURABLE %s nodes=%d edges=%d\nnode_sources=%+v\nedge_sources=%+v\nproperty_conflicts=%d cardinality_conflicts=%d quarantined_edges=%d warnings=%d\nnode_property_conflict_policy=%s resolved_node_property_conflicts=%d\n", completeness, report.Nodes, report.Edges, report.NodeSources, report.EdgeSources, report.PropertyConflictGroups, report.PropertyCardinalityConflictGroups, report.QuarantinedEdgeIDs, report.Warnings, policy, report.ResolvedNodePropertyConflictGroups)
 	if e == nil {
 		_, e = fmt.Fprintf(stdout, "ingest_merge=%s canonicalize_csr_indexes=%s write_validate_commit=%s\n", report.Times.IngestMerge, report.Times.Canonicalize, writeDuration)
 	}

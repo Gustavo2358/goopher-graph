@@ -30,4 +30,4 @@ Fontes primárias consultadas para o desenho em Go. As decisões de produto são
 
 ## O que é política local, não promessa do Neptune
 
-Carga tolerante por registro/fonte; remoção determinística de propriedades conflitantes; quarentena de EdgeID estruturalmente inconsistente; warning na coerção Bool; datas como texto validado; distinção entre origem incluída na API e omitida na listagem. Nem os documentos nem os testes afirmam equivalência transacional com o serviço ou comparação de performance com outro motor.
+Carga tolerante por registro/fonte; first/last-wins ou remoção configuráveis para conflitos de valores single de nodes (last-wins por padrão); remoção de conflitos de cardinalidade e valores single de edges; quarentena de EdgeID estruturalmente inconsistente; warning na coerção Bool; datas como texto validado; distinção entre origem incluída na API e omitida na listagem. Nem os documentos nem os testes afirmam equivalência transacional com o serviço ou comparação de performance com outro motor.

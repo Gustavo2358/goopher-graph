@@ -1,5 +1,30 @@
 # Progresso
 
+## Política de conflito de propriedades de nós — 2026-10-07
+
+Estado: **concluído**. `LastWins` é o padrão em `ingest.Options` e na CLI;
+`FirstWins` e `DropConflictingProperty` são explícitos. Precedência por chave
+do catálogo em bytes e ordem das contribuições; heap/spill produzem snapshots,
+reports sem tempos e diagnósticos iguais. Warning por grupo resolvido informa
+política e origem vencedora, sem tornar a carga parcial por si só. Sets,
+labels, cardinalidade, edges e snapshot v1 preservados; fixtures/goldens
+originais continuam sendo verificados em drop.
+
+Evidência executada offline (`GOPROXY=off GOTOOLCHAIN=local`, cache em `/tmp`):
+
+- Teste do default falhou antes da implementação e passou depois.
+- `go test -count=1 ./...`: passou, incluindo SDK externo, E2E e TCP local.
+- `CGO_ENABLED=1 go test -race -count=1 -p=1 ./...`: passou em ambiente com cgo.
+- `go vet ./...`, gofmt, `git diff --check` e builds CLI/servidor com
+  `CGO_ENABLED=0`: passaram.
+- Fuzz Neptune e snapshot com `-fuzztime=10000x`: 10 mil execuções cada,
+  sem falhas; `python3 tools/check_package.py` passou.
+
+O E2E de SDK WASM desativa apenas VCS stamping do módulo temporário sem Git,
+após trace mostrar `git status` fora de repositório; a compilação é real.
+Branch: `feat/node-property-conflict-policy`. Próximo passo: revisão do PR;
+merge não faz parte desta entrega.
+
 ## Servidor residente — campanha autorizada em 2026-10-06
 
 Branch `feat/resident-grpc-server`, fonte `main` 0178f3f. Implementação e PR

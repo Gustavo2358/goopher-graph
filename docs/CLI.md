@@ -16,6 +16,18 @@ gophergraph build \
 
 `--index-property KEY` pode repetir; deduplicar/ordenar opções. Sem essa opção, apenas índices obrigatórios de labels/IDs. `--max-record-bytes N` tem default 67108864, mínimo 1024; aplica-se inclusive ao header. Não é um limite global de memória nem desculpa para truncar o grafo.
 
+`--node-property-conflict last-wins|first-wins|drop` configura conflitos de
+valores de propriedades single de nós; padrão `last-wins`. Declare, por
+exemplo, `sigla:String(single)`; `sigla:String` continua set por padrão.
+Arquivos são percorridos por chave em bytes, registros em sequência lógica.
+Ausência de propriedade não apaga valor. A política vale por chave, não pelo
+registro inteiro. Sets, cardinalidade incompatível e edges mantêm suas regras.
+O resumo informa `node_property_conflict_policy` e
+`resolved_node_property_conflicts`; warnings JSON de resolução mostram política
+e origem vencedora sem valores. Resolução configurada não torna o snapshot
+parcial por si só. Valor inválido retorna 2 antes de abrir dados ou publicar.
+Um snapshot existente só muda ao ser reconstruído com a opção desejada.
+
 Output não pode coincidir nem ficar dentro de nodes/edges; validar caminhos resolvidos e aliases locais razoáveis no adapter. Rejeitar catálogos idênticos. O produto não é um sandbox contra filesystem adversarial e não cria rede/remote.
 
 Ao fim, stdout recebe um resumo legível: publicação, completeness, fontes, registros vistos/rejeitados/staged, conflitos e contagens finais. Diagnósticos vão a stderr. Carga parcial publicada com sucesso retorna 0, com `PARTIAL` explícito; não anunciar completa. O bit de parcialidade fica no snapshot. Empty válido também publica; EMPTY_GRAPH é aviso, não aborto.

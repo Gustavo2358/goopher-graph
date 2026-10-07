@@ -34,6 +34,17 @@ Cancelar consulta retorna erro e nenhum resultado anunciado como completo. Não 
 
 `ingest.Build` recebe contexto, dois Catalogs, Decoder, DiagnosticSink e Options. Retorna Graph consolidado, Report e error. Report parcial + error nil é sucesso operacional com rejeições. Graph ainda não está publicado: snapshot.Write é operação separada, com Publication explícita. `Report.Times` informa tempos de leitura/merge e canonicalização/CSR/índices para medição local; esses tempos não são persistidos.
 
+`Options.NodePropertyConflictPolicy` configura valores diferentes de
+propriedades single de nodes. `Options{}` usa `LastWins`; `FirstWins` e
+`DropConflictingProperty` são explícitos. Arquivos seguem a ordem de bytes
+da chave do catálogo; registros seguem a ordem de emissão do decoder.
+Propriedades ausentes e registros rejeitados não participam. Sets, conflitos
+de cardinalidade e edges mantêm suas regras. Valor de enum inválido é erro
+de configuração, antes de abrir catálogos ou scratch. Resoluções geram warning
+com política e origem vencedora, incrementam
+`Report.ResolvedNodePropertyConflictGroups` e não tornam a carga parcial por
+si só. [Semântica e compatibilidade](INGEST.md).
+
 `snapshot.Open(ctx,Source)` abre/valida o backing e transfere lifecycle para Graph. `snapshot.Write(ctx,g,Sink)` serializa, valida staging e publica. Não receber um path no domínio para facilitar a CLI; path fica em Source/Sink concretos.
 
 Para ingestão limitada, configure `Options{Scratch: filesystem.Scratch{Dir: dir},

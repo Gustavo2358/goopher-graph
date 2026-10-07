@@ -15,9 +15,14 @@ O pipeline externo faz estes passes:
    descritores com capacidade fixa; merges de dois runs mantêm uma pilha de até
    64 níveis. Não há lista de runs ou número de arquivos proporcional aos registros.
 3. Consolida cada ID em streams, mantendo contagem e as duas menores origens.
+   Cada contribuição de propriedade conserva uma sequência atribuída antes do
+   sort. First/last-wins de propriedades single de nodes escolhe a menor/maior
+   sequência, conservando só um candidato e sua origem; a ordem por valor dos
+   runs não determina o vencedor. Duplicatas mantêm suas sequências.
    Identidades de edge vêm antes das propriedades: quarentena elimina todo o ID
    e seus conflitos de propriedades. Para um grupo de propriedade, primeiro decide
-   conflitos; depois relê o intervalo aceito, deduplicando valores consecutivos.
+   conflitos; aceita só o vencedor quando configurado ou relê o intervalo
+   aceito, deduplicando valores consecutivos.
    Nem mesmo um único node, set, label ou hub enorme exige buffering do grupo.
 4. Depois de todos os nodes, cria um índice de IDs em arquivos mmap (offsets e
    bytes). Busca binária resolve endpoints; ausências rejeitam cada registro de

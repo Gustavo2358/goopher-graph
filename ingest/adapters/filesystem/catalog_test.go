@@ -80,7 +80,7 @@ func TestFixturesOnDisk(t *testing.T) {
 			if e != nil {
 				t.Fatal(e)
 			}
-			g, _, e := ingest.Build(context.Background(), n, edges, neptune.Decoder{}, sink{}, ingest.Options{IndexProperties: w.IndexProperties})
+			g, _, e := ingest.Build(context.Background(), n, edges, neptune.Decoder{}, sink{}, ingest.Options{NodePropertyConflictPolicy: ingest.DropConflictingProperty, IndexProperties: w.IndexProperties})
 			if e != nil {
 				t.Fatal(e)
 			}
