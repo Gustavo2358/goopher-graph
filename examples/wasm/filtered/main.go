@@ -11,7 +11,11 @@ func main() {
 		os.Exit(2)
 	}
 	q := sdk.New()
-	targets := q.Nodes(os.Args[1]).Out().HasLabel(os.Args[2]).Has(os.Args[3], sdk.String(os.Args[4]))
+	neighbors := q.Nodes(os.Args[1]).Out()
+	labelled := neighbors.HasLabel(os.Args[2])
+	targets := labelled.Has(os.Args[3], sdk.String(os.Args[4]))
+	neighbors.Release()
+	labelled.Release()
 	callers := targets.In()
 	edges := callers.OutE().Intersection(targets.InE())
 	if err := q.Return(q.Subgraph(targets, edges)); err != nil {

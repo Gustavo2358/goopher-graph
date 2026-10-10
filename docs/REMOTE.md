@@ -134,12 +134,18 @@ parâmetros nominais, ABI, versão e SHA original. Identidade do resultado:
 Registry tem digest estável; discovery retorna cópias, sem aliases mutáveis.
 
 Assets WASI embutidos e versionados. Atualizar no build/deployment, nunca por
-RPC: `go generate ./remote/installedwasm`. Go WASI, trimpath/buildid vazio,
+RPC: `go generate ./remote/installedwasm`. `filtered` versão 2 usa filtragem sobre
+os vizinhos e conserva os opcodes anteriores. O exemplo separado `select_labels`
+usa opcode 27 e exige o host atualizado; compile-o para uso pela CLI.
+Servidor e assets são distribuídos juntos. Módulos antigos continuam suportados.
+Os contratos da ABI v1, dos parâmetros remotos e de `ExpectedSha256` são preservados. [Detalhes](WASM.md).
+
+Go WASI, trimpath/buildid vazio,
 sem metadata VCS que mudaria o hash a cada commit;
 reproduzir exige mesma versão Go e fontes SDK. Startup compila/cacheia, resolve
 names/signatures de imports contra exports reais, instancia sem `_start`.
 Binary start section, se existir, roda bounded sem Graph. Nenhuma query falsa
-para health/first-request compilation. Todos os módulos são obrigatórios V1.
+para health/first-request compilation. Todos os módulos usam a ABI `gophergraph_v1`.
 
 Guest fresco por execução; runtime reutilizável. Sem filesystem/socket/env/
 stdio/Go pointers/snapshot bytes/capabilities de context ambiente. Memória,

@@ -68,11 +68,14 @@ func compileGuest(t *testing.T, r *Runtime, path string) *Module {
 	}
 	return m
 }
-func loadGraph(t *testing.T, path string, index bool) *graph.Graph {
+func loadGraph(t *testing.T, path string, index bool, keys ...string) *graph.Graph {
 	t.Helper()
 	o := ingest.Options{}
 	if index {
 		o.IndexProperties = []string{"sigla", "line", "rank", "group"}
+		if len(keys) != 0 {
+			o.IndexProperties = keys
+		}
 	}
 	nodes, err := filesystem.New(filepath.Join(path, "nodes"))
 	if err != nil {

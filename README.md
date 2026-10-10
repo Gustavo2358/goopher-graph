@@ -178,6 +178,10 @@ bin/gophergraph wasm --snapshot /tmp/graph.snapshot --module /tmp/between.wasm -
 ```
 
 Veja [Host API, SDK, exemplos, lifecycle e limites](docs/WASM.md).
+O core e o SDK oferecem `NodesWithAnyLabelAndProperty` (OR de labels, AND
+com igualdade tipada). `NodeSet.Has` filtra candidatos e aproveita qualquer
+índice de propriedade configurado; sem índice, lê só as propriedades desses
+nodes. [Semântica Go](docs/API.md) e [medições](docs/SELECTION_BENCHMARKS.md).
 
 ## Resultados Protobuf GGPB
 

@@ -1,0 +1,7 @@
+{"Graph":{"Nodes":[
+{"ID":"A","Labels":["L","M"],"Properties":[{"Key":"tag","Type":"String","Value":"X"},{"Key":"tag","Type":"String","Value":"Y"},{"Key":"rank","Type":"Int","Value":1}]},
+{"ID":"B","Labels":["L"],"Properties":[{"Key":"tag","Type":"String","Value":"Y"},{"Key":"rank","Type":"Int","Value":2}]},
+{"ID":"C","Labels":["M"],"Properties":[{"Key":"tag","Type":"String","Value":"X"},{"Key":"rank","Type":"Int","Value":3}]},
+{"ID":"D","Labels":["O"],"Properties":[{"Key":"tag","Type":"String","Value":"X"},{"Key":"rank","Type":"Int","Value":4}]},
+{"ID":"S","Labels":["L"],"Properties":[{"Key":"rank","Type":"Int","Value":5}]}
+]}}

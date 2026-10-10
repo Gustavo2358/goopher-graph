@@ -127,6 +127,29 @@ func main() {
 			check(found && got == v)
 			q.Return(q.Subgraph(q.Nodes(), q.Nodes(os.Args[6]).OutE().Has(os.Args[3], v)))
 		}
+	case "selection":
+		var v sdk.Value
+		var labels []string
+		check(json.Unmarshal([]byte(os.Args[3]), &labels) == nil)
+		check(json.Unmarshal([]byte(os.Args[5]), &v) == nil)
+		var selected sdk.NodeSet
+		if os.Args[2] == "composed" {
+			selected = q.NodesWithAnyLabelAndProperty(labels, os.Args[4], v)
+		} else {
+			selected = q.Nodes()
+			for _, label := range labels {
+				labelled := q.NodesWithLabel(label)
+				filtered := labelled.Has(os.Args[4], v)
+				next := selected.Union(filtered)
+				labelled.Release()
+				filtered.Release()
+				selected.Release()
+				selected = next
+			}
+		}
+		sub := selected.Induced()
+		selected.Release()
+		q.Return(sub)
 	case "native":
 		direction, _ := strconv.Atoi(os.Args[3])
 		var labels []string
